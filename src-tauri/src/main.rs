@@ -1,5 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    program_manager_lib::run()
+    gosh_retro_launcher_lib::run()
 }
