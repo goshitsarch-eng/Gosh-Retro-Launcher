@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout code
@@ -31,12 +31,12 @@ jobs:
       - name: Setup Flatpak
         run: |
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak install --user -y flathub org.gnome.Platform//47 org.gnome.Sdk//47
+          flatpak install --user -y flathub org.gnome.Platform//48 org.gnome.Sdk//48
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Setup Rust
@@ -85,7 +85,7 @@ jobs:
           cat > com.gosh_retro_launcher.app.yml << EOF
           app-id: com.gosh_retro_launcher.app
           runtime: org.gnome.Platform
-          runtime-version: '47'
+          runtime-version: '48'
           sdk: org.gnome.Sdk
           command: gosh-retro-launcher
           finish-args:

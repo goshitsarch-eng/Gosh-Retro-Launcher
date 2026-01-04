@@ -5,7 +5,7 @@ description = "Gosh Retro Launcher - A Windows 3.1 Program Manager clone"
 authors = ["Goshitsarch"]
 license = "MIT"
 edition = "2021"
-rust-version = "1.70"
+rust-version = "1.77.2"
 
 [lib]
 name = "gosh_retro_launcher_lib"
