@@ -1,0 +1,43 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default capabilities for Program Manager",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-minimize",
+    "core:window:allow-maximize",
+    "core:window:allow-unmaximize",
+    "core:window:allow-close",
+    "core:window:allow-hide",
+    "core:window:allow-show",
+    "core:window:allow-set-focus",
+    "core:window:allow-is-maximized",
+    "core:window:allow-is-visible",
+    "core:window:allow-toggle-maximize",
+    "shell:allow-open",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "store:default",
+    "fs:allow-exists",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister",
+    "process:allow-exit",
+    "opener:default",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        "$HOME/**",
+        "$APPDATA/**",
+        "$LOCALAPPDATA/**",
+        "/Applications/**",
+        "/usr/**",
+        "C:\\Program Files\\**",
+        "C:\\Program Files (x86)\\**",
+        "**"
+      ]
+    }
+  ]
+}
