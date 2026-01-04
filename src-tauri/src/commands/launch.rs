@@ -128,7 +128,7 @@ fn launch_windows(item: &ProgramItem) -> LaunchResult {
     if path_lower.ends_with(".lnk") {
         match lnk::ShellLink::open(path) {
             Ok(link) => {
-                if let Some(target) = link.link_info().and_then(|i| i.local_base_path()) {
+                if let Some(target) = link.link_info().and_then(|i| i.local_base_path().clone()) {
                     let mut cmd = Command::new(target);
                     cmd.creation_flags(DETACHED_PROCESS | CREATE_NO_WINDOW);
 
@@ -163,7 +163,7 @@ fn launch_windows(item: &ProgramItem) -> LaunchResult {
             Err(e) => {
                 return LaunchResult {
                     success: false,
-                    error: Some(format!("Failed to parse .lnk file: {}", e)),
+                    error: Some(format!("Failed to parse .lnk file: {:?}", e)),
                 }
             }
         }
