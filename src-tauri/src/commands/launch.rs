@@ -128,7 +128,7 @@ fn launch_windows(item: &ProgramItem) -> LaunchResult {
     if path_lower.ends_with(".lnk") {
         match lnk::ShellLink::open(path) {
             Ok(link) => {
-                if let Some(target) = link.link_info().and_then(|i| i.local_base_path().clone()) {
+                if let Some(target) = link.link_info().clone().and_then(|i| i.local_base_path().clone()) {
                     let mut cmd = Command::new(target);
                     cmd.creation_flags(DETACHED_PROCESS | CREATE_NO_WINDOW);
 
