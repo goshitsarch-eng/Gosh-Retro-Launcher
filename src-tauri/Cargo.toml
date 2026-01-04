@@ -1,6 +1,6 @@
 [package]
 name = "gosh-retro-launcher"
-version = "1.0.0"
+version = "1.1.1"
 description = "Gosh Retro Launcher - A Windows 3.1 Program Manager clone"
 authors = ["Goshitsarch"]
 license = "MIT"
