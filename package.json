@@ -1,0 +1,42 @@
+{
+  "name": "program-manager",
+  "version": "1.0.0",
+  "description": "A Windows 3.1 Program Manager clone built with Electron and React",
+  "main": "./out/main/index.js",
+  "author": "",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "postinstall": "electron-builder install-app-deps",
+    "build:unpack": "npm run build && electron-builder --dir",
+    "build:win": "npm run build && electron-builder --win",
+    "build:mac": "npm run build && electron-builder --mac",
+    "build:linux": "npm run build && electron-builder --linux",
+    "typecheck:main": "tsc --noEmit -p tsconfig.node.json",
+    "typecheck:preload": "tsc --noEmit -p tsconfig.node.json",
+    "typecheck:renderer": "tsc --noEmit -p tsconfig.web.json",
+    "typecheck": "npm run typecheck:main && npm run typecheck:preload && npm run typecheck:renderer"
+  },
+  "dependencies": {
+    "@electron-toolkit/utils": "^3.0.0",
+    "electron-store": "^8.1.0",
+    "uuid": "^9.0.1",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "@types/uuid": "^9.0.7",
+    "@vitejs/plugin-react": "^4.2.1",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "electron-vite": "^5.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10"
+  }
+}

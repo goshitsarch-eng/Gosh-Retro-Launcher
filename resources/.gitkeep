@@ -1,0 +1,5 @@
+# Placeholder for resources directory (used by electron-builder)
+# Add app icons here:
+# - icon.ico (Windows - multi-resolution ICO, 16x16 to 256x256)
+# - icon.icns (macOS - ICNS format)
+# - icon.png (Linux - 512x512 PNG)

@@ -1,0 +1,103 @@
+/* Windows 3.1 Design System Variables */
+
+:root {
+  /* Core Colors - 16-color palette */
+  --win31-white: #ffffff;
+  --win31-black: #000000;
+  --win31-gray: #c0c0c0;        /* Window chrome, button face */
+  --win31-dark: #808080;         /* Shadows, inactive elements */
+  --win31-teal: #008080;         /* Desktop background */
+  --win31-blue: #000080;         /* Active title bar */
+
+  /* Semantic Colors */
+  --desktop-bg: var(--win31-teal);
+  --window-bg: var(--win31-white);
+  --window-chrome: var(--win31-gray);
+  --window-border: var(--win31-black);
+
+  /* Title Bar Colors */
+  --titlebar-active-bg: var(--win31-blue);
+  --titlebar-active-text: var(--win31-white);
+  --titlebar-inactive-bg: var(--win31-dark);
+  --titlebar-inactive-text: var(--win31-gray);
+
+  /* 3D Bevel System */
+  --bevel-light: var(--win31-white);
+  --bevel-face: var(--win31-gray);
+  --bevel-dark: var(--win31-dark);
+  --bevel-darkest: var(--win31-black);
+
+  /* Text Colors */
+  --text-primary: var(--win31-black);
+  --text-disabled: var(--win31-dark);
+  --text-selected: var(--win31-white);
+
+  /* Selection */
+  --selection-bg: var(--win31-blue);
+  --selection-text: var(--win31-white);
+
+  --desktop-text: var(--win31-white);
+
+  /* Typography */
+  --font-system: 'W95FA', 'Fixedsys', 'Courier New', monospace;
+  --font-size-base: 14px;
+  --font-size-title: 14px;
+  --font-size-menu: 14px;
+  --line-height-base: 1.3;
+
+  /* Sizing */
+  --titlebar-height: 22px;
+  --menubar-height: 24px;
+  --button-height: 26px;
+  --button-min-width: 75px;
+  --control-button-size: 14px;
+  --icon-size: 32px;
+  --icon-size-small: 16px;
+  --icon-tile-width: 96px;
+  --mdi-icon-width: 96px;
+
+  /* Spacing */
+  --window-padding: 2px;
+  --dialog-padding: 10px;
+  --button-padding-x: 12px;
+  --button-padding-y: 4px;
+  --menu-item-padding-x: 20px;
+  --menu-item-padding-y: 2px;
+
+  /* Borders */
+  --border-width: 1px;
+  --border-width-thick: 2px;
+}
+
+:root.theme-dark {
+  --win31-white: #1f1f1f;
+  --win31-black: #0a0a0a;
+  --win31-gray: #2b2b2b;
+  --win31-dark: #1a1a1a;
+  --win31-teal: #0f2f2f;
+  --win31-blue: #0b2a52;
+
+  --desktop-bg: #0f2f2f;
+  --window-bg: #1f1f1f;
+  --window-chrome: #2b2b2b;
+  --window-border: #000000;
+
+  --titlebar-active-bg: #0b2a52;
+  --titlebar-active-text: #e6e6e6;
+  --titlebar-inactive-bg: #3a3a3a;
+  --titlebar-inactive-text: #b0b0b0;
+
+  --bevel-light: #4a4a4a;
+  --bevel-face: #2f2f2f;
+  --bevel-dark: #101010;
+  --bevel-darkest: #000000;
+
+  --text-primary: #e6e6e6;
+  --text-disabled: #8a8a8a;
+  --text-selected: #ffffff;
+
+  --selection-bg: #1b4f9c;
+  --selection-text: #ffffff;
+
+  --desktop-text: #e6e6e6;
+}

@@ -1,0 +1,390 @@
+/* Windows 3.1 Core Design System */
+
+@import './variables.css';
+
+/* Font Face - W95FA bitmap-style font */
+@font-face {
+  font-family: 'W95FA';
+  src: url('../assets/fonts/W95FA.woff2') format('woff2'),
+       url('../assets/fonts/W95FA.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'W95FA';
+  src: url('../assets/fonts/W95FA-Bold.woff2') format('woff2'),
+       url('../assets/fonts/W95FA-Bold.woff') format('woff');
+  font-weight: bold;
+  font-style: normal;
+  font-display: block;
+}
+
+/* Reset & Base Styles */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: var(--font-size-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-system);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  color: var(--text-primary);
+  background-color: var(--desktop-bg);
+  overflow: hidden;
+  user-select: none;
+}
+
+/* App container - full height flex layout */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+/* ==========================================
+   BEVEL UTILITIES
+   ========================================== */
+
+/* Raised bevel - for buttons, panels */
+.bevel-raised {
+  border-style: solid;
+  border-width: var(--border-width);
+  border-top-color: var(--bevel-light);
+  border-left-color: var(--bevel-light);
+  border-bottom-color: var(--bevel-dark);
+  border-right-color: var(--bevel-dark);
+  background-color: var(--bevel-face);
+}
+
+/* Sunken bevel - for inputs, work areas */
+.bevel-sunken {
+  border-style: solid;
+  border-width: var(--border-width);
+  border-top-color: var(--bevel-dark);
+  border-left-color: var(--bevel-dark);
+  border-bottom-color: var(--bevel-light);
+  border-right-color: var(--bevel-light);
+}
+
+/* Thick raised bevel */
+.bevel-raised-thick {
+  border-style: solid;
+  border-width: var(--border-width-thick);
+  border-top-color: var(--bevel-light);
+  border-left-color: var(--bevel-light);
+  border-bottom-color: var(--bevel-dark);
+  border-right-color: var(--bevel-dark);
+  background-color: var(--bevel-face);
+}
+
+/* Thick sunken bevel */
+.bevel-sunken-thick {
+  border-style: solid;
+  border-width: var(--border-width-thick);
+  border-top-color: var(--bevel-dark);
+  border-left-color: var(--bevel-dark);
+  border-bottom-color: var(--bevel-light);
+  border-right-color: var(--bevel-light);
+}
+
+/* Window frame bevel */
+.bevel-window {
+  border: var(--border-width) solid var(--window-border);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-light),
+    inset -1px -1px 0 var(--bevel-dark);
+  background-color: var(--window-chrome);
+}
+
+/* ==========================================
+   BUTTON STYLES
+   ========================================== */
+
+.win31-button {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--button-min-width);
+  min-height: var(--button-height);
+  padding: var(--button-padding-y) var(--button-padding-x);
+  font-family: var(--font-system);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  color: var(--text-primary);
+  background-color: var(--bevel-face);
+  border-style: solid;
+  border-width: var(--border-width);
+  border-top-color: var(--bevel-light);
+  border-left-color: var(--bevel-light);
+  border-bottom-color: var(--bevel-dark);
+  border-right-color: var(--bevel-dark);
+  outline: var(--border-width) solid var(--win31-black);
+  outline-offset: 0;
+  cursor: default;
+  position: relative;
+}
+
+.win31-button:active:not(:disabled) {
+  border-top-color: var(--bevel-dark);
+  border-left-color: var(--bevel-dark);
+  border-bottom-color: var(--bevel-light);
+  border-right-color: var(--bevel-light);
+  padding-top: calc(var(--button-padding-y) + 1px);
+  padding-left: calc(var(--button-padding-x) + 1px);
+  padding-bottom: calc(var(--button-padding-y) - 1px);
+  padding-right: calc(var(--button-padding-x) - 1px);
+}
+
+.win31-button:focus {
+  outline: var(--border-width) solid var(--win31-black);
+}
+
+.win31-button:focus::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  right: 3px;
+  bottom: 3px;
+  border: 1px dotted var(--text-primary);
+  pointer-events: none;
+}
+
+.win31-button.default {
+  outline-width: var(--border-width-thick);
+}
+
+.win31-button:disabled {
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+
+/* Small control button (min/max/close) */
+.win31-control-button {
+  width: var(--control-button-size);
+  height: var(--control-button-size);
+  min-width: var(--control-button-size);
+  min-height: var(--control-button-size);
+  padding: 0;
+  font-size: 9px;
+  line-height: 1;
+  outline: none;
+}
+
+/* ==========================================
+   INPUT STYLES
+   ========================================== */
+
+.win31-input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  padding: 2px 4px;
+  font-family: var(--font-system);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  color: var(--text-primary);
+  background-color: var(--win31-white);
+  border-style: solid;
+  border-width: var(--border-width);
+  border-top-color: var(--bevel-dark);
+  border-left-color: var(--bevel-dark);
+  border-bottom-color: var(--bevel-light);
+  border-right-color: var(--bevel-light);
+  outline: none;
+}
+
+.win31-input:disabled {
+  background-color: var(--bevel-face);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+
+.win31-input::placeholder {
+  color: var(--text-disabled);
+}
+
+/* ==========================================
+   CHECKBOX STYLES
+   ========================================== */
+
+.win31-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: default;
+}
+
+.win31-checkbox input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.win31-checkbox .checkmark {
+  width: 13px;
+  height: 13px;
+  background-color: var(--win31-white);
+  border-style: solid;
+  border-width: var(--border-width);
+  border-top-color: var(--bevel-dark);
+  border-left-color: var(--bevel-dark);
+  border-bottom-color: var(--bevel-light);
+  border-right-color: var(--bevel-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.win31-checkbox input:checked + .checkmark::after {
+  content: '✓';
+  font-size: 11px;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.win31-checkbox input:disabled + .checkmark {
+  background-color: var(--bevel-face);
+}
+
+.win31-checkbox .label {
+  font-family: var(--font-system);
+  font-size: var(--font-size-base);
+}
+
+/* ==========================================
+   WINDOW STYLES
+   ========================================== */
+
+.win31-window {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--window-chrome);
+  border: var(--border-width) solid var(--window-border);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-light),
+    inset 2px 2px 0 var(--bevel-face),
+    inset -1px -1px 0 var(--bevel-dark),
+    inset -2px -2px 0 var(--bevel-face);
+}
+
+.win31-titlebar {
+  display: flex;
+  align-items: center;
+  height: var(--titlebar-height);
+  padding: 0 2px;
+  gap: 2px;
+  background-color: var(--titlebar-active-bg);
+  color: var(--titlebar-active-text);
+  font-family: var(--font-system);
+  font-size: var(--font-size-title);
+  font-weight: bold;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.win31-window.inactive .win31-titlebar {
+  background-color: var(--titlebar-inactive-bg);
+  color: var(--titlebar-inactive-text);
+}
+
+.win31-titlebar-text {
+  flex: 1;
+  padding-left: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+}
+
+.win31-titlebar-controls {
+  display: flex;
+  gap: 1px;
+}
+
+.win31-window-body {
+  flex: 1;
+  background-color: var(--window-bg);
+  padding: var(--window-padding);
+  overflow: auto;
+}
+
+.win31-window-body.chrome-bg {
+  background-color: var(--window-chrome);
+}
+
+/* ==========================================
+   SELECTION STYLES
+   ========================================== */
+
+::selection {
+  background-color: var(--selection-bg);
+  color: var(--selection-text);
+}
+
+.selected {
+  background-color: var(--selection-bg);
+  color: var(--selection-text);
+}
+
+/* ==========================================
+   SCROLLBAR STYLES (Win 3.1 style)
+   ========================================== */
+
+::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bevel-face);
+  border: 1px solid var(--bevel-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bevel-face);
+  border-style: solid;
+  border-width: 1px;
+  border-top-color: var(--bevel-light);
+  border-left-color: var(--bevel-light);
+  border-bottom-color: var(--bevel-dark);
+  border-right-color: var(--bevel-dark);
+}
+
+::-webkit-scrollbar-button {
+  background: var(--bevel-face);
+  border-style: solid;
+  border-width: 1px;
+  border-top-color: var(--bevel-light);
+  border-left-color: var(--bevel-light);
+  border-bottom-color: var(--bevel-dark);
+  border-right-color: var(--bevel-dark);
+  width: 16px;
+  height: 16px;
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--bevel-face);
+}
