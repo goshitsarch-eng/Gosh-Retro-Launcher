@@ -94,6 +94,22 @@
     }
   })
 
+  // Handle Delete key for active group (when no item is selected)
+  $effect(() => {
+    function handleDeleteKey(event: KeyboardEvent) {
+      // Only handle Delete if no item is selected and no dialog is open
+      if (event.key === 'Delete' && !uiStore.selectedItemId && activeWindowId && !uiStore.activeDialog) {
+        const group = groups.find(g => g.id === activeWindowId)
+        if (group) {
+          confirmDeleteGroup(group)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleDeleteKey)
+    return () => window.removeEventListener('keydown', handleDeleteKey)
+  })
+
   // Close context menu on click/escape
   $effect(() => {
     if (!contextMenu) return

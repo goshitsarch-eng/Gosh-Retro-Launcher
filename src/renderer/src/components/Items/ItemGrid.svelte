@@ -24,6 +24,33 @@
     }
   }
 
+  // Handle keyboard events for delete
+  function handleKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Delete' && uiStore.selectedItemId && uiStore.selectedGroupId === groupId) {
+      const itemToDelete = items.find(item => item.id === uiStore.selectedItemId)
+      if (itemToDelete) {
+        uiStore.openDialog('confirm', {
+          confirmOptions: {
+            title: 'Delete Item',
+            message: `Are you sure you want to delete "${itemToDelete.name}"?`,
+            onConfirm: () => {
+              programStore.deleteItem(groupId, uiStore.selectedItemId!)
+              uiStore.clearSelection()
+            }
+          }
+        })
+      }
+    }
+  }
+
+  // Listen for keyboard events when this grid's items are selected
+  $effect(() => {
+    if (uiStore.selectedGroupId === groupId) {
+      window.addEventListener('keydown', handleKeyDown)
+      return () => window.removeEventListener('keydown', handleKeyDown)
+    }
+  })
+
   // Handle drag over
   function handleDragOver(event: DragEvent) {
     event.preventDefault()
