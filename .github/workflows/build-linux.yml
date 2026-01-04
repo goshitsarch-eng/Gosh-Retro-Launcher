@@ -1,7 +1,9 @@
 name: Build Linux (AppImage, deb, RPM)
 
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -70,3 +72,11 @@ jobs:
           name: linux-rpm
           path: src-tauri/target/release/bundle/rpm/*.rpm
           retention-days: 30
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/rpm/*.rpm
