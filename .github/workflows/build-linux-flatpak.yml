@@ -25,8 +25,8 @@ jobs:
 
       - name: Setup Flatpak
         run: |
-          sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          sudo flatpak install -y flathub org.gnome.Platform//46 org.gnome.Sdk//46
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y flathub org.gnome.Platform//46 org.gnome.Sdk//46
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -56,9 +56,28 @@ jobs:
       - name: Build Linux app
         run: npm run build:linux
 
+      - name: Create Flatpak resources
+        run: |
+          mkdir -p flatpak
+
+          # Create desktop file
+          cat > flatpak/gosh-retro-launcher.desktop << 'EOF'
+          [Desktop Entry]
+          Name=Gosh Retro Launcher
+          Comment=Retro Game Launcher
+          Exec=gosh-retro-launcher
+          Icon=com.gosh_retro_launcher.app
+          Terminal=false
+          Type=Application
+          Categories=Game;
+          EOF
+
+          # Copy icon
+          cp src-tauri/icons/icon.png flatpak/icon.png
+
       - name: Create Flatpak manifest
         run: |
-          cat > com.gosh_retro_launcher.app.yml << 'EOF'
+          cat > com.gosh_retro_launcher.app.yml << EOF
           app-id: com.gosh_retro_launcher.app
           runtime: org.gnome.Platform
           runtime-version: '46'
@@ -90,33 +109,6 @@ jobs:
                 - type: file
                   path: flatpak/icon.png
           EOF
-
-      - name: Create Flatpak resources
-        run: |
-          mkdir -p flatpak
-
-          # Create desktop file
-          cat > flatpak/gosh-retro-launcher.desktop << 'EOF'
-          [Desktop Entry]
-          Name=Gosh Retro Launcher
-          Comment=Retro Game Launcher
-          Exec=gosh-retro-launcher
-          Icon=com.gosh_retro_launcher.app
-          Terminal=false
-          Type=Application
-          Categories=Game;
-          EOF
-
-          # Copy icon (use existing or create placeholder)
-          if [ -f "src-tauri/icons/icon.png" ]; then
-            cp src-tauri/icons/icon.png flatpak/icon.png
-          elif [ -f "src-tauri/icons/128x128.png" ]; then
-            cp src-tauri/icons/128x128.png flatpak/icon.png
-          else
-            # Create a simple placeholder icon
-            convert -size 256x256 xc:gray flatpak/icon.png 2>/dev/null || \
-              echo "Warning: No icon found, using placeholder"
-          fi
 
       - name: Build Flatpak
         run: |
