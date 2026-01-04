@@ -24,13 +24,16 @@
 
   function handleDelete() {
     if (!group) return
+    // Capture values before opening confirm dialog (which replaces dialogData)
+    const groupId = group.id
+    const groupName = group.name
     uiStore.openDialog('confirm', {
       confirmOptions: {
         title: 'Delete Group',
-        message: `Are you sure you want to delete "${group.name}" and all its items?`,
+        message: `Are you sure you want to delete "${groupName}" and all its items?`,
         onConfirm: () => {
-          mdiStore.closeWindow(group.id)
-          programStore.deleteGroup(group.id)
+          mdiStore.closeWindow(groupId)
+          programStore.deleteGroup(groupId)
         }
       }
     })

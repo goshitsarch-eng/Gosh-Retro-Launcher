@@ -29,12 +29,16 @@
     if (event.key === 'Delete' && uiStore.selectedItemId && uiStore.selectedGroupId === groupId) {
       const itemToDelete = items.find(item => item.id === uiStore.selectedItemId)
       if (itemToDelete) {
+        // Capture values before opening confirm dialog
+        const itemId = itemToDelete.id
+        const itemName = itemToDelete.name
+        const targetGroupId = groupId
         uiStore.openDialog('confirm', {
           confirmOptions: {
             title: 'Delete Item',
-            message: `Are you sure you want to delete "${itemToDelete.name}"?`,
+            message: `Are you sure you want to delete "${itemName}"?`,
             onConfirm: () => {
-              programStore.deleteItem(groupId, uiStore.selectedItemId!)
+              programStore.deleteItem(targetGroupId, itemId)
               uiStore.clearSelection()
             }
           }

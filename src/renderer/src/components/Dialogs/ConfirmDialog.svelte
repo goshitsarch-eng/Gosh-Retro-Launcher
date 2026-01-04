@@ -7,7 +7,7 @@
   let confirmOptions = $derived(uiStore.dialogData.confirmOptions)
 
   function handleConfirm() {
-    confirmOptions?.onConfirm()
+    confirmOptions?.onConfirm?.()
     uiStore.closeDialog()
   }
 
