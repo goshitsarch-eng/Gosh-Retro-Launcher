@@ -64,7 +64,7 @@
     },
     "macOS": {
       "entitlements": "./entitlements.plist",
-      "signingIdentity": "-",
+      "signingIdentity": "Developer ID Application: Vaughan Jones (7PP92382T8)",
       "hardenedRuntime": true,
       "minimumSystemVersion": "10.13",
       "dmg": {
