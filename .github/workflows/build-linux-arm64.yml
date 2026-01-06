@@ -21,8 +21,8 @@ jobs:
         uses: pguyot/arm-runner-action@v2
         id: arm-runner
         with:
-          base_image: dietpi:rpi_armv8_bullseye
-          cpu: cortex-a53
+          base_image: raspios_lite_arm64:latest
+          cpu: cortex-a72
           image_additional_mb: 10240
           bind_mount_repository: true
           commands: |
