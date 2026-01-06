@@ -1,6 +1,7 @@
 name: Build Linux (AppImage, deb, RPM)
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*'
