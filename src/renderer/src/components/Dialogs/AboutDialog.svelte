@@ -33,7 +33,7 @@
       />
 
       <div class="win31-about-title">Gosh Retro Launcher</div>
-      <div class="win31-about-version">Version 2.0.0</div>
+      <div class="win31-about-version">Version 2.0.1</div>
 
       <hr class="win31-about-separator" />
 
