@@ -21,18 +21,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libappindicator3-dev \
-            librsvg2-dev \
-            patchelf \
-            libgtk-3-dev \
             flatpak \
             flatpak-builder
 
       - name: Setup Flatpak
         run: |
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak install --user -y flathub org.gnome.Platform//48 org.gnome.Sdk//48
+          flatpak install --user -y flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -40,33 +35,17 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            src-tauri/target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Build Linux app
-        run: npm run build:linux
+      - name: Build and package
+        run: |
+          npm run build
+          npm run package:linux
 
       - name: Create Flatpak resources
         run: |
           mkdir -p flatpak
-
-          # Create desktop file
           cat > flatpak/gosh-retro-launcher.desktop << 'EOF'
           [Desktop Entry]
           Name=Gosh Retro Launcher
@@ -78,16 +57,17 @@ jobs:
           Categories=Game;
           EOF
 
-          # Copy icon
-          cp src-tauri/icons/icon.png flatpak/icon.png
+          # Use app icon
+          cp iconlauncher.png flatpak/icon.png 2>/dev/null || echo "No icon found"
 
       - name: Create Flatpak manifest
         run: |
+          APPIMAGE=$(ls release/*.AppImage 2>/dev/null | head -1)
           cat > com.gosh_retro_launcher.app.yml << EOF
           app-id: com.gosh_retro_launcher.app
-          runtime: org.gnome.Platform
-          runtime-version: '48'
-          sdk: org.gnome.Sdk
+          runtime: org.freedesktop.Platform
+          runtime-version: '24.08'
+          sdk: org.freedesktop.Sdk
           command: gosh-retro-launcher
           finish-args:
             - --socket=wayland
@@ -104,12 +84,12 @@ jobs:
             - name: gosh-retro-launcher
               buildsystem: simple
               build-commands:
-                - install -Dm755 gosh-retro-launcher /app/bin/gosh-retro-launcher
+                - install -Dm755 $(basename $APPIMAGE) /app/bin/gosh-retro-launcher
                 - install -Dm644 gosh-retro-launcher.desktop /app/share/applications/com.gosh_retro_launcher.app.desktop
                 - install -Dm644 icon.png /app/share/icons/hicolor/256x256/apps/com.gosh_retro_launcher.app.png
               sources:
                 - type: file
-                  path: src-tauri/target/x86_64-unknown-linux-gnu/release/gosh-retro-launcher
+                  path: $APPIMAGE
                 - type: file
                   path: flatpak/gosh-retro-launcher.desktop
                 - type: file
@@ -136,6 +116,7 @@ jobs:
         run: mv gosh-retro-launcher.flatpak gosh-retro-launcher-${{ github.ref_name }}-x86_64.flatpak
 
       - name: Upload to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: gosh-retro-launcher-${{ github.ref_name }}-x86_64.flatpak

@@ -17,61 +17,44 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build ARM64 in emulated environment
-        uses: pguyot/arm-runner-action@v2
-        id: arm-runner
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          base_image: raspios_lite_arm64:latest
-          cpu: cortex-a72
-          image_additional_mb: 10240
-          bind_mount_repository: true
-          commands: |
-            # Update and install system dependencies
-            apt-get update
-            apt-get install -y \
-              curl \
-              wget \
-              libwebkit2gtk-4.1-dev \
-              libappindicator3-dev \
-              librsvg2-dev \
-              patchelf \
-              libgtk-3-dev \
-              rpm \
-              build-essential \
-              file
+          node-version: '22'
+          cache: 'npm'
 
-            # Install Node.js 22
-            curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-            apt-get install -y nodejs
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libappindicator3-dev \
+            rpm
 
-            # Install Rust
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
-            . "$HOME/.cargo/env"
+      - name: Install dependencies
+        run: npm ci
 
-            # Build frontend
-            npm ci
-            npm run build:frontend
-
-            # Build Tauri app
-            npx tauri build --bundles deb,rpm
+      - name: Build and package for ARM64
+        run: |
+          npm run build
+          npm run package:linux -- --arm64
 
       - name: Upload Debian package
         uses: actions/upload-artifact@v4
         with:
           name: linux-arm64-deb
-          path: src-tauri/target/release/bundle/deb/*.deb
+          path: release/*.deb
 
       - name: Upload RPM package
         uses: actions/upload-artifact@v4
         with:
           name: linux-arm64-rpm
-          path: src-tauri/target/release/bundle/rpm/*.rpm
+          path: release/*.rpm
 
       - name: Upload to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            src-tauri/target/release/bundle/deb/*.deb
-            src-tauri/target/release/bundle/rpm/*.rpm
+            release/*.deb
+            release/*.rpm
           fail_on_unmatched_files: true

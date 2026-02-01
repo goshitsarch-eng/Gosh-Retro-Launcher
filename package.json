@@ -1,46 +1,42 @@
 {
-  "name": "gosh-retro-launcher",
-  "version": "2.0.1",
-  "description": "A Windows 3.1 Program Manager clone built with Tauri and Svelte",
-  "type": "module",
-  "author": "Goshitsarch",
+  "name": "program-manager",
+  "version": "1.0.0",
+  "description": "A Windows 3.1 Program Manager clone built with Electron and React",
+  "main": "./out/main/index.js",
+  "author": "",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/goshitsarch-eng/Gosh-Retro-Launcher"
-  },
   "scripts": {
-    "dev": "tauri dev",
-    "dev:frontend": "vite",
-    "build": "tauri build",
-    "build:frontend": "vite build",
-    "build:win": "tauri build --target x86_64-pc-windows-msvc",
-    "build:mac": "tauri build --target universal-apple-darwin",
-    "build:mac-arm": "tauri build --target aarch64-apple-darwin",
-    "build:mac-intel": "tauri build --target x86_64-apple-darwin",
-    "build:linux": "tauri build --target x86_64-unknown-linux-gnu",
-    "typecheck": "svelte-check --tsconfig ./tsconfig.json",
-    "preview": "vite preview",
-    "tauri": "tauri"
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "postinstall": "electron-builder install-app-deps",
+    "build:unpack": "npm run build && electron-builder --dir",
+    "build:win": "npm run build && electron-builder --win",
+    "build:mac": "npm run build && electron-builder --mac",
+    "build:linux": "npm run build && electron-builder --linux",
+    "typecheck:main": "tsc --noEmit -p tsconfig.node.json",
+    "typecheck:preload": "tsc --noEmit -p tsconfig.node.json",
+    "typecheck:renderer": "tsc --noEmit -p tsconfig.web.json",
+    "typecheck": "npm run typecheck:main && npm run typecheck:preload && npm run typecheck:renderer"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-dialog": "^2",
-    "@tauri-apps/plugin-fs": "^2",
-    "@tauri-apps/plugin-global-shortcut": "^2",
-    "@tauri-apps/plugin-process": "^2",
-    "@tauri-apps/plugin-shell": "^2",
-    "@tauri-apps/plugin-store": "^2",
-    "uuid": "^9.0.1"
+    "@electron-toolkit/utils": "^3.0.0",
+    "electron-store": "^8.1.0",
+    "uuid": "^9.0.1",
+    "zustand": "^4.4.7"
   },
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^6",
-    "@tauri-apps/cli": "^2",
-    "@types/node": "^22",
+    "@types/node": "^20.10.5",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
     "@types/uuid": "^9.0.7",
-    "svelte": "^5",
-    "svelte-check": "^4",
-    "typescript": "^5.7",
-    "vite": "^7"
+    "@vitejs/plugin-react": "^4.2.1",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "electron-vite": "^5.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10"
   }
 }

@@ -19,9 +19,9 @@ jobs:
       matrix:
         include:
           - arch: x64
-            target: x86_64-apple-darwin
+            electron_arch: x64
           - arch: arm64
-            target: aarch64-apple-darwin
+            electron_arch: arm64
 
     steps:
       - name: Checkout code
@@ -32,17 +32,6 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: './src-tauri -> target'
-          key: ${{ matrix.target }}
 
       - name: Import macOS signing certificate
         run: |
@@ -68,28 +57,30 @@ jobs:
         run: |
           IDENTITY=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application" | head -1 | sed 's/.*"\(.*\)".*/\1/')
           echo "identity=$IDENTITY" >> $GITHUB_OUTPUT
-          echo "Found signing identity: $IDENTITY"
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build, sign & notarize
+      - name: Build and package
         env:
-          APPLE_SIGNING_IDENTITY: ${{ steps.signing.outputs.identity }}
+          CSC_LINK: ${{ secrets.MACOS_CERT_P12_GH }}
+          CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD_GH }}
           APPLE_ID: ${{ secrets.APPLE_ID_GH }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD_GH }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_PASSWORD_GH }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID_GH }}
-        run: npx tauri build --target ${{ matrix.target }}
+        run: |
+          npm run build
+          npm run package:mac -- --${{ matrix.electron_arch }}
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-dmg-${{ matrix.arch }}
-          path: src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+          path: release/*.dmg
 
       - name: Upload to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+          files: release/*.dmg
           fail_on_unmatched_files: true

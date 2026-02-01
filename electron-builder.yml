@@ -1,0 +1,79 @@
+appId: com.programmanager.app
+productName: Program Manager
+copyright: Copyright © 2024
+
+directories:
+  output: dist
+  buildResources: resources
+
+files:
+  - out/**/*
+  - package.json
+
+extraResources:
+  - from: assets
+    to: assets
+    filter:
+      - "**/*"
+
+# Windows Configuration
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: resources/icon.ico
+  artifactName: "${productName}-${version}-${platform}-${arch}.${ext}"
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+# macOS Configuration
+mac:
+  target:
+    - target: dmg
+      arch:
+        - universal
+    - target: zip
+      arch:
+        - universal
+  icon: resources/icon.icns
+  category: public.app-category.utilities
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: entitlements.plist
+  entitlementsInherit: entitlements.plist
+  identity: "Vaughan Jones (7PP92382T8)"
+  notarize:
+    teamId: 7PP92382T8
+
+dmg:
+  iconSize: 100
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+# Linux Configuration
+linux:
+  target:
+    - AppImage
+    - flatpak
+  category: Utility
+  icon: resources/icon.png
+  maintainer: ""
+  synopsis: Windows 3.1 Program Manager clone
+  description: A nostalgic recreation of the Windows 3.1 Program Manager for launching applications
+
+flatpak:
+  runtime: org.freedesktop.Platform
+  runtimeVersion: "24.08"
+  sdk: org.freedesktop.Sdk
