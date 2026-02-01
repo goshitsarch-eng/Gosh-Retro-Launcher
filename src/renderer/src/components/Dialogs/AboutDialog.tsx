@@ -16,6 +16,8 @@ export const AboutDialog: React.FC = () => {
         linux: 'Linux'
       }
       setPlatform(platformNames[p] || p)
+    }).catch(() => {
+      setPlatform('Unknown')
     })
   }, [])
 

@@ -26,7 +26,11 @@ app.whenReady().then(() => {
   Menu.setApplicationMenu(null)
 
   // Initialize store
-  initStore()
+  try {
+    initStore()
+  } catch (error) {
+    console.error('Failed to initialize store, using defaults:', error)
+  }
 
   // Register IPC handlers
   registerIpcHandlers()

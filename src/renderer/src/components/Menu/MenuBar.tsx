@@ -111,15 +111,23 @@ export const MenuBar: React.FC = () => {
   }, [])
 
   const handleExport = useCallback(async () => {
-    await window.electronAPI.store.exportData()
+    try {
+      await window.electronAPI.store.exportData()
+    } catch (error) {
+      console.error('Failed to export:', error)
+    }
     closeMenu()
   }, [closeMenu])
 
   const handleImport = useCallback(async () => {
-    const result = await window.electronAPI.store.importData()
-    if (result.success) {
-      // Reload data
-      useProgramStore.getState().loadData()
+    try {
+      const result = await window.electronAPI.store.importData()
+      if (result.success) {
+        // Reload data
+        useProgramStore.getState().loadData()
+      }
+    } catch (error) {
+      console.error('Failed to import:', error)
     }
     closeMenu()
   }, [closeMenu])

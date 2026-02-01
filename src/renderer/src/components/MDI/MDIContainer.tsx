@@ -19,17 +19,25 @@ export const MDIContainer: React.FC = () => {
     y: number
     group: ProgramGroup
   } | null>(null)
+  const openedGroupIds = useRef<Set<string>>(new Set())
 
   // Open windows for all groups - runs when groups change
   useEffect(() => {
     groups.forEach((group) => {
+      if (openedGroupIds.current.has(group.id)) return
       // Check if window already exists in MDI store
       const windowExists = windows.some((w) => w.groupId === group.id)
       if (!windowExists && !group.windowState.minimized) {
+        openedGroupIds.current.add(group.id)
         openWindow(group.id)
       }
     })
-  }, [groups, windows, openWindow])
+    // Clean up tracked IDs for removed groups
+    const groupIds = new Set(groups.map((g) => g.id))
+    for (const id of openedGroupIds.current) {
+      if (!groupIds.has(id)) openedGroupIds.current.delete(id)
+    }
+  }, [groups, openWindow])
 
   // Handle cascade windows event
   const handleCascade = useCallback(() => {
@@ -118,8 +126,14 @@ export const MDIContainer: React.FC = () => {
     }
   }, [contextMenu])
 
+  const hasRepositioned = useRef(false)
+
   useEffect(() => {
-    if (!contextMenu || !contextMenuRef.current) return
+    if (!contextMenu || !contextMenuRef.current) {
+      hasRepositioned.current = false
+      return
+    }
+    if (hasRepositioned.current) return
 
     const menuRect = contextMenuRef.current.getBoundingClientRect()
     const padding = 4
@@ -130,6 +144,7 @@ export const MDIContainer: React.FC = () => {
     y = Math.max(padding, Math.min(y, window.innerHeight - menuRect.height - padding))
 
     if (x !== contextMenu.x || y !== contextMenu.y) {
+      hasRepositioned.current = true
       setContextMenu((prev) => (prev ? { ...prev, x, y } : prev))
     }
   }, [contextMenu])

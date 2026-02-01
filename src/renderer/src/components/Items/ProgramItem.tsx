@@ -23,14 +23,18 @@ export const ProgramItem: React.FC<ProgramItemProps> = ({
 
   // Handle double-click to launch
   const handleDoubleClick = useCallback(async () => {
-    const result = await window.electronAPI.program.launch(item)
-    if (!result.success) {
-      console.error('Failed to launch program:', result.error)
-    }
+    try {
+      const result = await window.electronAPI.program.launch(item)
+      if (!result.success) {
+        console.error('Failed to launch program:', result.error)
+      }
 
-    // Minimize main window if setting is enabled
-    if (settings.minimizeOnUse) {
-      window.electronAPI.window.minimize()
+      // Minimize main window if setting is enabled
+      if (settings.minimizeOnUse) {
+        window.electronAPI.window.minimize()
+      }
+    } catch (error) {
+      console.error('Failed to launch program:', error)
     }
   }, [item, settings.minimizeOnUse])
 

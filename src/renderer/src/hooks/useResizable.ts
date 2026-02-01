@@ -16,6 +16,7 @@ interface UseResizableOptions {
   initialSize: Size
   initialPosition: Position
   minSize?: Size
+  containerRef?: React.RefObject<HTMLElement>
   elementRef?: React.RefObject<HTMLElement>
   onResizeStart?: () => void
   onResizeEnd?: (size: Size, position: Position) => void
@@ -25,6 +26,7 @@ export function useResizable({
   initialSize,
   initialPosition,
   minSize = { width: 150, height: 100 },
+  containerRef,
   elementRef,
   onResizeStart,
   onResizeEnd
@@ -107,6 +109,15 @@ export function useResizable({
         }
       }
 
+      // Clamp to container bounds
+      if (containerRef?.current) {
+        const containerRect = containerRef.current.getBoundingClientRect()
+        const maxWidth = containerRect.width - newX
+        const maxHeight = containerRect.height - newY
+        if (newWidth > maxWidth) newWidth = Math.max(minSize.width, maxWidth)
+        if (newHeight > maxHeight) newHeight = Math.max(minSize.height, maxHeight)
+      }
+
       pendingSize.current = { width: newWidth, height: newHeight }
       pendingPosition.current = { x: newX, y: newY }
 
@@ -161,8 +172,12 @@ export function useResizable({
     return () => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current)
+        frameRef.current = null
+      }
     }
-  }, [isResizing, minSize, elementRef, onResizeEnd])
+  }, [isResizing, minSize, containerRef, elementRef, onResizeEnd])
 
   return {
     size,

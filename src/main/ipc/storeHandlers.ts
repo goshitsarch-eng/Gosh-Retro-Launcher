@@ -10,7 +10,33 @@ import {
   setAllData
 } from '../store'
 import { getMainWindow } from '../window'
-import type { ProgramGroup, AppSettings, StoreData } from '@shared/types'
+import { updateTrayMenu } from '../tray'
+import type { ProgramGroup, ProgramItem, AppSettings, StoreData } from '@shared/types'
+
+function isValidItem(item: unknown): item is ProgramItem {
+  if (typeof item !== 'object' || item === null) return false
+  const obj = item as Record<string, unknown>
+  return (
+    typeof obj.id === 'string' &&
+    typeof obj.name === 'string' &&
+    typeof obj.path === 'string' &&
+    typeof obj.icon === 'string'
+  )
+}
+
+function isValidGroup(group: unknown): group is ProgramGroup {
+  if (typeof group !== 'object' || group === null) return false
+  const obj = group as Record<string, unknown>
+  return (
+    typeof obj.id === 'string' &&
+    typeof obj.name === 'string' &&
+    typeof obj.icon === 'string' &&
+    typeof obj.windowState === 'object' &&
+    obj.windowState !== null &&
+    Array.isArray(obj.items) &&
+    obj.items.every(isValidItem)
+  )
+}
 
 export function registerStoreHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.STORE_GET, async (_, key: string) => {
@@ -28,6 +54,7 @@ export function registerStoreHandlers(): void {
     switch (key) {
       case 'groups':
         setGroups(value as ProgramGroup[])
+        updateTrayMenu()
         break
       case 'settings':
         setSettings(value as AppSettings)
@@ -82,11 +109,16 @@ export function registerStoreHandlers(): void {
       const data = JSON.parse(content) as StoreData
 
       // Validate structure
-      if (!Array.isArray(data.groups) || typeof data.settings !== 'object') {
+      if (!Array.isArray(data.groups) || typeof data.settings !== 'object' || data.settings === null) {
         return { success: false, error: 'Invalid file format' }
       }
 
+      if (!data.groups.every(isValidGroup)) {
+        return { success: false, error: 'Invalid group or item data in file' }
+      }
+
       setAllData(data)
+      updateTrayMenu()
       return { success: true }
     } catch (error) {
       console.error('Failed to import settings:', error)

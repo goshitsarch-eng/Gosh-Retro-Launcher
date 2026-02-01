@@ -39,13 +39,17 @@ export const QuickSearchOverlay: React.FC = () => {
       }
     }
 
-    return matches.slice(0, 10) // Limit to 10 results
+    return matches
   }, [query, groups])
+
+  const MAX_RESULTS = 10
+  const displayedResults = results.slice(0, MAX_RESULTS)
+  const hasMore = results.length > MAX_RESULTS
 
   // Reset selection when results change
   useEffect(() => {
     setSelectedIndex(0)
-  }, [results.length])
+  }, [displayedResults.length])
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
@@ -53,7 +57,7 @@ export const QuickSearchOverlay: React.FC = () => {
       switch (event.key) {
         case 'ArrowDown':
           event.preventDefault()
-          setSelectedIndex((i) => Math.min(i + 1, results.length - 1))
+          setSelectedIndex((i) => Math.min(i + 1, displayedResults.length - 1))
           break
         case 'ArrowUp':
           event.preventDefault()
@@ -61,8 +65,8 @@ export const QuickSearchOverlay: React.FC = () => {
           break
         case 'Enter':
           event.preventDefault()
-          if (results[selectedIndex]) {
-            launchItem(results[selectedIndex].item)
+          if (displayedResults[selectedIndex]) {
+            launchItem(displayedResults[selectedIndex].item)
           }
           break
         case 'Escape':
@@ -71,21 +75,29 @@ export const QuickSearchOverlay: React.FC = () => {
           break
       }
     },
-    [results, selectedIndex, closeQuickSearch]
+    [displayedResults, selectedIndex, closeQuickSearch]
   )
 
   // Launch selected item
   const launchItem = useCallback(
     async (item: ProgramItem) => {
-      const result = await window.electronAPI.program.launch(item)
-      if (!result.success) {
-        console.error('Failed to launch:', result.error)
+      try {
+        const result = await window.electronAPI.program.launch(item)
+        if (!result.success) {
+          console.error('Failed to launch:', result.error)
+        }
+      } catch (error) {
+        console.error('Failed to launch:', error)
       }
 
       closeQuickSearch()
 
       if (settings.minimizeOnUse) {
-        window.electronAPI.window.minimize()
+        try {
+          window.electronAPI.window.minimize()
+        } catch {
+          // ignore
+        }
       }
     },
     [closeQuickSearch, settings.minimizeOnUse]
@@ -125,7 +137,7 @@ export const QuickSearchOverlay: React.FC = () => {
             style={{ marginBottom: 8 }}
           />
 
-          {results.length > 0 && (
+          {displayedResults.length > 0 && (
             <div
               className="quick-search-results"
               style={{
@@ -136,7 +148,7 @@ export const QuickSearchOverlay: React.FC = () => {
                 background: 'var(--win31-white)'
               }}
             >
-              {results.map((result, index) => (
+              {displayedResults.map((result, index) => (
                 <div
                   key={`${result.group.id}-${result.item.id}`}
                   className={`quick-search-item ${index === selectedIndex ? 'selected' : ''}`}
@@ -162,6 +174,11 @@ export const QuickSearchOverlay: React.FC = () => {
                   </div>
                 </div>
               ))}
+              {hasMore && (
+                <div style={{ padding: '4px 8px', fontSize: 10, color: 'var(--text-disabled)', textAlign: 'center' }}>
+                  {results.length - MAX_RESULTS} more result{results.length - MAX_RESULTS !== 1 ? 's' : ''} not shown
+                </div>
+              )}
             </div>
           )}
 

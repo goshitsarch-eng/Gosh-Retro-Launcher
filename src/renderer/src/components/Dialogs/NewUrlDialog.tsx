@@ -46,12 +46,22 @@ export const NewUrlDialog: React.FC = () => {
     }
   }, [resolvedGroupId, selectedGroupId])
 
+  const isValidUrl = useCallback((raw: string): boolean => {
+    try {
+      new URL(normalizeUrl(raw))
+      return true
+    } catch {
+      return false
+    }
+  }, [])
+
   const handleSubmit = useCallback(
     (event: React.FormEvent) => {
       event.preventDefault()
       if (!url.trim() || !selectedGroupId) return
 
       const normalizedUrl = normalizeUrl(url)
+      if (!isValidUrl(url)) return
       const finalName = name.trim() || deriveName(normalizedUrl)
 
       addItem(selectedGroupId, {
@@ -65,7 +75,7 @@ export const NewUrlDialog: React.FC = () => {
 
       closeDialog()
     },
-    [url, name, selectedGroupId, launchGroup, addItem, closeDialog]
+    [url, name, selectedGroupId, launchGroup, addItem, closeDialog, isValidUrl]
   )
 
   return (
@@ -128,7 +138,7 @@ export const NewUrlDialog: React.FC = () => {
         </div>
 
         <div className="win31-dialog-buttons">
-          <Button type="submit" isDefault disabled={!url.trim() || !selectedGroupId}>
+          <Button type="submit" isDefault disabled={!url.trim() || !selectedGroupId || !isValidUrl(url)}>
             OK
           </Button>
           <Button type="button" onClick={closeDialog}>

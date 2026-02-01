@@ -72,6 +72,10 @@ export const MenuItem: React.FC<MenuItemProps> = ({
   return (
     <div
       className={classNames}
+      role={checkbox ? 'menuitemcheckbox' : 'menuitem'}
+      aria-checked={checkbox ? checked : undefined}
+      aria-disabled={disabled || undefined}
+      aria-haspopup={hasSubmenu || undefined}
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}

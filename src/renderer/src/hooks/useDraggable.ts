@@ -123,6 +123,10 @@ export function useDraggable({
     return () => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current)
+        frameRef.current = null
+      }
     }
   }, [isDragging, containerRef, elementRef, onDragEnd])
 

@@ -4,9 +4,66 @@ import { readFileSync } from 'fs'
 import { IPC_CHANNELS } from '@shared/constants/ipc'
 import type { ProgramItem } from '@shared/types'
 
+// Tokenize a shell-like command string, respecting quotes
+function tokenizeCommand(cmd: string): string[] {
+  const tokens: string[] = []
+  let current = ''
+  let inSingle = false
+  let inDouble = false
+  let escape = false
+
+  for (const ch of cmd) {
+    if (escape) {
+      current += ch
+      escape = false
+      continue
+    }
+
+    if (ch === '\\' && !inSingle) {
+      escape = true
+      continue
+    }
+
+    if (ch === "'" && !inDouble) {
+      inSingle = !inSingle
+      continue
+    }
+
+    if (ch === '"' && !inSingle) {
+      inDouble = !inDouble
+      continue
+    }
+
+    if (/\s/.test(ch) && !inSingle && !inDouble) {
+      if (current) {
+        tokens.push(current)
+        current = ''
+      }
+      continue
+    }
+
+    current += ch
+  }
+
+  if (current) tokens.push(current)
+  return tokens
+}
+
+// Validate that an exec path looks safe (no shell metacharacters in command name)
+function isValidExecPath(execPath: string): boolean {
+  // Reject if empty or contains shell operators
+  if (!execPath) return false
+  // Only validate the command itself (first token) - reject shell metacharacters
+  if (/[;&|`$(){}]/.test(execPath)) return false
+  return true
+}
+
 // Parse Linux .desktop file
 function parseDesktopFile(filePath: string): { exec: string; name: string } | null {
   try {
+    // Verify the file path ends with .desktop
+    if (!filePath.endsWith('.desktop')) return null
+
     const content = readFileSync(filePath, 'utf-8')
     const lines = content.split('\n')
 
@@ -48,6 +105,23 @@ function parseDesktopFile(filePath: string): { exec: string; name: string } | nu
   }
 }
 
+// Spawn a process with error handling
+function spawnDetached(
+  command: string,
+  args: string[],
+  options: { cwd?: string }
+): void {
+  const child = spawn(command, args, {
+    cwd: options.cwd,
+    detached: true,
+    stdio: 'ignore'
+  })
+  child.on('error', (err) => {
+    console.error(`Failed to spawn ${command}:`, err.message)
+  })
+  child.unref()
+}
+
 // Launch a program based on platform
 async function launchProgram(item: ProgramItem): Promise<{ success: boolean; error?: string }> {
   const { path: programPath, workingDir } = item
@@ -71,11 +145,10 @@ async function launchProgram(item: ProgramItem): Promise<{ success: boolean; err
         if (ext === 'lnk') {
           // Read shortcut and launch target
           const details = shell.readShortcutLink(programPath)
-          spawn(details.target, details.args?.split(' ') ?? [], {
-            cwd: details.cwd || workingDir || undefined,
-            detached: true,
-            stdio: 'ignore'
-          }).unref()
+          const args = details.args ? tokenizeCommand(details.args) : []
+          spawnDetached(details.target, args, {
+            cwd: details.cwd || workingDir || undefined
+          })
         } else {
           const error = await shell.openPath(programPath)
           if (error) {
@@ -88,16 +161,11 @@ async function launchProgram(item: ProgramItem): Promise<{ success: boolean; err
       case 'darwin': {
         // macOS: Use 'open' for .app bundles, spawn for executables
         if (programPath.endsWith('.app')) {
-          spawn('open', ['-a', programPath], {
-            detached: true,
-            stdio: 'ignore'
-          }).unref()
+          spawnDetached('open', ['-a', programPath], {})
         } else {
-          spawn(programPath, [], {
-            cwd: workingDir || undefined,
-            detached: true,
-            stdio: 'ignore'
-          }).unref()
+          spawnDetached(programPath, [], {
+            cwd: workingDir || undefined
+          })
         }
         break
       }
@@ -107,21 +175,20 @@ async function launchProgram(item: ProgramItem): Promise<{ success: boolean; err
         if (programPath.endsWith('.desktop')) {
           const desktop = parseDesktopFile(programPath)
           if (desktop) {
-            const parts = desktop.exec.split(/\s+/)
-            spawn(parts[0], parts.slice(1), {
-              cwd: workingDir || undefined,
-              detached: true,
-              stdio: 'ignore'
-            }).unref()
+            const parts = tokenizeCommand(desktop.exec)
+            if (parts.length === 0 || !isValidExecPath(parts[0])) {
+              return { success: false, error: 'Invalid Exec command in .desktop file' }
+            }
+            spawnDetached(parts[0], parts.slice(1), {
+              cwd: workingDir || undefined
+            })
           } else {
             return { success: false, error: 'Could not parse .desktop file' }
           }
         } else {
-          spawn(programPath, [], {
-            cwd: workingDir || undefined,
-            detached: true,
-            stdio: 'ignore'
-          }).unref()
+          spawnDetached(programPath, [], {
+            cwd: workingDir || undefined
+          })
         }
         break
       }
