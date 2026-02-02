@@ -7,8 +7,8 @@ interface Position {
 
 interface UseDraggableOptions {
   initialPosition: Position
-  containerRef?: React.RefObject<HTMLElement>
-  elementRef?: React.RefObject<HTMLElement>
+  containerRef?: React.RefObject<HTMLElement | null>
+  elementRef?: React.RefObject<HTMLElement | null>
   onDragStart?: () => void
   onDragEnd?: (position: Position) => void
 }

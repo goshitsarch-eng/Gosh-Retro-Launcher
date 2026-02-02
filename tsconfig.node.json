@@ -8,7 +8,6 @@
     "target": "ESNext",
     "lib": ["ESNext"],
     "outDir": "./out",
-    "rootDir": "./src",
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
