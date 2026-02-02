@@ -1,6 +1,6 @@
 import { ipcMain, shell } from 'electron'
 import { spawn } from 'child_process'
-import { readFileSync } from 'fs'
+import { readFile } from 'fs/promises'
 import { IPC_CHANNELS } from '@shared/constants/ipc'
 import type { ProgramItem } from '@shared/types'
 
@@ -59,12 +59,12 @@ function isValidExecPath(execPath: string): boolean {
 }
 
 // Parse Linux .desktop file
-function parseDesktopFile(filePath: string): { exec: string; name: string } | null {
+async function parseDesktopFile(filePath: string): Promise<{ exec: string; name: string } | null> {
   try {
     // Verify the file path ends with .desktop
     if (!filePath.endsWith('.desktop')) return null
 
-    const content = readFileSync(filePath, 'utf-8')
+    const content = await readFile(filePath, 'utf-8')
     const lines = content.split('\n')
 
     let exec = ''
@@ -123,7 +123,7 @@ function spawnDetached(
 }
 
 // Launch a program based on platform
-async function launchProgram(item: ProgramItem): Promise<{ success: boolean; error?: string }> {
+export async function launchProgram(item: ProgramItem): Promise<{ success: boolean; error?: string }> {
   const { path: programPath, workingDir } = item
 
   // Handle URLs
@@ -173,7 +173,7 @@ async function launchProgram(item: ProgramItem): Promise<{ success: boolean; err
       case 'linux': {
         // Linux: Parse .desktop files, spawn executables
         if (programPath.endsWith('.desktop')) {
-          const desktop = parseDesktopFile(programPath)
+          const desktop = await parseDesktopFile(programPath)
           if (desktop) {
             const parts = tokenizeCommand(desktop.exec)
             if (parts.length === 0 || !isValidExecPath(parts[0])) {
@@ -227,6 +227,10 @@ export function registerLaunchHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.SYSTEM_OPEN_EXTERNAL, async (_, url: string) => {
     try {
+      const parsed = new URL(url)
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return { success: false, error: 'Only http and https URLs are allowed' }
+      }
       await shell.openExternal(url)
       return { success: true }
     } catch (error) {

@@ -1,5 +1,5 @@
 import { ipcMain, dialog } from 'electron'
-import { writeFileSync, readFileSync } from 'fs'
+import { writeFile, readFile } from 'fs/promises'
 import { IPC_CHANNELS } from '@shared/constants/ipc'
 import {
   getGroups,
@@ -52,13 +52,21 @@ export function registerStoreHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.STORE_SET, async (_, key: string, value: unknown) => {
     switch (key) {
-      case 'groups':
-        setGroups(value as ProgramGroup[])
+      case 'groups': {
+        if (!Array.isArray(value) || !value.every(isValidGroup)) {
+          throw new Error('Invalid groups data')
+        }
+        setGroups(value)
         updateTrayMenu()
         break
-      case 'settings':
+      }
+      case 'settings': {
+        if (typeof value !== 'object' || value === null) {
+          throw new Error('Invalid settings data')
+        }
         setSettings(value as AppSettings)
         break
+      }
     }
   })
 
@@ -82,7 +90,7 @@ export function registerStoreHandlers(): void {
 
     try {
       const data = getAllData()
-      writeFileSync(result.filePath, JSON.stringify(data, null, 2), 'utf-8')
+      await writeFile(result.filePath, JSON.stringify(data, null, 2), 'utf-8')
       return true
     } catch (error) {
       console.error('Failed to export settings:', error)
@@ -105,7 +113,7 @@ export function registerStoreHandlers(): void {
     }
 
     try {
-      const content = readFileSync(result.filePaths[0], 'utf-8')
+      const content = await readFile(result.filePaths[0], 'utf-8')
       const data = JSON.parse(content) as StoreData
 
       // Validate structure

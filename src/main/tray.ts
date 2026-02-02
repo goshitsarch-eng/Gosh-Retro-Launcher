@@ -1,8 +1,9 @@
 import { app, Tray, Menu, nativeImage } from 'electron'
 import { join } from 'path'
-import { showMainWindow, getMainWindow } from './window'
+import { showMainWindow } from './window'
 import { getGroups } from './store'
-import type { ProgramGroup, ProgramItem } from '@shared/types'
+import { launchProgram } from './ipc/launchHandlers'
+import type { ProgramItem } from '@shared/types'
 
 let tray: Tray | null = null
 
@@ -22,10 +23,9 @@ function getTrayIconPath(): string {
 }
 
 function launchItem(item: ProgramItem): void {
-  const mainWindow = getMainWindow()
-  if (mainWindow) {
-    mainWindow.webContents.send('launch-item', item)
-  }
+  launchProgram(item).catch((err) => {
+    console.error('Failed to launch item from tray:', err)
+  })
 }
 
 function buildTrayMenu(): Menu {

@@ -70,7 +70,7 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID_GH }}
         run: |
           npm run build
-          npm run package:mac -- --${{ matrix.electron_arch }}
+          npm run build:mac -- --${{ matrix.electron_arch }}
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4

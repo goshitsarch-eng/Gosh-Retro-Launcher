@@ -3,6 +3,8 @@ import { v4 as uuidv4 } from 'uuid'
 import type { ProgramGroup, ProgramItem, AppSettings, WindowState } from '@shared/types'
 import { DEFAULT_SETTINGS, DEFAULT_WINDOW_STATE } from '@shared/types'
 
+let saveGroupsTimer: ReturnType<typeof setTimeout> | null = null
+
 interface ProgramState {
   groups: ProgramGroup[]
   settings: AppSettings
@@ -102,7 +104,11 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
       )
     })
     if (settings.saveSettingsOnExit) {
-      saveGroups()
+      if (saveGroupsTimer) clearTimeout(saveGroupsTimer)
+      saveGroupsTimer = setTimeout(() => {
+        saveGroupsTimer = null
+        saveGroups()
+      }, 500)
     }
   },
 

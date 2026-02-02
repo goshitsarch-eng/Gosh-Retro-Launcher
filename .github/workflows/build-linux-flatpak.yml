@@ -41,7 +41,7 @@ jobs:
       - name: Build and package
         run: |
           npm run build
-          npm run package:linux
+          npm run build:linux
 
       - name: Create Flatpak resources
         run: |
