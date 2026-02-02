@@ -32,7 +32,7 @@ export const AboutDialog: React.FC = () => {
         />
 
         <div className="win31-about-title">Program Manager</div>
-        <div className="win31-about-version">Version 1.0.0</div>
+        <div className="win31-about-version">Version 1.0.1</div>
 
         <hr className="win31-about-separator" />
 
