@@ -16,8 +16,8 @@ interface UseResizableOptions {
   initialSize: Size
   initialPosition: Position
   minSize?: Size
-  containerRef?: React.RefObject<HTMLElement>
-  elementRef?: React.RefObject<HTMLElement>
+  containerRef?: React.RefObject<HTMLElement | null>
+  elementRef?: React.RefObject<HTMLElement | null>
   onResizeStart?: () => void
   onResizeEnd?: (size: Size, position: Position) => void
 }

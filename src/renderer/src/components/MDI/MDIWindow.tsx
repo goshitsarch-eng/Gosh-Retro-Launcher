@@ -12,7 +12,7 @@ interface MDIWindowProps {
   group: ProgramGroup
   isActive: boolean
   zIndex: number
-  containerRef: React.RefObject<HTMLDivElement>
+  containerRef: React.RefObject<HTMLDivElement | null>
   onFocus: () => void
 }
 
