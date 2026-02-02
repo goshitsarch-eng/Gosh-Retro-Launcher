@@ -64,8 +64,3 @@ export const DEFAULT_WINDOW_STATE: WindowState = {
 // Platform type for cross-platform handling
 export type Platform = 'win32' | 'darwin' | 'linux'
 
-// File filter types for dialogs
-export interface FileFilter {
-  name: string
-  extensions: string[]
-}

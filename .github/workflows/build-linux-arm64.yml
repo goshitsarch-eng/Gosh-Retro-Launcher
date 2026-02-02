@@ -36,7 +36,7 @@ jobs:
       - name: Build and package for ARM64
         run: |
           npm run build
-          npm run package:linux -- --arm64
+          npm run build:linux -- --arm64
 
       - name: Upload Debian package
         uses: actions/upload-artifact@v4

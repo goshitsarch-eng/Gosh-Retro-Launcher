@@ -37,7 +37,7 @@ jobs:
       - name: Build and package
         run: |
           npm run build
-          npm run package:win -- --${{ matrix.electron_arch }}
+          npm run build:win -- --${{ matrix.electron_arch }}
 
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4

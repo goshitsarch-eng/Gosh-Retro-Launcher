@@ -15,12 +15,11 @@
     "build:mac": "npm run build && electron-builder --mac",
     "build:linux": "npm run build && electron-builder --linux",
     "typecheck:main": "tsc --noEmit -p tsconfig.node.json",
-    "typecheck:preload": "tsc --noEmit -p tsconfig.node.json",
+    "typecheck:preload": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:renderer": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:main && npm run typecheck:preload && npm run typecheck:renderer"
   },
   "dependencies": {
-    "@electron-toolkit/utils": "^3.0.0",
     "electron-store": "^8.1.0",
     "uuid": "^11.0.0",
     "zustand": "^5.0.10"
