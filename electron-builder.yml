@@ -68,6 +68,7 @@ linux:
     - deb
     - rpm
     - tar.gz
+  executableName: program-manager
   category: Utility
   icon: resources/icon.png
   maintainer: ""
