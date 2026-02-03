@@ -14,12 +14,15 @@ jobs:
     runs-on: ${{ matrix.runner }}
 
     strategy:
+      fail-fast: false
       matrix:
         include:
           - arch: x64
             runner: ubuntu-24.04
+            targets: deb rpm tar.gz
           - arch: arm64
             runner: ubuntu-24.04-arm
+            targets: deb tar.gz
 
     steps:
       - name: Checkout code
@@ -44,7 +47,7 @@ jobs:
       - name: Build and package
         run: |
           npm run build
-          npm run build:linux -- --${{ matrix.arch }} --publish never
+          npx electron-builder --linux ${{ matrix.targets }} --${{ matrix.arch }} --publish never
 
       - name: Upload Debian package
         uses: actions/upload-artifact@v4
@@ -54,6 +57,7 @@ jobs:
           retention-days: 30
 
       - name: Upload RPM package
+        if: contains(matrix.targets, 'rpm')
         uses: actions/upload-artifact@v4
         with:
           name: linux-rpm-${{ matrix.arch }}
@@ -75,4 +79,4 @@ jobs:
             dist/*.deb
             dist/*.rpm
             dist/*.tar.gz
-          fail_on_unmatched_files: true
+          fail_on_unmatched_files: false
