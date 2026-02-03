@@ -1,0 +1,211 @@
+/* Windows 3.1 Dialog Styles */
+
+/* ==========================================
+   DIALOG OVERLAY
+   ========================================== */
+
+.win31-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+/* ==========================================
+   DIALOG WINDOW
+   ========================================== */
+
+.win31-dialog {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 300px;
+  max-width: 90vw;
+  max-height: 90vh;
+  background-color: var(--window-chrome);
+  border: var(--border-width) solid var(--window-border);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-light),
+    inset 2px 2px 0 var(--bevel-face),
+    inset -1px -1px 0 var(--bevel-dark),
+    inset -2px -2px 0 var(--bevel-face),
+    4px 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.win31-dialog .win31-titlebar {
+  cursor: default;
+}
+
+/* ==========================================
+   DIALOG CONTENT
+   ========================================== */
+
+.win31-dialog-content {
+  padding: var(--dialog-padding);
+  background-color: var(--window-chrome);
+}
+
+/* ==========================================
+   DIALOG BUTTONS ROW
+   ========================================== */
+
+.win31-dialog-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: var(--dialog-padding);
+  padding-top: 0;
+}
+
+/* ==========================================
+   FORM ELEMENTS
+   ========================================== */
+
+.win31-form-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.win31-form-row label {
+  min-width: 100px;
+  font-family: var(--font-system);
+  font-size: var(--font-size-base);
+  text-align: right;
+}
+
+.win31-form-row .win31-input {
+  flex: 1;
+}
+
+/* ==========================================
+   GROUP BOX (Labeled Frame)
+   ========================================== */
+
+.win31-groupbox {
+  position: relative;
+  margin: 12px 0 8px;
+  padding: 16px 8px 8px;
+  border: none;
+  /* Etched border effect */
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-dark),
+    inset -1px -1px 0 var(--bevel-light),
+    inset 2px 2px 0 var(--bevel-light),
+    inset -2px -2px 0 var(--bevel-dark);
+}
+
+.win31-groupbox-label {
+  position: absolute;
+  top: -8px;
+  left: 8px;
+  padding: 0 4px;
+  background-color: var(--window-chrome);
+  font-family: var(--font-system);
+  font-size: var(--font-size-base);
+}
+
+/* ==========================================
+   ABOUT DIALOG SPECIFIC
+   ========================================== */
+
+.win31-about-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px;
+  gap: 12px;
+}
+
+.win31-about-icon {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+}
+
+.win31-about-title {
+  font-family: var(--font-system);
+  font-size: var(--font-size-base);
+  font-weight: bold;
+}
+
+.win31-about-version {
+  font-family: var(--font-system);
+  font-size: var(--font-size-base);
+}
+
+.win31-about-separator {
+  width: 80%;
+  height: 0;
+  border: none;
+  border-top: var(--border-width) solid var(--bevel-dark);
+  border-bottom: var(--border-width) solid var(--bevel-light);
+  margin: 8px 0;
+}
+
+.win31-about-info {
+  font-family: var(--font-system);
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+}
+
+/* ==========================================
+   SETTINGS DIALOG SPECIFIC
+   ========================================== */
+
+.win31-settings-section {
+  margin-bottom: 16px;
+}
+
+.win31-settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.win31-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.win31-slider-row label {
+  min-width: 100px;
+}
+
+.win31-slider-row input[type="range"] {
+  flex: 1;
+}
+
+.win31-slider-row .value {
+  min-width: 60px;
+  text-align: right;
+}
+
+/* ==========================================
+   CONFIRM DIALOG SPECIFIC
+   ========================================== */
+
+.win31-confirm-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+}
+
+.win31-confirm-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.win31-confirm-message {
+  font-family: var(--font-system);
+  font-size: var(--font-size-base);
+  line-height: 1.4;
+}

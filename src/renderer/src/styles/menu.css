@@ -1,0 +1,166 @@
+/* Windows 3.1 Menu Bar Styles */
+
+/* ==========================================
+   MENU BAR
+   ========================================== */
+
+.win31-menubar {
+  display: flex;
+  height: var(--menubar-height);
+  background-color: var(--window-chrome);
+  border-bottom: var(--border-width) solid var(--bevel-dark);
+  padding: 0 2px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.win31-menu {
+  position: relative;
+}
+
+.win31-menu-trigger {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 8px;
+  font-family: var(--font-system);
+  font-size: var(--font-size-menu);
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  cursor: default;
+}
+
+.win31-menu-trigger:hover,
+.win31-menu.open .win31-menu-trigger {
+  background-color: var(--selection-bg);
+  color: var(--selection-text);
+}
+
+/* Underlined hotkey letter */
+.win31-menu-trigger .hotkey {
+  text-decoration: underline;
+}
+
+/* ==========================================
+   DROPDOWN MENU
+   ========================================== */
+
+.win31-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 180px;
+  background-color: var(--window-chrome);
+  border: var(--border-width) solid var(--window-border);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-light),
+    inset -1px -1px 0 var(--bevel-dark);
+  z-index: 1000;
+  padding: 2px 0;
+}
+
+/* ==========================================
+   MENU ITEM
+   ========================================== */
+
+.win31-menu-item {
+  display: flex;
+  align-items: center;
+  padding: var(--menu-item-padding-y) var(--menu-item-padding-x);
+  font-family: var(--font-system);
+  font-size: var(--font-size-menu);
+  color: var(--text-primary);
+  cursor: default;
+  white-space: nowrap;
+  position: relative;
+}
+
+.win31-menu-item:hover:not(.disabled) {
+  background-color: var(--selection-bg);
+  color: var(--selection-text);
+}
+
+.win31-menu-item .hotkey {
+  text-decoration: underline;
+}
+
+.win31-menu-item .shortcut {
+  margin-left: auto;
+  padding-left: 24px;
+  color: inherit;
+}
+
+.win31-menu-item.disabled {
+  color: var(--text-disabled);
+}
+
+.win31-menu-item.disabled:hover {
+  background-color: transparent;
+  color: var(--text-disabled);
+}
+
+/* Checkbox menu item */
+.win31-menu-item.checkbox::before {
+  content: '';
+  width: 12px;
+  margin-right: 4px;
+}
+
+.win31-menu-item.checkbox.checked::before {
+  content: '✓';
+}
+
+/* Submenu indicator */
+.win31-menu-item.has-submenu::after {
+  content: '►';
+  margin-left: auto;
+  padding-left: 16px;
+  font-size: 8px;
+}
+
+/* ==========================================
+   MENU SEPARATOR
+   ========================================== */
+
+.win31-menu-separator {
+  height: 0;
+  margin: 4px 2px;
+  border: none;
+  border-top: var(--border-width) solid var(--bevel-dark);
+  border-bottom: var(--border-width) solid var(--bevel-light);
+}
+
+/* ==========================================
+   SUBMENU
+   ========================================== */
+
+.win31-submenu {
+  position: absolute;
+  top: -2px;
+  left: 100%;
+  min-width: 180px;
+  background-color: var(--window-chrome);
+  border: var(--border-width) solid var(--window-border);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-light),
+    inset -1px -1px 0 var(--bevel-dark);
+  z-index: 1001;
+  padding: 2px 0;
+}
+
+/* ==========================================
+   CONTEXT MENU
+   ========================================== */
+
+.win31-context-menu {
+  position: fixed;
+  min-width: 160px;
+  background-color: var(--window-chrome);
+  border: var(--border-width) solid var(--window-border);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-light),
+    inset -1px -1px 0 var(--bevel-dark);
+  z-index: 3000;
+  padding: 2px 0;
+}
