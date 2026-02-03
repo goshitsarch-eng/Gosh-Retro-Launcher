@@ -50,8 +50,7 @@ mac:
   entitlements: entitlements.plist
   entitlementsInherit: entitlements.plist
   identity: "Vaughan Jones (7PP92382T8)"
-  notarize:
-    teamId: 7PP92382T8
+  notarize: true
 
 dmg:
   iconSize: 100
