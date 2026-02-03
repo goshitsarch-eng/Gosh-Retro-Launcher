@@ -44,7 +44,7 @@ jobs:
       - name: Build and package
         run: |
           npm run build
-          npm run build:linux -- --${{ matrix.arch }}
+          npm run build:linux -- --${{ matrix.arch }} --publish never
 
       - name: Upload Debian package
         uses: actions/upload-artifact@v4
