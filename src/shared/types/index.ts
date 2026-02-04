@@ -35,6 +35,7 @@ export interface AppSettings {
   trayOnClose: boolean
   groupChromeScale: number
   theme: 'light' | 'dark'
+  labelDisplay: 'wrap' | 'ellipsis'
 }
 
 export interface StoreData {
@@ -49,7 +50,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   launchDelay: 500,
   trayOnClose: true,
   groupChromeScale: 1,
-  theme: 'light'
+  theme: 'light',
+  labelDisplay: 'wrap'
 }
 
 export const DEFAULT_WINDOW_STATE: WindowState = {
@@ -63,4 +65,18 @@ export const DEFAULT_WINDOW_STATE: WindowState = {
 
 // Platform type for cross-platform handling
 export type Platform = 'win32' | 'darwin' | 'linux'
+
+// App info extracted from dropped/browsed files
+export interface AppInfo {
+  name: string
+  path: string
+  icon?: string // data URL or icon ID
+  workingDir?: string
+}
+
+// File filter for dialog boxes
+export interface FileFilter {
+  name: string
+  extensions: string[]
+}
 

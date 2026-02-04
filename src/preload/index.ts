@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC_CHANNELS } from '@shared/constants/ipc'
-import type { ProgramItem, ProgramGroup, AppSettings, StoreData } from '@shared/types'
+import type { ProgramItem, ProgramGroup, AppSettings, StoreData, AppInfo } from '@shared/types'
 
 const ipcListenerMap = new Map<string, Map<(...args: unknown[]) => void, (...args: unknown[]) => void>>()
 
@@ -64,6 +64,12 @@ const electronAPI = {
         success: boolean
         error?: string
       }>
+  },
+
+  // App Info Extraction
+  app: {
+    getInfo: (filePath: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.APP_GET_INFO, filePath) as Promise<AppInfo>
   },
 
   // Event Listeners

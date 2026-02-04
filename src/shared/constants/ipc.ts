@@ -31,7 +31,10 @@ export const IPC_CHANNELS = {
   SYSTEM_OPEN_EXTERNAL: 'system:open-external',
 
   // Quick Search
-  QUICK_SEARCH_TOGGLE: 'quick-search:toggle'
+  QUICK_SEARCH_TOGGLE: 'quick-search:toggle',
+
+  // Application Info
+  APP_GET_INFO: 'app:get-info'
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]

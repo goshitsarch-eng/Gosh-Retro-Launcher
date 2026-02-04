@@ -59,7 +59,7 @@ export const ProgramItem: React.FC<ProgramItemProps> = ({
       onContextMenu={handleContextMenu}
     >
       <Icon src={iconSrc} alt={item.name} />
-      <span className="label">{item.name}</span>
+      <span className={`label label-${settings.labelDisplay || 'wrap'}`}>{item.name}</span>
     </div>
   )
 }

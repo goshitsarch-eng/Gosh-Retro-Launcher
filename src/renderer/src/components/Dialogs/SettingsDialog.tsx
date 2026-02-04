@@ -16,6 +16,7 @@ export const SettingsDialog: React.FC = () => {
   const [trayOnClose, setTrayOnClose] = useState(settings.trayOnClose)
   const [groupChromeScale, setGroupChromeScale] = useState(settings.groupChromeScale)
   const [theme, setTheme] = useState(settings.theme)
+  const [labelDisplay, setLabelDisplay] = useState(settings.labelDisplay || 'wrap')
 
   const handleSubmit = useCallback(
     (event: React.FormEvent) => {
@@ -27,7 +28,8 @@ export const SettingsDialog: React.FC = () => {
         saveSettingsOnExit,
         trayOnClose,
         groupChromeScale,
-        theme
+        theme,
+        labelDisplay
       })
       closeDialog()
     },
@@ -39,6 +41,7 @@ export const SettingsDialog: React.FC = () => {
       trayOnClose,
       groupChromeScale,
       theme,
+      labelDisplay,
       updateSettings,
       closeDialog
     ]
@@ -91,6 +94,14 @@ export const SettingsDialog: React.FC = () => {
               label="Dark Mode"
               checked={theme === 'dark'}
               onChange={(e) => setTheme(e.target.checked ? 'dark' : 'light')}
+            />
+          </div>
+
+          <div style={{ marginBottom: 8 }}>
+            <Checkbox
+              label="Wrap item labels (show full names)"
+              checked={labelDisplay === 'wrap'}
+              onChange={(e) => setLabelDisplay(e.target.checked ? 'wrap' : 'ellipsis')}
             />
           </div>
 
