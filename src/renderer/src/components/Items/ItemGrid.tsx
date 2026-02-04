@@ -46,31 +46,46 @@ export const ItemGrid: React.FC<ItemGridProps> = ({ groupId, items }) => {
 
   // Handle drop
   const handleDrop = useCallback(
-    (event: React.DragEvent) => {
+    async (event: React.DragEvent) => {
       event.preventDefault()
       setIsDragOver(false)
 
       const files = event.dataTransfer.files
       if (files.length === 0) return
 
-      Array.from(files).forEach((file) => {
+      for (const file of Array.from(files)) {
         // Get the file path (Electron-specific)
         const filePath = (file as any).path as string
-        if (!filePath) return
+        if (!filePath) continue
 
-        // Extract filename without extension for display name
-        const fileName = file.name
-        const nameWithoutExt = fileName.replace(/\.[^/.]+$/, '')
+        try {
+          // Get app info including icon from main process
+          const appInfo = await window.electronAPI.app.getInfo(filePath)
 
-        addItem(groupId, {
-          name: nameWithoutExt,
-          path: filePath,
-          icon: 'default-item.png',
-          workingDir: '',
-          shortcutKey: '',
-          launchGroup: 0
-        })
-      })
+          addItem(groupId, {
+            name: appInfo.name,
+            path: appInfo.path,
+            icon: appInfo.icon || 'default',
+            workingDir: appInfo.workingDir || '',
+            shortcutKey: '',
+            launchGroup: 0
+          })
+        } catch (error) {
+          console.error('Failed to get app info:', error)
+          // Fallback to basic info
+          const fileName = file.name
+          const nameWithoutExt = fileName.replace(/\.[^/.]+$/, '')
+
+          addItem(groupId, {
+            name: nameWithoutExt,
+            path: filePath,
+            icon: 'default',
+            workingDir: '',
+            shortcutKey: '',
+            launchGroup: 0
+          })
+        }
+      }
     },
     [groupId, addItem]
   )

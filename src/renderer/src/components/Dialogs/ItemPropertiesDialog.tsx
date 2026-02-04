@@ -41,13 +41,34 @@ export const ItemPropertiesDialog: React.FC = () => {
     const selectedPath = await window.electronAPI.file.selectExecutable()
     if (selectedPath) {
       setPath(selectedPath)
-      // Set name from filename if empty
-      if (!name) {
-        const fileName = selectedPath.split(/[/\\]/).pop() || ''
-        setName(fileName.replace(/\.[^/.]+$/, ''))
+
+      // Try to extract app info including icon
+      try {
+        const appInfo = await window.electronAPI.app.getInfo(selectedPath)
+
+        // Auto-fill name if empty
+        if (!name && appInfo.name) {
+          setName(appInfo.name)
+        }
+
+        // Auto-fill icon if app has one and current icon is default
+        if (appInfo.icon && (icon === 'default' || icon === 'default-item.png')) {
+          setIcon(appInfo.icon)
+        }
+
+        // Auto-fill working directory if empty
+        if (!workingDir && appInfo.workingDir) {
+          setWorkingDir(appInfo.workingDir)
+        }
+      } catch (e) {
+        // Fallback: just set name from filename
+        if (!name) {
+          const fileName = selectedPath.split(/[/\\]/).pop() || ''
+          setName(fileName.replace(/\.[^/.]+$/, ''))
+        }
       }
     }
-  }, [name])
+  }, [name, icon, workingDir])
 
   const handleSubmit = useCallback(
     (event: React.FormEvent) => {
@@ -207,13 +228,13 @@ export const ItemPropertiesDialog: React.FC = () => {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(8, 1fr)',
+              gridTemplateColumns: 'repeat(10, 1fr)',
               gap: 4,
               padding: 8,
               background: 'var(--win31-white)',
               border: '2px inset var(--bevel-dark)',
               marginBottom: 10,
-              maxHeight: 150,
+              maxHeight: 200,
               overflowY: 'auto'
             }}
           >
