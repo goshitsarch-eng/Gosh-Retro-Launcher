@@ -322,7 +322,7 @@ Alex (README line 278) correctly identifies the discrepancy: `package.json` says
 | `src/renderer/src/utils/sounds.ts` | 7 sound functions + SoundPlayer interface + createSoundPlayer factory. Matches Jordan. |
 | `src/renderer/src/hooks/useSounds.ts` | Wraps createSoundPlayer with settings check. Matches Jordan. |
 | `src/renderer/src/components/QuickSearch/QuickSearchOverlay.tsx` | Scoring: prefix=3, substring=2, path/group=1. Max 10 results. Matches all documents. |
-| `package.json` | Version 1.0.4, license field "MIT" (contradicts AGPL-3.0 LICENSE file), all scripts and deps verified. |
+| `package.json` | Version 1.0.5, license field "MIT" (contradicts AGPL-3.0 LICENSE file), all scripts and deps verified. |
 | `LICENSE` | AGPL-3.0 (not MIT as package.json states). Alex correctly identified this. |
 
 ### Verification Statistics

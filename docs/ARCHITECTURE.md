@@ -527,7 +527,7 @@ Every claim in this document was verified by reading actual source code. No info
 | `src/renderer/src/shells/types.ts` | 1-11 | ShellProps and ShellDefinition interfaces |
 | `src/renderer/src/shells/registry.ts` | 1-31 | Map-based registry, registerShell/getShell/getAllShells, two built-in registrations |
 | `src/renderer/src/types/electron.d.ts` | 1-9 | Global Window.electronAPI declaration |
-| `package.json` | 1-44 | Version 1.0.4, all scripts, 3 production deps, 11 dev deps with versions |
+| `package.json` | 1-44 | Version 1.0.5, all scripts, 3 production deps, 11 dev deps with versions |
 | `electron-builder.yml` | 1-77 | App ID, all platform configs (Windows NSIS, macOS DMG+ZIP, Linux deb+rpm+tar.gz), signing config |
 | `electron.vite.config.ts` | 1-53 | Three build targets (main, preload, renderer), plugins, path aliases |
 | `tsconfig.json` | 1-7 | Project references to node and web configs |

@@ -53,7 +53,7 @@ export const AboutDialog: React.FC = () => {
         <hr className="win31-about-separator" />
 
         <div className="win31-about-info" style={{ fontSize: 10 }}>
-          © 2024. Made with nostalgia.
+          © 2025. Made with nostalgia.
         </div>
       </div>
 

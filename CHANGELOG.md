@@ -5,7 +5,7 @@ All notable changes to Gosh Retro Launcher are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.5] - 2026-02-06
 
 ### Added
 
@@ -99,9 +99,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Findings
 - **Tag v1.0.4** points to commit `99215c9` (2026-02-02), the last CI fix
-- **package.json version** has been `1.0.4` since the initial commit -- no version bumps
-- **No other tags** exist; all post-v1.0.4 work is unreleased
-- **11 total commits**: 6 in v1.0.4 (initial + 5 CI/build fixes), 5 unreleased (4 feature commits + 1 merge commit)
+- **package.json version** bumped to `1.0.5` for the 2026-02-06 release
+- **Two tags**: `v1.0.4` (initial release) and `v1.0.5` (feature release)
+- **11 total commits**: 6 in v1.0.4 (initial + 5 CI/build fixes), 5 in v1.0.5 (4 feature commits + 1 merge commit)
 - **PR #8** (`e203023`) is a merge commit for `95ae107`; changes attributed to the feature commit, not the merge
 - **Commit authorship**: initial + CI fixes by Goshitsarch/Vaughan; PR #8 feature commit by Claude (Anthropic); remaining 3 feature commits by Goshitsarch
 

@@ -286,7 +286,7 @@ Returns the current operating system platform.
 Returns the application version string.
 
 - **Parameters**: None
-- **Returns**: `Promise<string>` -- e.g., `"1.0.4"` (from `package.json` version field)
+- **Returns**: `Promise<string>` -- e.g., `"1.0.5"` (from `package.json` version field)
 - **Channel**: `system:get-version`
 - **Handler**: Returns `app.getVersion()`
 
