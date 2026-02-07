@@ -40,6 +40,7 @@ export function isValidGroup(group: unknown): group is ProgramGroup {
 
 const VALID_THEMES = ['light', 'dark']
 const VALID_LABEL_DISPLAYS = ['wrap', 'ellipsis']
+const VALID_SHELLS = ['win31', 'win95']
 
 export function isValidSettings(settings: unknown): settings is AppSettings {
   if (typeof settings !== 'object' || settings === null) return false
@@ -56,7 +57,9 @@ export function isValidSettings(settings: unknown): settings is AppSettings {
     typeof obj.theme === 'string' &&
     VALID_THEMES.includes(obj.theme) &&
     typeof obj.labelDisplay === 'string' &&
-    VALID_LABEL_DISPLAYS.includes(obj.labelDisplay)
+    VALID_LABEL_DISPLAYS.includes(obj.labelDisplay) &&
+    (obj.shell === undefined ||
+      (typeof obj.shell === 'string' && VALID_SHELLS.includes(obj.shell)))
   )
 }
 

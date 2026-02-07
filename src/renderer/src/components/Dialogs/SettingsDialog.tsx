@@ -4,6 +4,8 @@ import { Button } from '../Common/Button'
 import { Checkbox } from '../Common/Checkbox'
 import { useUIStore } from '@/store/uiStore'
 import { useProgramStore } from '@/store/programStore'
+import { getAllShells } from '@/shells'
+import type { ShellType } from '@shared/types'
 
 export const SettingsDialog: React.FC = () => {
   const closeDialog = useUIStore((state) => state.closeDialog)
@@ -17,6 +19,7 @@ export const SettingsDialog: React.FC = () => {
   const [groupChromeScale, setGroupChromeScale] = useState(settings.groupChromeScale)
   const [theme, setTheme] = useState(settings.theme)
   const [labelDisplay, setLabelDisplay] = useState(settings.labelDisplay || 'wrap')
+  const [shell, setShell] = useState<ShellType>(settings.shell || 'win31')
 
   const handleSubmit = useCallback(
     (event: React.FormEvent) => {
@@ -29,7 +32,8 @@ export const SettingsDialog: React.FC = () => {
         trayOnClose,
         groupChromeScale,
         theme,
-        labelDisplay
+        labelDisplay,
+        shell
       })
       closeDialog()
     },
@@ -42,6 +46,7 @@ export const SettingsDialog: React.FC = () => {
       groupChromeScale,
       theme,
       labelDisplay,
+      shell,
       updateSettings,
       closeDialog
     ]
@@ -103,6 +108,22 @@ export const SettingsDialog: React.FC = () => {
               checked={labelDisplay === 'wrap'}
               onChange={(e) => setLabelDisplay(e.target.checked ? 'wrap' : 'ellipsis')}
             />
+          </div>
+
+          <div className="win31-form-row">
+            <label htmlFor="shell-select">Desktop Shell:</label>
+            <select
+              id="shell-select"
+              className="win31-input"
+              value={shell}
+              onChange={(e) => setShell(e.target.value as ShellType)}
+            >
+              {getAllShells().map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="win31-slider-row">

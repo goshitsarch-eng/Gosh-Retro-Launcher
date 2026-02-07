@@ -102,7 +102,8 @@ describe('isValidSettings', () => {
     trayOnClose: true,
     groupChromeScale: 1,
     theme: 'light',
-    labelDisplay: 'wrap'
+    labelDisplay: 'wrap',
+    shell: 'win31'
   }
 
   it('accepts valid settings', () => {
@@ -148,5 +149,18 @@ describe('isValidSettings', () => {
   it('rejects missing fields', () => {
     const { theme, ...rest } = validSettings
     expect(isValidSettings(rest)).toBe(false)
+  })
+
+  it('accepts win95 shell', () => {
+    expect(isValidSettings({ ...validSettings, shell: 'win95' })).toBe(true)
+  })
+
+  it('rejects invalid shell', () => {
+    expect(isValidSettings({ ...validSettings, shell: 'win98' })).toBe(false)
+  })
+
+  it('accepts missing shell for backward compatibility', () => {
+    const { shell, ...rest } = validSettings
+    expect(isValidSettings(rest)).toBe(true)
   })
 })

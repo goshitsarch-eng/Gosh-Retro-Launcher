@@ -35,6 +35,7 @@ export interface AppSettings {
   groupChromeScale: number
   theme: 'light' | 'dark'
   labelDisplay: 'wrap' | 'ellipsis'
+  shell: ShellType
 }
 
 export interface StoreData {
@@ -50,7 +51,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   trayOnClose: true,
   groupChromeScale: 1,
   theme: 'light',
-  labelDisplay: 'wrap'
+  labelDisplay: 'wrap',
+  shell: 'win31'
 }
 
 export const DEFAULT_WINDOW_STATE: WindowState = {
@@ -61,6 +63,9 @@ export const DEFAULT_WINDOW_STATE: WindowState = {
   minimized: false,
   maximized: false
 }
+
+// Shell type for pluggable UI shells
+export type ShellType = 'win31' | 'win95'
 
 // Platform type for cross-platform handling
 export type Platform = 'win32' | 'darwin' | 'linux'
