@@ -7,6 +7,7 @@ import './styles/win95.css'
 import './styles/menu.css'
 import './styles/dialog.css'
 import './styles/mdi.css'
+import './styles/animations.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

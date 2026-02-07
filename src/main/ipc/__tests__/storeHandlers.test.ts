@@ -163,4 +163,21 @@ describe('isValidSettings', () => {
     const { shell, ...rest } = validSettings
     expect(isValidSettings(rest)).toBe(true)
   })
+
+  it('accepts soundEnabled true', () => {
+    expect(isValidSettings({ ...validSettings, soundEnabled: true })).toBe(true)
+  })
+
+  it('accepts soundEnabled false', () => {
+    expect(isValidSettings({ ...validSettings, soundEnabled: false })).toBe(true)
+  })
+
+  it('rejects non-boolean soundEnabled', () => {
+    expect(isValidSettings({ ...validSettings, soundEnabled: 'yes' })).toBe(false)
+  })
+
+  it('accepts missing soundEnabled for backward compatibility', () => {
+    const { soundEnabled, ...rest } = validSettings as Record<string, unknown>
+    expect(isValidSettings(rest)).toBe(true)
+  })
 })

@@ -133,6 +133,160 @@
   margin: 2px;
 }
 
+/* ==========================================
+   WIN95 WINDOW STATUS BAR
+   ========================================== */
+
+.win95-window-statusbar {
+  display: flex;
+  align-items: center;
+  height: 20px;
+  margin: 0 2px 2px 2px;
+  padding: 0 4px;
+  font-family: var(--font-system);
+  font-size: 12px;
+  color: var(--text-primary);
+  border-style: solid;
+  border-width: 1px;
+  border-top-color: var(--bevel-dark);
+  border-left-color: var(--bevel-dark);
+  border-bottom-color: var(--bevel-light);
+  border-right-color: var(--bevel-light);
+  flex-shrink: 0;
+}
+
+/* ==========================================
+   WIN95 RESIZE GRIP
+   ========================================== */
+
+.win95-resize-grip {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 12px;
+  height: 12px;
+  cursor: se-resize;
+  z-index: 11;
+  /* 6 raised 3D dots in triangular pattern */
+  background: transparent;
+  box-shadow:
+    /* bottom row - 3 dots */
+    8px 10px 0 0 var(--bevel-light),
+    9px 11px 0 0 var(--bevel-dark),
+    4px 10px 0 0 var(--bevel-light),
+    5px 11px 0 0 var(--bevel-dark),
+    0px 10px 0 0 var(--bevel-light),
+    1px 11px 0 0 var(--bevel-dark),
+    /* middle row - 2 dots */
+    8px 6px 0 0 var(--bevel-light),
+    9px 7px 0 0 var(--bevel-dark),
+    4px 6px 0 0 var(--bevel-light),
+    5px 7px 0 0 var(--bevel-dark),
+    /* top row - 1 dot */
+    8px 2px 0 0 var(--bevel-light),
+    9px 3px 0 0 var(--bevel-dark);
+}
+
+/* ==========================================
+   WIN95 WINDOW BUTTON GLYPHS
+   ========================================== */
+
+.win95-glyph-minimize,
+.win95-glyph-maximize,
+.win95-glyph-restore,
+.win95-glyph-close {
+  display: block;
+  position: relative;
+  width: 8px;
+  height: 7px;
+}
+
+/* Minimize: horizontal line at bottom */
+.win95-glyph-minimize::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 6px;
+  height: 2px;
+  background: var(--text-primary);
+}
+
+/* Maximize: outlined rectangle */
+.win95-glyph-maximize::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--text-primary);
+  border-top-width: 2px;
+  box-sizing: border-box;
+}
+
+/* Restore: two overlapping rectangles */
+.win95-glyph-restore::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 5px;
+  height: 5px;
+  border: 1px solid var(--text-primary);
+  border-top-width: 2px;
+  box-sizing: border-box;
+}
+
+.win95-glyph-restore::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  border: 1px solid var(--text-primary);
+  border-top-width: 2px;
+  box-sizing: border-box;
+  background: var(--bevel-face);
+}
+
+/* Close: X shape using rotated pseudo-elements */
+.win95-glyph-close::before,
+.win95-glyph-close::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 2px;
+  background: var(--text-primary);
+}
+
+.win95-glyph-close::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.win95-glyph-close::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+/* Dimmed glyphs for inactive windows */
+.win95-window.inactive .win95-glyph-minimize::after,
+.win95-window.inactive .win95-glyph-maximize::after,
+.win95-window.inactive .win95-glyph-restore::before,
+.win95-window.inactive .win95-glyph-restore::after,
+.win95-window.inactive .win95-glyph-close::before,
+.win95-window.inactive .win95-glyph-close::after {
+  background: var(--text-disabled);
+}
+
+.win95-window.inactive .win95-glyph-maximize::after,
+.win95-window.inactive .win95-glyph-restore::before,
+.win95-window.inactive .win95-glyph-restore::after {
+  border-color: var(--text-disabled);
+}
+
 /* Maximized state */
 .win95-window.maximized {
   top: 0 !important;
@@ -151,6 +305,14 @@
 
 .win95-window.maximized .win95-window-body {
   margin: 0;
+}
+
+.win95-window.maximized .win95-window-statusbar {
+  margin: 0;
+}
+
+.win95-window.maximized .win95-resize-grip {
+  display: none;
 }
 
 /* Resize handles */

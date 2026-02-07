@@ -3,6 +3,7 @@ import { DialogManager } from './components/Dialogs/DialogManager'
 import { QuickSearchOverlay } from './components/QuickSearch/QuickSearchOverlay'
 import { useProgramStore } from './store/programStore'
 import { useUIStore } from './store/uiStore'
+import { useSounds } from './hooks/useSounds'
 import { getShell } from './shells'
 
 const App: React.FC = () => {
@@ -18,11 +19,14 @@ const App: React.FC = () => {
   const selectedGroupId = useUIStore((state) => state.selectedGroupId)
   const openDialog = useUIStore((state) => state.openDialog)
 
+  const sounds = useSounds()
   const [platform, setPlatform] = useState<string>('linux')
 
   // Load data and platform on mount
   useEffect(() => {
-    loadData()
+    loadData().then(() => {
+      setTimeout(() => sounds.startupChime(), 300)
+    })
     window.electronAPI.system.getPlatform().then(setPlatform)
 
     // Show welcome dialog on first run

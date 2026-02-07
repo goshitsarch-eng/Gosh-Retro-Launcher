@@ -1,0 +1,183 @@
+/* Animations */
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .anim-window-open,
+  .anim-window-close,
+  .anim-window-minimize,
+  .anim-window-restore,
+  .anim-dialog-open,
+  .anim-dialog-close,
+  .anim-overlay-fade-in,
+  .anim-start-menu-open,
+  .anim-start-menu-close,
+  .anim-menu-open {
+    animation: none !important;
+  }
+}
+
+/* ==========================================
+   WINDOW ANIMATIONS
+   ========================================== */
+
+@keyframes window-open {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes window-close {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+}
+
+@keyframes window-minimize {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.3) translateY(100px);
+    opacity: 0;
+  }
+}
+
+@keyframes window-restore {
+  from {
+    transform: scale(0.3) translateY(100px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.anim-window-open {
+  animation: window-open 150ms ease-out both;
+}
+
+.anim-window-close {
+  animation: window-close 120ms ease-in both;
+  pointer-events: none;
+}
+
+.anim-window-minimize {
+  animation: window-minimize 200ms ease-in both;
+  pointer-events: none;
+}
+
+.anim-window-restore {
+  animation: window-restore 200ms ease-out both;
+}
+
+/* ==========================================
+   DIALOG ANIMATIONS
+   ========================================== */
+
+@keyframes dialog-open {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes dialog-close {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
+
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.anim-dialog-open {
+  animation: dialog-open 150ms ease-out both;
+}
+
+.anim-dialog-close {
+  animation: dialog-close 100ms ease-in both;
+  pointer-events: none;
+}
+
+.anim-overlay-fade-in {
+  animation: overlay-fade-in 150ms ease-out both;
+}
+
+/* ==========================================
+   START MENU ANIMATIONS
+   ========================================== */
+
+@keyframes start-menu-open {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes start-menu-close {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+}
+
+.anim-start-menu-open {
+  animation: start-menu-open 120ms ease-out both;
+}
+
+.anim-start-menu-close {
+  animation: start-menu-close 80ms ease-in both;
+  pointer-events: none;
+}
+
+/* ==========================================
+   MENU ANIMATIONS
+   ========================================== */
+
+@keyframes menu-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.anim-menu-open {
+  animation: menu-fade-in 80ms ease-out both;
+}

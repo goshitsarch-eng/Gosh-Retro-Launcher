@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useProgramStore } from '@/store/programStore'
 import { useMDIStore } from '@/store/mdiStore'
 import { useUIStore } from '@/store/uiStore'
+import { useSounds } from '@/hooks/useSounds'
+import { useAnimatedUnmount } from '@/hooks/useAnimatedUnmount'
 import { getIconSrc, DEFAULT_FOLDER_ICON } from '@/utils/icons'
 
 interface Win95StartMenuProps {
@@ -16,6 +18,8 @@ export const Win95StartMenu: React.FC<Win95StartMenuProps> = ({ isOpen, onClose 
   const openWindow = useMDIStore((state) => state.openWindow)
   const openQuickSearch = useUIStore((state) => state.openQuickSearch)
   const openDialog = useUIStore((state) => state.openDialog)
+  const sounds = useSounds()
+  const { shouldRender, animClass } = useAnimatedUnmount(isOpen, 80)
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -46,7 +50,7 @@ export const Win95StartMenu: React.FC<Win95StartMenuProps> = ({ isOpen, onClose 
     if (!isOpen) setExpandedGroupId(null)
   }, [isOpen])
 
-  if (!isOpen) return null
+  if (!shouldRender) return null
 
   const handleLaunch = async (item: {
     path: string
@@ -55,6 +59,7 @@ export const Win95StartMenu: React.FC<Win95StartMenuProps> = ({ isOpen, onClose 
     icon: string
     workingDir: string
   }): Promise<void> => {
+    sounds.menuClick()
     try {
       const result = await window.electronAPI.program.launch(item)
       if (!result.success) {
@@ -76,7 +81,7 @@ export const Win95StartMenu: React.FC<Win95StartMenuProps> = ({ isOpen, onClose 
   }
 
   return (
-    <div ref={menuRef} className="win95-start-menu">
+    <div ref={menuRef} className={`win95-start-menu ${animClass === 'open' ? 'anim-start-menu-open' : animClass === 'closing' ? 'anim-start-menu-close' : ''}`}>
       {/* Vertical strip */}
       <div className="win95-start-menu-strip">
         <span className="win95-start-menu-strip-text">

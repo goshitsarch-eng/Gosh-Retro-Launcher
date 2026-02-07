@@ -1,4 +1,5 @@
-import React, { useEffect, useCallback, useRef } from 'react'
+import React, { useEffect, useCallback, useRef, useState } from 'react'
+import { useSounds } from '@/hooks/useSounds'
 
 interface DialogProps {
   title: string
@@ -15,12 +16,15 @@ export const Dialog: React.FC<DialogProps> = ({
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<Element | null>(null)
+  const sounds = useSounds()
+  const [isClosing, setIsClosing] = useState(false)
 
   // Save and restore focus
   useEffect(() => {
     previousFocusRef.current = document.activeElement
     // Focus the dialog container
     dialogRef.current?.focus()
+    sounds.dialogOpen()
 
     return () => {
       if (previousFocusRef.current instanceof HTMLElement) {
@@ -29,11 +33,17 @@ export const Dialog: React.FC<DialogProps> = ({
     }
   }, [])
 
+  const handleAnimatedClose = useCallback(() => {
+    if (isClosing) return
+    setIsClosing(true)
+    setTimeout(() => onClose(), 100)
+  }, [isClosing, onClose])
+
   // Handle escape key and focus trap
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose()
+        handleAnimatedClose()
         return
       }
 
@@ -63,7 +73,7 @@ export const Dialog: React.FC<DialogProps> = ({
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
+  }, [handleAnimatedClose])
 
   // Prevent clicks inside dialog from closing it
   const handleDialogClick = useCallback((event: React.MouseEvent) => {
@@ -71,10 +81,16 @@ export const Dialog: React.FC<DialogProps> = ({
   }, [])
 
   return (
-    <div className="win31-dialog-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={title}>
+    <div
+      className={`win31-dialog-overlay anim-overlay-fade-in`}
+      onClick={handleAnimatedClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
       <div
         ref={dialogRef}
-        className="win31-dialog"
+        className={`win31-dialog ${isClosing ? 'anim-dialog-close' : 'anim-dialog-open'}`}
         style={{ width }}
         onClick={handleDialogClick}
         tabIndex={-1}

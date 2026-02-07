@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react'
+import React, { useCallback, useRef, useState, useEffect } from 'react'
 import { MDIWindowControls } from './MDIWindowControls'
 import { ItemGrid } from '../Items/ItemGrid'
 import { useDraggable } from '@/hooks/useDraggable'
@@ -6,6 +6,7 @@ import { useResizable } from '@/hooks/useResizable'
 import { useProgramStore } from '@/store/programStore'
 import { useMDIStore } from '@/store/mdiStore'
 import { useUIStore } from '@/store/uiStore'
+import { useSounds } from '@/hooks/useSounds'
 import type { ProgramGroup } from '@shared/types'
 
 interface MDIWindowProps {
@@ -27,6 +28,12 @@ export const MDIWindow: React.FC<MDIWindowProps> = ({
   const updateGroupWindowState = useProgramStore((state) => state.updateGroupWindowState)
   const closeWindow = useMDIStore((state) => state.closeWindow)
   const openDialog = useUIStore((state) => state.openDialog)
+  const sounds = useSounds()
+  const [animClass, setAnimClass] = useState('anim-window-open')
+
+  useEffect(() => {
+    sounds.windowOpen()
+  }, [])
 
   const { windowState } = group
 
@@ -77,9 +84,13 @@ export const MDIWindow: React.FC<MDIWindowProps> = ({
 
   // Window actions
   const handleMinimize = useCallback(() => {
-    updateGroupWindowState(group.id, { minimized: true })
-    closeWindow(group.id)
-  }, [group.id, updateGroupWindowState, closeWindow])
+    sounds.windowClose()
+    setAnimClass('anim-window-close')
+    setTimeout(() => {
+      updateGroupWindowState(group.id, { minimized: true })
+      closeWindow(group.id)
+    }, 120)
+  }, [group.id, updateGroupWindowState, closeWindow, sounds])
 
   const handleMaximize = useCallback(() => {
     updateGroupWindowState(group.id, {
@@ -88,9 +99,13 @@ export const MDIWindow: React.FC<MDIWindowProps> = ({
   }, [group.id, windowState.maximized, updateGroupWindowState])
 
   const handleClose = useCallback(() => {
-    updateGroupWindowState(group.id, { minimized: true })
-    closeWindow(group.id)
-  }, [group.id, updateGroupWindowState, closeWindow])
+    sounds.windowClose()
+    setAnimClass('anim-window-close')
+    setTimeout(() => {
+      updateGroupWindowState(group.id, { minimized: true })
+      closeWindow(group.id)
+    }, 120)
+  }, [group.id, updateGroupWindowState, closeWindow, sounds])
 
   // Handle right-click on titlebar to open group properties
   const handleTitleBarContextMenu = useCallback(
@@ -110,7 +125,7 @@ export const MDIWindow: React.FC<MDIWindowProps> = ({
   return (
     <div
       ref={windowRef}
-      className={`win31-mdi-window ${isActive ? 'active' : 'inactive'} ${windowState.maximized ? 'maximized' : ''}`}
+      className={`win31-mdi-window ${isActive ? 'active' : 'inactive'} ${windowState.maximized ? 'maximized' : ''} ${animClass}`}
       style={{
         left: windowState.maximized ? 0 : x,
         top: windowState.maximized ? 0 : y,

@@ -63,7 +63,7 @@ export const Menu: React.FC<MenuProps> = ({
       >
         {renderLabel()}
       </button>
-      {isOpen && <div className="win31-dropdown">{children}</div>}
+      {isOpen && <div className="win31-dropdown anim-menu-open">{children}</div>}
     </div>
   )
 }

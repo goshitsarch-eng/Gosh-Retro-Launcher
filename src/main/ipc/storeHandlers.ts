@@ -59,7 +59,8 @@ export function isValidSettings(settings: unknown): settings is AppSettings {
     typeof obj.labelDisplay === 'string' &&
     VALID_LABEL_DISPLAYS.includes(obj.labelDisplay) &&
     (obj.shell === undefined ||
-      (typeof obj.shell === 'string' && VALID_SHELLS.includes(obj.shell)))
+      (typeof obj.shell === 'string' && VALID_SHELLS.includes(obj.shell))) &&
+    (obj.soundEnabled === undefined || typeof obj.soundEnabled === 'boolean')
   )
 }
 

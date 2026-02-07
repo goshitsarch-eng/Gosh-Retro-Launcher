@@ -1,10 +1,11 @@
-import React, { useCallback, useRef } from 'react'
+import React, { useCallback, useRef, useState, useEffect } from 'react'
 import { ItemGrid } from '../../components/Items/ItemGrid'
 import { useDraggable } from '@/hooks/useDraggable'
 import { useResizable } from '@/hooks/useResizable'
 import { useProgramStore } from '@/store/programStore'
 import { useMDIStore } from '@/store/mdiStore'
 import { useUIStore } from '@/store/uiStore'
+import { useSounds } from '@/hooks/useSounds'
 import { getIconSrc } from '@/utils/icons'
 import type { ProgramGroup } from '@shared/types'
 
@@ -27,6 +28,12 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
   const updateGroupWindowState = useProgramStore((state) => state.updateGroupWindowState)
   const closeWindow = useMDIStore((state) => state.closeWindow)
   const openDialog = useUIStore((state) => state.openDialog)
+  const sounds = useSounds()
+  const [animClass, setAnimClass] = useState('anim-window-open')
+
+  useEffect(() => {
+    sounds.windowOpen()
+  }, [])
 
   const { windowState } = group
 
@@ -75,9 +82,13 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
 
   // Minimize: hide from desktop but keep in mdiStore (stays in taskbar)
   const handleMinimize = useCallback(() => {
-    updateGroupWindowState(group.id, { minimized: true })
+    sounds.windowClose()
+    setAnimClass('anim-window-minimize')
+    setTimeout(() => {
+      updateGroupWindowState(group.id, { minimized: true })
+    }, 200)
     // Do NOT call closeWindow — keep the mdiStore entry so taskbar still shows it
-  }, [group.id, updateGroupWindowState])
+  }, [group.id, updateGroupWindowState, sounds])
 
   const handleMaximize = useCallback(() => {
     updateGroupWindowState(group.id, {
@@ -87,9 +98,13 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
 
   // Close: remove from desktop AND taskbar entirely
   const handleClose = useCallback(() => {
-    updateGroupWindowState(group.id, { minimized: true })
-    closeWindow(group.id)
-  }, [group.id, updateGroupWindowState, closeWindow])
+    sounds.windowClose()
+    setAnimClass('anim-window-close')
+    setTimeout(() => {
+      updateGroupWindowState(group.id, { minimized: true })
+      closeWindow(group.id)
+    }, 120)
+  }, [group.id, updateGroupWindowState, closeWindow, sounds])
 
   const handleTitleBarContextMenu = useCallback(
     (event: React.MouseEvent) => {
@@ -107,7 +122,7 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
   return (
     <div
       ref={windowRef}
-      className={`win95-window ${isActive ? 'active' : 'inactive'} ${windowState.maximized ? 'maximized' : ''}`}
+      className={`win95-window ${isActive ? 'active' : 'inactive'} ${windowState.maximized ? 'maximized' : ''} ${animClass}`}
       style={{
         left: windowState.maximized ? 0 : x,
         top: windowState.maximized ? 0 : y,
@@ -139,7 +154,7 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
             }}
             title="Minimize"
           >
-            _
+            <span className="win95-glyph-minimize" />
           </button>
           <button
             className="win95-window-control-btn"
@@ -149,7 +164,7 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
             }}
             title={windowState.maximized ? 'Restore' : 'Maximize'}
           >
-            {windowState.maximized ? '\u25A2' : '\u25A1'}
+            <span className={windowState.maximized ? 'win95-glyph-restore' : 'win95-glyph-maximize'} />
           </button>
           <button
             className="win95-window-control-btn"
@@ -159,7 +174,7 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
             }}
             title="Close"
           >
-            &times;
+            <span className="win95-glyph-close" />
           </button>
         </div>
       </div>
@@ -167,6 +182,11 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
       {/* Content area */}
       <div className="win95-window-body">
         <ItemGrid groupId={group.id} groupName={group.name} items={group.items} />
+      </div>
+
+      {/* Status bar */}
+      <div className="win95-window-statusbar">
+        {group.items.length} object{group.items.length !== 1 ? 's' : ''}
       </div>
 
       {/* Resize handles (only when not maximized) */}
@@ -201,7 +221,7 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
             onPointerDown={(e) => handleResizePointerDown(e, 'sw')}
           />
           <div
-            className="resize-handle resize-handle-se"
+            className="resize-handle resize-handle-se win95-resize-grip"
             onPointerDown={(e) => handleResizePointerDown(e, 'se')}
           />
         </>

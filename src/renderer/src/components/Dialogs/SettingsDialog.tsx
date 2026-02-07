@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { Dialog } from './Dialog'
 import { Button } from '../Common/Button'
 import { Checkbox } from '../Common/Checkbox'
+import { ThemePreview } from './ThemePreview'
 import { useUIStore } from '@/store/uiStore'
 import { useProgramStore } from '@/store/programStore'
 import { getAllShells } from '@/shells'
@@ -20,6 +21,7 @@ export const SettingsDialog: React.FC = () => {
   const [theme, setTheme] = useState(settings.theme)
   const [labelDisplay, setLabelDisplay] = useState(settings.labelDisplay || 'wrap')
   const [shell, setShell] = useState<ShellType>(settings.shell || 'win31')
+  const [soundEnabled, setSoundEnabled] = useState(settings.soundEnabled ?? true)
 
   const handleSubmit = useCallback(
     (event: React.FormEvent) => {
@@ -33,7 +35,8 @@ export const SettingsDialog: React.FC = () => {
         groupChromeScale,
         theme,
         labelDisplay,
-        shell
+        shell,
+        soundEnabled
       })
       closeDialog()
     },
@@ -47,6 +50,7 @@ export const SettingsDialog: React.FC = () => {
       theme,
       labelDisplay,
       shell,
+      soundEnabled,
       updateSettings,
       closeDialog
     ]
@@ -110,6 +114,14 @@ export const SettingsDialog: React.FC = () => {
             />
           </div>
 
+          <div style={{ marginBottom: 8 }}>
+            <Checkbox
+              label="Sound Effects"
+              checked={soundEnabled}
+              onChange={(e) => setSoundEnabled(e.target.checked)}
+            />
+          </div>
+
           <div className="win31-form-row">
             <label htmlFor="shell-select">Desktop Shell:</label>
             <select
@@ -124,6 +136,10 @@ export const SettingsDialog: React.FC = () => {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div style={{ marginTop: 8, marginBottom: 8 }}>
+            <ThemePreview shell={shell} theme={theme} groupChromeScale={groupChromeScale} />
           </div>
 
           <div className="win31-slider-row">

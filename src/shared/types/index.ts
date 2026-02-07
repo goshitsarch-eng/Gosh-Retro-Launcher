@@ -36,6 +36,7 @@ export interface AppSettings {
   theme: 'light' | 'dark'
   labelDisplay: 'wrap' | 'ellipsis'
   shell: ShellType
+  soundEnabled: boolean
 }
 
 export interface StoreData {
@@ -52,7 +53,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   groupChromeScale: 1,
   theme: 'light',
   labelDisplay: 'wrap',
-  shell: 'win31'
+  shell: 'win31',
+  soundEnabled: true
 }
 
 export const DEFAULT_WINDOW_STATE: WindowState = {
