@@ -1,28 +1,36 @@
 # Program Manager
 
-A Windows 3.1 Program Manager clone built with Electron and React. Organize and launch applications, URLs, and scripts from a retro-styled MDI desktop — on Windows, macOS, and Linux.
+A nostalgic recreation of the classic Windows Program Manager, built with Electron and React. Organize and launch applications, URLs, and scripts from a retro-styled desktop -- with switchable Windows 3.1 and Windows 95 shells -- on Windows, macOS, and Linux.
 
-![Windows 3.1 Style](https://img.shields.io/badge/Style-Windows%203.1-008080)
+![Retro Style](https://img.shields.io/badge/Style-Retro%20Desktop-008080)
 ![Electron](https://img.shields.io/badge/Electron-40-47848F)
 ![React](https://img.shields.io/badge/React-19-61DAFB)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6)
+![License](https://img.shields.io/badge/License-AGPL--3.0-blue)
+
+<!-- TODO: Add screenshot of the application here -->
 
 ## Features
 
-- **Windows 3.1 UI**: Beveled borders, teal desktop (`#008080`), classic bitmap-style W95FA font, MDI (Multiple Document Interface) windows with draggable and resizable group windows
-- **Program Groups**: Create, rename, and delete groups. Each group opens as its own MDI window containing program items. Drag and drop files onto a group window to add them as items.
-- **Cross-Platform Launch**: Executes programs based on platform — `.exe`/`.lnk`/`.bat` on Windows, `.app` bundles on macOS, `.desktop` files and executables on Linux. URLs open in the default browser.
-- **System Tray**: Closing the window minimizes to tray (configurable). The tray menu lists all groups and their items for quick launch. Double-click the tray icon to restore on Windows/Linux.
-- **Quick Search**: Global shortcut (`Ctrl+Shift+Space` / `Cmd+Shift+Space`) opens a search overlay to filter and launch any item across all groups. Keyboard navigable with arrow keys and Enter.
-- **Batch Launch**: Launch all items in a group sequentially with a configurable delay (100ms–5000ms) between each.
-- **Launch Groups**: Assign items to numbered launch groups (1–8) for batch launching subsets of items across groups.
-- **Import/Export**: Back up and restore all groups and settings as JSON.
-- **Dark Mode**: Toggle between light and dark themes from settings.
-- **Scalable Title Bars**: Adjust the MDI window title bar size from 1x to 1.6x in settings.
-- **Built-in Icon Picker**: Over 40 embedded Win 3.1–style icons (SVG and PNG data URLs) to assign to groups and items, with no external icon files required.
+- **Two Desktop Shells**: Switch between a Windows 3.1 MDI desktop (menu bar, beveled borders, teal background) and a Windows 95 shell (taskbar, Start menu, desktop windows). Selectable in Settings.
+- **Program Groups**: Create, rename, and delete groups. Each group opens as its own window containing program items. Drag and drop files onto a group window to add them.
+- **Cross-Platform Launch**: Platform-aware program execution -- `.exe`/`.lnk`/`.bat` on Windows, `.app` bundles on macOS, `.desktop` files and executables on Linux. URLs open in the default browser.
+- **System Tray**: Closing the window minimizes to tray (configurable). The tray context menu lists all groups and their items for quick launch. Double-click the tray icon to restore on Windows and Linux.
+- **Quick Search**: Global shortcut (`Ctrl+Shift+Space` / `Cmd+Shift+Space`) opens a search overlay to find and launch any item across all groups. Results are ranked by relevance (name prefix > name substring > path/group match). Keyboard navigable with arrow keys and Enter.
+- **Batch Launch**: Assign items to numbered launch groups (1--8) and launch them sequentially via File > Launch All, with a configurable delay between each (100ms--5000ms).
+- **Import/Export**: Back up and restore all groups and settings as a JSON file.
+- **Dark Mode**: Toggle between light and dark themes.
+- **Scalable Title Bars**: Adjust the MDI window title bar size from 100% to 160%.
+- **80+ Built-in Icons**: Embedded SVG and PNG icons in a searchable icon picker -- no external icon files needed. Custom icon paths (file URLs, data URLs) are also supported.
+- **Sound Effects**: Retro sound effects (startup chime, window open/close, menu click, dialog open, error beep) generated with the Web Audio API. Toggleable in Settings.
+- **CSS Animations**: Window open/close/minimize, dialog transitions, menu fade-in, and Start menu slide. Automatically disabled when the OS-level `prefers-reduced-motion` setting is active.
+- **Keyboard Accessible**: Full keyboard navigation with ARIA roles, arrow keys in the item grid, and menu shortcuts (Alt+F/O/W/H in the Win31 shell).
 - **Single Instance**: Only one instance of the application runs at a time. Launching again focuses the existing window.
+- **First-Run Welcome**: A welcome dialog on first launch explains how to get started.
 
 ## Installation
+
+**Prerequisites**: [Node.js](https://nodejs.org/) 22+ and npm.
 
 ```bash
 # Clone the repository
@@ -35,13 +43,13 @@ npm install
 # Run in development mode
 npm run dev
 
-# Build for production
+# Build for production (compile only, no packaging)
 npm run build
 
 # Package for your platform
-npm run build:win    # Windows (NSIS installer)
-npm run build:mac    # macOS (DMG + ZIP, universal)
-npm run build:linux  # Linux (AppImage + Flatpak)
+npm run build:win    # Windows -- NSIS installer (x64 + arm64)
+npm run build:mac    # macOS -- DMG + ZIP (universal)
+npm run build:linux  # Linux -- .deb, .rpm, .tar.gz
 ```
 
 ## Development
@@ -53,120 +61,245 @@ npm run dev
 # Type check all targets (main, preload, renderer)
 npm run typecheck
 
-# Build without packaging
+# Run tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Build without packaging (outputs to out/)
 npm run build
+
+# Build unpacked directory (for testing packaging)
+npm run build:unpack
 ```
 
-DevTools can be opened by setting the environment variable `ELECTRON_OPEN_DEVTOOLS=1` before running in dev mode.
+DevTools can be opened by setting the environment variable `ELECTRON_OPEN_DEVTOOLS=1` before running in dev mode:
+
+```bash
+ELECTRON_OPEN_DEVTOOLS=1 npm run dev
+```
 
 ## Architecture
 
+For a visual overview, see the [System Architecture Diagram](docs/diagrams/system-architecture.md).
+
 ```
 src/
-├── main/               # Electron main process
-│   ├── index.ts        # App lifecycle, single instance lock, global shortcuts
-│   ├── window.ts       # BrowserWindow creation and management
-│   ├── tray.ts         # System tray with dynamic group/item menus
-│   ├── store.ts        # electron-store persistence (program-manager-data.json)
-│   └── ipc/            # IPC handlers
-│       ├── index.ts        # Handler registration
-│       ├── windowHandlers.ts   # Minimize, maximize, close, quit, platform
-│       ├── fileHandlers.ts     # File/icon selection dialogs, file existence
-│       ├── launchHandlers.ts   # Program launch, batch launch, .desktop parsing
-│       └── storeHandlers.ts    # Get/set groups and settings, import/export
-├── preload/            # Context bridge (contextIsolation: true)
-│   └── index.ts        # Exposes electronAPI to renderer with typed interface
-├── renderer/           # React application
-│   └── src/
-│       ├── App.tsx             # Root component — loads data, applies theme/scale
-│       ├── main.tsx            # React entry point
-│       ├── components/
-│       │   ├── Common/         # Button, TextInput, Checkbox, Icon
-│       │   ├── Menu/           # MenuBar, Menu, MenuItem, MenuSeparator
-│       │   ├── MDI/            # MDIContainer, MDIWindow, MDIWindowControls
-│       │   ├── Items/          # ItemGrid (with drag-drop), ProgramItem
-│       │   ├── Dialogs/        # DialogManager + 9 dialog types
-│       │   └── QuickSearch/    # QuickSearchOverlay
-│       ├── hooks/
-│       │   ├── useDraggable.ts     # Mouse-based window dragging
-│       │   └── useResizable.ts     # 8-direction window resizing
-│       ├── store/              # Zustand state stores
-│       │   ├── programStore.ts     # Groups, items, settings, persistence
-│       │   ├── mdiStore.ts         # Window z-order, open/close/focus
-│       │   └── uiStore.ts         # Menus, dialogs, quick search, selection
-│       ├── styles/             # Windows 3.1 CSS
-│       │   ├── variables.css       # Color palette, sizing, dark mode overrides
-│       │   ├── win31.css           # Base styles, bevels, buttons, inputs
-│       │   ├── dialog.css          # Modal dialogs, forms, settings layout
-│       │   ├── menu.css            # Menu bar and dropdowns
-│       │   └── mdi.css             # MDI container, windows, item grid
-│       ├── types/
-│       │   └── electron.d.ts       # Window.electronAPI type declaration
-│       └── utils/
-│           ├── icons.ts            # 40+ built-in icon data URLs, getIconSrc()
-│           └── launchGroups.ts     # Launch group options (0–8)
-└── shared/             # Shared across all processes
-    ├── types/index.ts      # ProgramItem, ProgramGroup, AppSettings, etc.
-    └── constants/ipc.ts    # IPC channel name constants
++-- main/                  # Electron main process
+|   +-- index.ts           # App lifecycle, single instance lock, global shortcuts
+|   +-- window.ts          # BrowserWindow creation and management
+|   +-- tray.ts            # System tray with dynamic group/item menus
+|   +-- store.ts           # electron-store persistence (program-manager-data.json)
+|   +-- ipc/               # IPC handlers
+|       +-- index.ts           # Handler registration
+|       +-- windowHandlers.ts  # Minimize, maximize, close, quit, isMaximized
+|       +-- fileHandlers.ts    # File/icon selection dialogs, file existence check
+|       +-- launchHandlers.ts  # Program launch, batch launch, .desktop parsing
+|       +-- storeHandlers.ts   # Get/set groups and settings, import/export, validation
+|       +-- appInfoHandlers.ts # Extract app info from dropped files
+|       +-- __tests__/         # Unit tests for launch and store handlers
++-- preload/               # Context bridge (contextIsolation: true, sandbox: true)
+|   +-- index.ts           # Exposes typed electronAPI to renderer
++-- renderer/              # React application
+|   +-- src/
+|       +-- App.tsx                # Root component -- shell resolution, theme, shortcuts
+|       +-- main.tsx               # React entry point
+|       +-- components/
+|       |   +-- Common/            # Button, TextInput, Checkbox, Icon
+|       |   +-- Menu/              # MenuBar, Menu, MenuItem, MenuSeparator
+|       |   +-- MDI/               # MDIContainer, MDIWindow, MDIWindowControls
+|       |   +-- Items/             # ItemGrid (with drag-drop), ProgramItem
+|       |   +-- Dialogs/           # DialogManager + 10 dialog types (incl. ThemePreview)
+|       |   +-- QuickSearch/       # QuickSearchOverlay
+|       |   +-- ErrorBoundary.tsx  # React error boundary
+|       +-- hooks/
+|       |   +-- useDraggable.ts        # Pointer-event-based window dragging
+|       |   +-- useResizable.ts        # 8-direction pointer-event window resizing
+|       |   +-- useSounds.ts           # Sound player hook (wraps sounds.ts)
+|       |   +-- useAnimatedUnmount.ts  # Delayed unmount for CSS exit animations
+|       +-- shells/                # Pluggable desktop shell system
+|       |   +-- types.ts               # ShellProps, ShellDefinition interfaces
+|       |   +-- registry.ts            # Shell registration (win31, win95)
+|       |   +-- index.ts               # Re-exports getShell, getAllShells
+|       |   +-- Win31Shell.tsx         # Windows 3.1 shell (MenuBar + MDI)
+|       |   +-- win95/                 # Windows 95 shell
+|       |       +-- index.ts
+|       |       +-- Win95Shell.tsx     # Shell root (desktop + taskbar + start menu)
+|       |       +-- Win95Desktop.tsx   # Desktop with program group windows
+|       |       +-- Win95Taskbar.tsx   # Bottom taskbar with Start button
+|       |       +-- Win95StartMenu.tsx # Start menu overlay
+|       |       +-- Win95Window.tsx    # Win95-styled group window chrome
+|       +-- store/                 # Zustand state stores
+|       |   +-- programStore.ts        # Groups, items, settings, debounced persistence
+|       |   +-- mdiStore.ts            # Window z-order, open/close/focus/tile/cascade
+|       |   +-- uiStore.ts            # Menus, dialogs, quick search, selection
+|       +-- utils/
+|       |   +-- icons.ts               # 82 built-in icon data URLs, getIconSrc()
+|       |   +-- launchGroups.ts        # Launch group options (0--8)
+|       |   +-- sounds.ts             # Web Audio oscillator sound effects
+|       |   +-- __tests__/            # Unit tests for icons utility
+|       +-- types/
+|           +-- electron.d.ts          # Window.electronAPI type declaration
++-- shared/                # Shared across all processes
+    +-- types/index.ts         # ProgramItem, ProgramGroup, AppSettings, StoreData, etc.
+    +-- constants/ipc.ts       # IPC channel name constants (16 channels)
 ```
 
 ## Data Model
 
-Application state is persisted via `electron-store` in a file called `program-manager-data.json`. The structure:
+Application state is persisted via `electron-store` in a file called `program-manager-data.json`. See the [Data Flow Diagram](docs/diagrams/data-flow.md) for a visual representation.
 
-- **groups**: Array of `ProgramGroup`, each containing a name, icon ID, window position/size state, and an array of `ProgramItem` entries.
-- **settings**: `AppSettings` object with fields for `autoArrange`, `minimizeOnUse`, `saveSettingsOnExit`, `launchDelay` (ms), `trayOnClose`, `groupChromeScale`, and `theme` (`'light'` | `'dark'`).
+### ProgramGroup
 
-Each `ProgramItem` stores a name, executable/URL path, icon reference, working directory, shortcut key, and optional launch group number.
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | UUID |
+| `name` | `string` | Display name |
+| `icon` | `string` | Icon ID or data URL |
+| `windowState` | `WindowState` | Position, size, minimized/maximized |
+| `items` | `ProgramItem[]` | Items in this group |
+
+### ProgramItem
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | UUID |
+| `name` | `string` | Display name |
+| `path` | `string` | Executable path or URL |
+| `icon` | `string` | Icon ID or data URL |
+| `workingDir` | `string` | Working directory for launch |
+| `launchGroup` | `number?` | Launch group number (1--8), optional |
+
+### AppSettings
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `autoArrange` | `boolean` | `true` | Auto-arrange icons in group windows |
+| `minimizeOnUse` | `boolean` | `false` | Minimize app after launching a program |
+| `saveSettingsOnExit` | `boolean` | `true` | Persist window positions on exit |
+| `launchDelay` | `number` | `500` | Delay (ms) between batch launches |
+| `trayOnClose` | `boolean` | `true` | Minimize to tray instead of quitting |
+| `groupChromeScale` | `number` | `1` | Title bar scale factor (1--1.6) |
+| `theme` | `'light' \| 'dark'` | `'light'` | Color theme |
+| `labelDisplay` | `'wrap' \| 'ellipsis'` | `'wrap'` | How item labels handle overflow |
+| `shell` | `'win31' \| 'win95'` | `'win31'` | Active desktop shell |
+| `soundEnabled` | `boolean` | `true` | Enable retro sound effects |
 
 ## Tray Icons
 
 The tray module looks for platform-specific icons under `assets/icons/`:
 
-- `tray-macTemplate.png` (macOS — template image for dark/light mode)
-- `tray-win.ico` (Windows)
-- `tray-linux.png` (Linux)
+- `tray-macTemplate.png` -- macOS template image for automatic dark/light mode adaptation
+- `tray-win.ico` -- Windows
+- `tray-linux.png` -- Linux
 
-If the icon file is missing or empty, a small fallback PNG is used instead.
+If the icon file is missing or empty, a small fallback PNG is generated at runtime.
 
 ## App Icons for Packaging
 
 The `electron-builder.yml` expects platform-specific app icons in `resources/`:
 
-- `icon.ico` — Windows
-- `icon.icns` — macOS
-- `icon.png` — Linux (recommended 512×512)
+- `icon.ico` -- Windows
+- `icon.icns` -- macOS
+- `icon.png` -- Linux (recommended 512x512)
 
 ## Tech Stack
 
-- **Electron 40** — Desktop framework
-- **React 19** — UI (functional components, hooks only)
-- **TypeScript 5.9** — Type safety across all three processes
-- **Zustand 5** — Client-side state management
-- **electron-store 8** — JSON-based persistence in the main process
-- **electron-vite 5** — Build tooling with separate configs for main, preload, and renderer
-- **electron-builder 26** — Cross-platform packaging (NSIS, DMG, AppImage, Flatpak)
-- **Vite 7** — Renderer bundling with React plugin
+| Technology | Version | Role |
+|------------|---------|------|
+| Electron | 40 | Desktop framework |
+| React | 19 | UI (functional components, hooks only) |
+| TypeScript | 5.9 | Type safety across main, preload, and renderer |
+| Zustand | 5 | Client-side state management |
+| electron-store | 8 | JSON file persistence in the main process |
+| electron-vite | 5 | Build tooling with separate main/preload/renderer configs |
+| electron-builder | 26 | Cross-platform packaging (NSIS, DMG, deb, rpm, tar.gz) |
+| Vite | 7 | Renderer bundling with React plugin |
+| Vitest | 4 | Unit testing framework |
+| uuid | 11 | UUID generation for groups and items |
 
 ## CI/CD
 
-GitHub Actions workflows build platform-specific artifacts on manual dispatch or version tag pushes (`v*`):
+GitHub Actions workflows build platform-specific artifacts on manual dispatch (`workflow_dispatch`) or version tag pushes (`v*`). Both workflows run typecheck and tests before building.
 
-| Workflow | Runner | Output |
-|----------|--------|--------|
-| `build-windows.yml` | `windows-latest` | `.exe` (x64, arm64) |
-| `build-macos.yml` | `macos-latest` | `.dmg` (x64, arm64) — code-signed and notarized |
-| `build-linux.yml` | `ubuntu-24.04` | AppImage, `.deb`, `.rpm` |
-| `build-linux-arm64.yml` | `ubuntu-24.04` | `.deb`, `.rpm` (arm64) |
-| `build-linux-flatpak.yml` | `ubuntu-24.04` | `.flatpak` bundle |
+| Workflow | Runner | Architectures | Output |
+|----------|--------|---------------|--------|
+| `build-windows.yml` | `windows-latest` | x64, arm64 | `.exe` NSIS installer |
+| `build-linux.yml` | `ubuntu-24.04` / `ubuntu-24.04-arm` | x64, arm64 | `.deb`, `.rpm`, `.tar.gz` |
+
+Tagged releases (`v*`) automatically upload artifacts to GitHub Releases.
+
+> **Note**: The `electron-builder.yml` configuration file includes macOS build settings (DMG, code signing, notarization), but no CI workflow for macOS currently exists. macOS builds can be run locally with `npm run build:mac`.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Make your changes and ensure they pass:
+   ```bash
+   npm run typecheck
+   npm test
+   ```
+4. Commit your changes and push to your fork
+5. Open a Pull Request
+
+## Documentation
+
+- [User Guide](docs/USER_GUIDE.md) -- End-user documentation
+- [Architecture](docs/ARCHITECTURE.md) -- Technical architecture details
+- [API Reference](docs/API_REFERENCE.md) -- IPC API and store interfaces
+- [Changelog](CHANGELOG.md) -- Version history
+
+### Diagrams
+
+- [System Architecture](docs/diagrams/system-architecture.md)
+- [User Flows](docs/diagrams/user-flows.md)
+- [Data Flow](docs/diagrams/data-flow.md)
 
 ## Known Limitations
 
-- The CI workflows reference `package:win`, `package:mac`, and `package:linux` npm scripts that are not defined in `package.json`. The actual scripts are `build:win`, `build:mac`, and `build:linux`. The workflows will fail unless the scripts are added or the workflow files are updated.
-- Shortcut key bindings (`ProgramItem.shortcutKey`) are stored but not wired to any global or local shortcut registration at runtime.
-- The `saveSettingsOnExit` flag only affects whether window position changes are persisted — all other settings are saved immediately.
-- The tray menu is rebuilt when groups change, but not when individual items within groups are renamed or reordered without a full group save.
+- The `saveSettingsOnExit` flag controls whether window position changes are persisted on close. All other settings (theme, shell, sound, etc.) are saved immediately when changed.
+- The tray menu is rebuilt when the group list changes via IPC, but not when individual items within groups are renamed without triggering a full groups save.
 
 ## License
 
-MIT
+This project is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+
+---
+
+## Research Log
+
+This README was verified against the following source files on 2026-02-06:
+
+| File | Verified |
+|------|----------|
+| `package.json` | Name, version (1.0.4), all scripts, dependencies, devDependencies |
+| `LICENSE` | AGPL-3.0 (note: package.json `license` field incorrectly states "MIT") |
+| `electron-builder.yml` | appId, productName, all platform targets and output formats |
+| `electron.vite.config.ts` | Build configuration, path aliases (@shared, @) |
+| `vitest.config.ts` | Test configuration |
+| `src/shared/types/index.ts` | All interfaces, defaults, type unions |
+| `src/shared/constants/ipc.ts` | All 16 IPC channel names |
+| `src/main/index.ts` | Lifecycle, single instance, global shortcuts, error handlers |
+| `src/main/window.ts` | BrowserWindow config (800x600, sandbox, contextIsolation) |
+| `src/main/store.ts` | electron-store name, schema, all accessors |
+| `src/main/tray.ts` | Icon paths, context menu structure, double-click behavior |
+| `src/main/ipc/launchHandlers.ts` | Platform switch, .desktop parsing, URL handling, tokenizer |
+| `src/main/ipc/storeHandlers.ts` | Validation functions, import/export, tray update |
+| `src/preload/index.ts` | Full electronAPI shape, all method signatures |
+| `src/renderer/src/App.tsx` | Shell resolution, theme, quick search IPC, welcome dialog |
+| `src/renderer/src/shells/registry.ts` | Two registered shells (win31, win95) |
+| `src/renderer/src/shells/Win31Shell.tsx` | Menu bar, MDI, keyboard shortcuts |
+| `src/renderer/src/shells/win95/Win95Shell.tsx` | Taskbar, Start menu, desktop |
+| `src/renderer/src/components/Menu/MenuBar.tsx` | File/Options/Window/Help menus, all actions |
+| `src/renderer/src/components/QuickSearch/QuickSearchOverlay.tsx` | Relevance ranking, max 10 results |
+| `src/renderer/src/components/Dialogs/SettingsDialog.tsx` | All 10 settings fields verified |
+| `src/renderer/src/components/Dialogs/WelcomeDialog.tsx` | First-run onboarding content |
+| `src/renderer/src/store/programStore.ts` | All actions, debounced save (300ms) |
+| `src/renderer/src/store/uiStore.ts` | 10 dialog types, menu/selection/quicksearch state |
+| `src/renderer/src/utils/icons.ts` | 82 entries in BUILTIN_ICONS array, getIconSrc resolver |
+| `src/renderer/src/utils/sounds.ts` | 7 sound functions, Web Audio oscillator-based |
+| `src/renderer/src/utils/launchGroups.ts` | Options 0--8 |
+| `.github/workflows/build-linux.yml` | x64+arm64, ubuntu-24.04, deb/rpm/tar.gz |
+| `.github/workflows/build-windows.yml` | x64+arm64, windows-latest, NSIS .exe |
