@@ -19,10 +19,14 @@ jobs:
         include:
           - arch: x64
             runner: ubuntu-24.04
-            targets: deb rpm AppImage tar.gz
+            targets: deb AppImage tar.gz
+            rpm_arch: x86_64
+            unpack_dir: linux-unpacked
           - arch: arm64
             runner: ubuntu-24.04-arm
-            targets: deb rpm AppImage tar.gz
+            targets: deb AppImage tar.gz
+            rpm_arch: aarch64
+            unpack_dir: linux-arm64-unpacked
 
     steps:
       - name: Checkout code
@@ -50,10 +54,46 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Build and package
+      - name: Build and package (deb, AppImage, tar.gz)
         run: |
           npm run build
           npx electron-builder --linux ${{ matrix.targets }} --${{ matrix.arch }} --publish never
+
+      - name: Build RPM package
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          DESCRIPTION=$(node -p "require('./package.json').description")
+
+          # Use electron-builder's bundled fpm with properly quoted arguments
+          # electron-builder 26.7.0 has a bug where it doesn't quote multi-word
+          # strings passed to fpm, causing rpmbuild to fail
+          FPM=$(find ~/.cache/electron-builder/fpm* -name fpm -type f 2>/dev/null | head -1)
+          if [ -z "$FPM" ]; then
+            echo "fpm not found in electron-builder cache, downloading..."
+            npx electron-builder --linux rpm --${{ matrix.arch }} --publish never || true
+            FPM=$(find ~/.cache/electron-builder/fpm* -name fpm -type f 2>/dev/null | head -1)
+          fi
+
+          "$FPM" \
+            -s dir \
+            --force \
+            -t rpm \
+            --name "program-manager" \
+            --version "$VERSION" \
+            --architecture "${{ matrix.rpm_arch }}" \
+            --description "$DESCRIPTION" \
+            --url "https://github.com/goshitsarch-eng/Gosh-Retro-Launcher" \
+            --license "AGPL-3.0-only" \
+            --rpm-summary "Windows 3.1 Program Manager clone" \
+            --rpm-os linux \
+            -d gtk3 \
+            -d libnotify \
+            -d nss \
+            -d libXScrnSaver \
+            -d xdg-utils \
+            -d at-spi2-core \
+            -p "dist/program-manager-${VERSION}.${{ matrix.rpm_arch }}.rpm" \
+            "dist/${{ matrix.unpack_dir }}/=/opt/program-manager"
 
       - name: Upload Debian package
         uses: actions/upload-artifact@v4
