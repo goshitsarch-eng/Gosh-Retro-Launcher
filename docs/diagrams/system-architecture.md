@@ -62,7 +62,7 @@ graph TB
         subgraph "Components"
             MDI["MDI/<br/>MDIContainer, MDIWindow, MDIWindowControls"]
             Menu["Menu/<br/>MenuBar, Menu, MenuItem, MenuSeparator"]
-            Dialogs["Dialogs/<br/>DialogManager + 9 dialog components"]
+            Dialogs["Dialogs/<br/>DialogManager + 10 dialog components"]
             QuickSearch["QuickSearch/<br/>QuickSearchOverlay"]
             Items["Items/<br/>ItemGrid, ProgramItem"]
             Common["Common/<br/>Button, Checkbox, Icon, TextInput"]
@@ -89,7 +89,7 @@ graph TB
 
     subgraph "Shared (src/shared/)"
         Types["types/index.ts<br/>ProgramItem, ProgramGroup,<br/>AppSettings, StoreData, etc."]
-        IpcConst["constants/ipc.ts<br/>IPC_CHANNELS (17 channels)"]
+        IpcConst["constants/ipc.ts<br/>IPC_CHANNELS (20 channels)"]
     end
 
     Preload -->|"ipcRenderer.invoke()"| MainEntry

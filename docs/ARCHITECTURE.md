@@ -154,7 +154,7 @@ Schema:
 }
 ```
 
-Exposes six functions: `initStore`, `getGroups`, `setGroups`, `getSettings`, `setSettings`, `getAllData`, `setAllData`, `clearStore`.
+Exposes eight functions: `initStore`, `getGroups`, `setGroups`, `getSettings`, `setSettings`, `getAllData`, `setAllData`, `clearStore`.
 
 #### System Tray (`src/main/tray.ts`)
 
@@ -508,7 +508,7 @@ Every claim in this document was verified by reading actual source code. No info
 
 | File | Lines | What Was Verified |
 |---|---|---|
-| `src/main/index.ts` | 1-102 | Startup sequence order (5 steps), single instance lock, global shortcut (Ctrl/Cmd+Shift+Space), lifecycle events (activate, window-all-closed, before-quit, will-quit), error handlers |
+| `src/main/index.ts` | 1-102 | Startup sequence order (6 steps), single instance lock, global shortcut (Ctrl/Cmd+Shift+Space), lifecycle events (activate, window-all-closed, before-quit, will-quit), error handlers |
 | `src/main/window.ts` | 1-110 | BrowserWindow config (800x600, 400x300 min, teal background), security settings (contextIsolation, nodeIntegration, sandbox), tray-on-close behavior, external link protocol validation, dev mode loading |
 | `src/main/store.ts` | 1-64 | electron-store usage, file name `program-manager-data`, schema (groups + settings), all 8 exported functions |
 | `src/main/tray.ts` | 1-117 | Platform-specific icons (mac template, win ico, linux png), fallback base64 icon, context menu structure, double-click behavior, updateTrayMenu/destroyTray |

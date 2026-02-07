@@ -135,7 +135,7 @@ src/
 |       |   +-- mdiStore.ts            # Window z-order, open/close/focus/tile/cascade
 |       |   +-- uiStore.ts            # Menus, dialogs, quick search, selection
 |       +-- utils/
-|       |   +-- icons.ts               # 82 built-in icon data URLs, getIconSrc()
+|       |   +-- icons.ts               # 80 built-in icon data URLs, getIconSrc()
 |       |   +-- launchGroups.ts        # Launch group options (0--8)
 |       |   +-- sounds.ts             # Web Audio oscillator sound effects
 |       |   +-- __tests__/            # Unit tests for icons utility
@@ -143,7 +143,7 @@ src/
 |           +-- electron.d.ts          # Window.electronAPI type declaration
 +-- shared/                # Shared across all processes
     +-- types/index.ts         # ProgramItem, ProgramGroup, AppSettings, StoreData, etc.
-    +-- constants/ipc.ts       # IPC channel name constants (16 channels)
+    +-- constants/ipc.ts       # IPC channel name constants (20 channels)
 ```
 
 ## Data Model
@@ -280,7 +280,7 @@ This README was verified against the following source files on 2026-02-06:
 | `electron.vite.config.ts` | Build configuration, path aliases (@shared, @) |
 | `vitest.config.ts` | Test configuration |
 | `src/shared/types/index.ts` | All interfaces, defaults, type unions |
-| `src/shared/constants/ipc.ts` | All 16 IPC channel names |
+| `src/shared/constants/ipc.ts` | All 20 IPC channel names |
 | `src/main/index.ts` | Lifecycle, single instance, global shortcuts, error handlers |
 | `src/main/window.ts` | BrowserWindow config (800x600, sandbox, contextIsolation) |
 | `src/main/store.ts` | electron-store name, schema, all accessors |
@@ -298,7 +298,7 @@ This README was verified against the following source files on 2026-02-06:
 | `src/renderer/src/components/Dialogs/WelcomeDialog.tsx` | First-run onboarding content |
 | `src/renderer/src/store/programStore.ts` | All actions, debounced save (300ms) |
 | `src/renderer/src/store/uiStore.ts` | 10 dialog types, menu/selection/quicksearch state |
-| `src/renderer/src/utils/icons.ts` | 82 entries in BUILTIN_ICONS array, getIconSrc resolver |
+| `src/renderer/src/utils/icons.ts` | 80 entries in BUILTIN_ICONS array, getIconSrc resolver |
 | `src/renderer/src/utils/sounds.ts` | 7 sound functions, Web Audio oscillator-based |
 | `src/renderer/src/utils/launchGroups.ts` | Options 0--8 |
 | `.github/workflows/build-linux.yml` | x64+arm64, ubuntu-24.04, deb/rpm/tar.gz |
