@@ -24,22 +24,41 @@ export const QuickSearchOverlay: React.FC = () => {
     inputRef.current?.focus()
   }, [])
 
-  // Filter results based on query
+  // Filter results based on query with relevance ranking
   const results = useMemo<SearchResult[]>(() => {
     if (!query.trim()) return []
 
     const searchTerm = query.toLowerCase()
-    const matches: SearchResult[] = []
+    const scored: Array<SearchResult & { score: number }> = []
 
     for (const group of groups) {
+      const groupNameLower = group.name.toLowerCase()
       for (const item of group.items) {
-        if (item.name.toLowerCase().includes(searchTerm)) {
-          matches.push({ item, group })
+        const nameLower = item.name.toLowerCase()
+        const pathLower = item.path.toLowerCase()
+
+        let score = 0
+        // Name prefix match (highest priority)
+        if (nameLower.startsWith(searchTerm)) {
+          score = 3
+        // Name substring match
+        } else if (nameLower.includes(searchTerm)) {
+          score = 2
+        // Path or group name match
+        } else if (pathLower.includes(searchTerm) || groupNameLower.includes(searchTerm)) {
+          score = 1
+        }
+
+        if (score > 0) {
+          scored.push({ item, group, score })
         }
       }
     }
 
-    return matches
+    // Sort by score descending, then alphabetically by name
+    scored.sort((a, b) => b.score - a.score || a.item.name.localeCompare(b.item.name))
+
+    return scored
   }, [query, groups])
 
   const MAX_RESULTS = 10
@@ -133,7 +152,7 @@ export const QuickSearchOverlay: React.FC = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type to search programs..."
+            placeholder="Search programs... (Esc to close)"
             style={{ marginBottom: 8 }}
           />
 

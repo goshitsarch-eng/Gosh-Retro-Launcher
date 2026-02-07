@@ -11,6 +11,7 @@ type DialogType =
   | 'settings'
   | 'about'
   | 'confirm'
+  | 'welcome'
   | null
 
 interface ConfirmDialogOptions {

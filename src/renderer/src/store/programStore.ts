@@ -4,6 +4,23 @@ import type { ProgramGroup, ProgramItem, AppSettings, WindowState } from '@share
 import { DEFAULT_SETTINGS, DEFAULT_WINDOW_STATE } from '@shared/types'
 
 let saveGroupsTimer: ReturnType<typeof setTimeout> | null = null
+let saveSettingsTimer: ReturnType<typeof setTimeout> | null = null
+
+function debouncedSaveGroups(saveGroups: () => Promise<void>): void {
+  if (saveGroupsTimer) clearTimeout(saveGroupsTimer)
+  saveGroupsTimer = setTimeout(() => {
+    saveGroupsTimer = null
+    saveGroups()
+  }, 300)
+}
+
+function debouncedSaveSettings(saveSettings: () => Promise<void>): void {
+  if (saveSettingsTimer) clearTimeout(saveSettingsTimer)
+  saveSettingsTimer = setTimeout(() => {
+    saveSettingsTimer = null
+    saveSettings()
+  }, 300)
+}
 
 interface ProgramState {
   groups: ProgramGroup[]
@@ -78,7 +95,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
     }
 
     set({ groups: [...groups, newGroup] })
-    saveGroups()
+    debouncedSaveGroups(saveGroups)
     return newGroup.id
   },
 
@@ -87,13 +104,13 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
     set({
       groups: groups.map((g) => (g.id === id ? { ...g, ...updates } : g))
     })
-    saveGroups()
+    debouncedSaveGroups(saveGroups)
   },
 
   deleteGroup: (id: string) => {
     const { groups, saveGroups } = get()
     set({ groups: groups.filter((g) => g.id !== id) })
-    saveGroups()
+    debouncedSaveGroups(saveGroups)
   },
 
   updateGroupWindowState: (id: string, windowState: Partial<WindowState>) => {
@@ -104,11 +121,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
       )
     })
     if (settings.saveSettingsOnExit) {
-      if (saveGroupsTimer) clearTimeout(saveGroupsTimer)
-      saveGroupsTimer = setTimeout(() => {
-        saveGroupsTimer = null
-        saveGroups()
-      }, 500)
+      debouncedSaveGroups(saveGroups)
     }
   },
 
@@ -125,7 +138,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
         g.id === groupId ? { ...g, items: [...g.items, newItem] } : g
       )
     })
-    saveGroups()
+    debouncedSaveGroups(saveGroups)
   },
 
   updateItem: (groupId: string, itemId: string, updates: Partial<ProgramItem>) => {
@@ -140,7 +153,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
           : g
       )
     })
-    saveGroups()
+    debouncedSaveGroups(saveGroups)
   },
 
   deleteItem: (groupId: string, itemId: string) => {
@@ -150,7 +163,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
         g.id === groupId ? { ...g, items: g.items.filter((i) => i.id !== itemId) } : g
       )
     })
-    saveGroups()
+    debouncedSaveGroups(saveGroups)
   },
 
   moveItem: (fromGroupId: string, toGroupId: string, itemId: string) => {
@@ -171,13 +184,13 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
         return g
       })
     })
-    saveGroups()
+    debouncedSaveGroups(saveGroups)
   },
 
   // Settings actions
   updateSettings: (updates: Partial<AppSettings>) => {
     const { settings, saveSettings } = get()
     set({ settings: { ...settings, ...updates } })
-    saveSettings()
+    debouncedSaveSettings(saveSettings)
   }
 }))

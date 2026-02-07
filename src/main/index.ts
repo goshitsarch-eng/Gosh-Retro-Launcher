@@ -4,6 +4,14 @@ import { registerIpcHandlers } from './ipc'
 import { createTray } from './tray'
 import { initStore } from './store'
 
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception:', error)
+})
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled rejection:', reason)
+})
+
 function registerGlobalShortcuts(): void {
   // Register Quick Search shortcut
   const accelerator = process.platform === 'darwin'

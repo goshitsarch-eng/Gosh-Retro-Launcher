@@ -53,7 +53,7 @@ export const MDIWindow: React.FC<MDIWindowProps> = ({
 
   const {
     position: dragPosition,
-    handleMouseDown: handleDragMouseDown
+    handlePointerDown: handleDragPointerDown
   } = useDraggable({
     initialPosition: { x: windowState.x, y: windowState.y },
     containerRef,
@@ -65,7 +65,7 @@ export const MDIWindow: React.FC<MDIWindowProps> = ({
   const {
     size: resizeSize,
     position: resizePosition,
-    handleResizeMouseDown
+    handleResizePointerDown
   } = useResizable({
     initialSize: { width: windowState.width, height: windowState.height },
     initialPosition: { x: windowState.x, y: windowState.y },
@@ -123,7 +123,7 @@ export const MDIWindow: React.FC<MDIWindowProps> = ({
       {/* Title bar */}
       <div
         className="win31-titlebar"
-        onMouseDown={windowState.maximized ? undefined : handleDragMouseDown}
+        onPointerDown={windowState.maximized ? undefined : handleDragPointerDown}
         onContextMenu={handleTitleBarContextMenu}
       >
         <span className="win31-titlebar-text">{group.name}</span>
@@ -137,7 +137,7 @@ export const MDIWindow: React.FC<MDIWindowProps> = ({
 
       {/* Content area */}
       <div className="win31-window-body">
-        <ItemGrid groupId={group.id} items={group.items} />
+        <ItemGrid groupId={group.id} groupName={group.name} items={group.items} />
       </div>
 
       {/* Resize handles (only when not maximized) */}
@@ -145,35 +145,35 @@ export const MDIWindow: React.FC<MDIWindowProps> = ({
         <>
           <div
             className="resize-handle resize-handle-n"
-            onMouseDown={(e) => handleResizeMouseDown(e, 'n')}
+            onPointerDown={(e) => handleResizePointerDown(e, 'n')}
           />
           <div
             className="resize-handle resize-handle-s"
-            onMouseDown={(e) => handleResizeMouseDown(e, 's')}
+            onPointerDown={(e) => handleResizePointerDown(e, 's')}
           />
           <div
             className="resize-handle resize-handle-w"
-            onMouseDown={(e) => handleResizeMouseDown(e, 'w')}
+            onPointerDown={(e) => handleResizePointerDown(e, 'w')}
           />
           <div
             className="resize-handle resize-handle-e"
-            onMouseDown={(e) => handleResizeMouseDown(e, 'e')}
+            onPointerDown={(e) => handleResizePointerDown(e, 'e')}
           />
           <div
             className="resize-handle resize-handle-nw"
-            onMouseDown={(e) => handleResizeMouseDown(e, 'nw')}
+            onPointerDown={(e) => handleResizePointerDown(e, 'nw')}
           />
           <div
             className="resize-handle resize-handle-ne"
-            onMouseDown={(e) => handleResizeMouseDown(e, 'ne')}
+            onPointerDown={(e) => handleResizePointerDown(e, 'ne')}
           />
           <div
             className="resize-handle resize-handle-sw"
-            onMouseDown={(e) => handleResizeMouseDown(e, 'sw')}
+            onPointerDown={(e) => handleResizePointerDown(e, 'sw')}
           />
           <div
             className="resize-handle resize-handle-se"
-            onMouseDown={(e) => handleResizeMouseDown(e, 'se')}
+            onPointerDown={(e) => handleResizePointerDown(e, 'se')}
           />
         </>
       )}

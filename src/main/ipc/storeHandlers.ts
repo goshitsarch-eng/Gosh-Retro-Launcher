@@ -13,7 +13,7 @@ import { getMainWindow } from '../window'
 import { updateTrayMenu } from '../tray'
 import type { ProgramGroup, ProgramItem, AppSettings, StoreData } from '@shared/types'
 
-function isValidItem(item: unknown): item is ProgramItem {
+export function isValidItem(item: unknown): item is ProgramItem {
   if (typeof item !== 'object' || item === null) return false
   const obj = item as Record<string, unknown>
   return (
@@ -24,7 +24,7 @@ function isValidItem(item: unknown): item is ProgramItem {
   )
 }
 
-function isValidGroup(group: unknown): group is ProgramGroup {
+export function isValidGroup(group: unknown): group is ProgramGroup {
   if (typeof group !== 'object' || group === null) return false
   const obj = group as Record<string, unknown>
   return (
@@ -35,6 +35,28 @@ function isValidGroup(group: unknown): group is ProgramGroup {
     obj.windowState !== null &&
     Array.isArray(obj.items) &&
     obj.items.every(isValidItem)
+  )
+}
+
+const VALID_THEMES = ['light', 'dark']
+const VALID_LABEL_DISPLAYS = ['wrap', 'ellipsis']
+
+export function isValidSettings(settings: unknown): settings is AppSettings {
+  if (typeof settings !== 'object' || settings === null) return false
+  const obj = settings as Record<string, unknown>
+  return (
+    typeof obj.autoArrange === 'boolean' &&
+    typeof obj.minimizeOnUse === 'boolean' &&
+    typeof obj.saveSettingsOnExit === 'boolean' &&
+    typeof obj.launchDelay === 'number' &&
+    obj.launchDelay >= 0 &&
+    typeof obj.trayOnClose === 'boolean' &&
+    typeof obj.groupChromeScale === 'number' &&
+    obj.groupChromeScale > 0 &&
+    typeof obj.theme === 'string' &&
+    VALID_THEMES.includes(obj.theme) &&
+    typeof obj.labelDisplay === 'string' &&
+    VALID_LABEL_DISPLAYS.includes(obj.labelDisplay)
   )
 }
 
@@ -61,10 +83,10 @@ export function registerStoreHandlers(): void {
         break
       }
       case 'settings': {
-        if (typeof value !== 'object' || value === null) {
+        if (!isValidSettings(value)) {
           throw new Error('Invalid settings data')
         }
-        setSettings(value as AppSettings)
+        setSettings(value)
         break
       }
     }
@@ -117,7 +139,7 @@ export function registerStoreHandlers(): void {
       const data = JSON.parse(content) as StoreData
 
       // Validate structure
-      if (!Array.isArray(data.groups) || typeof data.settings !== 'object' || data.settings === null) {
+      if (!Array.isArray(data.groups) || !isValidSettings(data.settings)) {
         return { success: false, error: 'Invalid file format' }
       }
 

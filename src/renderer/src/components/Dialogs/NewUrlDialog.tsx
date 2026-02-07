@@ -69,7 +69,6 @@ export const NewUrlDialog: React.FC = () => {
         path: normalizedUrl,
         icon: 'web',
         workingDir: '',
-        shortcutKey: '',
         launchGroup
       })
 

@@ -17,7 +17,7 @@ export const MDIContainer: React.FC = () => {
   const [contextMenu, setContextMenu] = useState<{
     x: number
     y: number
-    group: ProgramGroup
+    group: ProgramGroup | null
   } | null>(null)
   const openedGroupIds = useRef<Set<string>>(new Set())
 
@@ -192,6 +192,13 @@ export const MDIContainer: React.FC = () => {
           setContextMenu(null)
         }
       }}
+      onContextMenu={(event) => {
+        // Show desktop context menu when clicking the container background
+        if (event.target === containerRef.current) {
+          event.preventDefault()
+          setContextMenu({ x: event.clientX, y: event.clientY, group: null })
+        }
+      }}
     >
       {/* Visible windows */}
       {visibleGroups.map((group) => (
@@ -234,7 +241,7 @@ export const MDIContainer: React.FC = () => {
           ))}
         </div>
       )}
-      {contextMenu && (
+      {contextMenu && contextMenu.group && (
         <div
           ref={contextMenuRef}
           className="win31-context-menu"
@@ -245,7 +252,7 @@ export const MDIContainer: React.FC = () => {
           <div
             className="win31-menu-item"
             onClick={() => {
-              restoreGroup(contextMenu.group)
+              restoreGroup(contextMenu.group!)
               setContextMenu(null)
             }}
           >
@@ -255,7 +262,7 @@ export const MDIContainer: React.FC = () => {
           <div
             className="win31-menu-item"
             onClick={() => {
-              openDialog('renameGroup', { group: contextMenu.group })
+              openDialog('renameGroup', { group: contextMenu.group! })
               setContextMenu(null)
             }}
           >
@@ -265,7 +272,7 @@ export const MDIContainer: React.FC = () => {
             className="win31-menu-item"
             onClick={() => {
               openDialog('groupProperties', {
-                group: contextMenu.group,
+                group: contextMenu.group!,
                 showIconPicker: true
               })
               setContextMenu(null)
@@ -276,7 +283,7 @@ export const MDIContainer: React.FC = () => {
           <div
             className="win31-menu-item"
             onClick={() => {
-              openDialog('groupProperties', { group: contextMenu.group })
+              openDialog('groupProperties', { group: contextMenu.group! })
               setContextMenu(null)
             }}
           >
@@ -286,11 +293,49 @@ export const MDIContainer: React.FC = () => {
           <div
             className="win31-menu-item"
             onClick={() => {
-              confirmDeleteGroup(contextMenu.group)
+              confirmDeleteGroup(contextMenu.group!)
               setContextMenu(null)
             }}
           >
             Delete
+          </div>
+        </div>
+      )}
+      {contextMenu && !contextMenu.group && (
+        <div
+          ref={contextMenuRef}
+          className="win31-context-menu"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onClick={(event) => event.stopPropagation()}
+          onContextMenu={(event) => event.preventDefault()}
+        >
+          <div
+            className="win31-menu-item"
+            onClick={() => {
+              openDialog('newGroup')
+              setContextMenu(null)
+            }}
+          >
+            New Group...
+          </div>
+          <div className="win31-menu-separator" />
+          <div
+            className="win31-menu-item"
+            onClick={() => {
+              window.dispatchEvent(new Event('mdi-cascade'))
+              setContextMenu(null)
+            }}
+          >
+            Cascade
+          </div>
+          <div
+            className="win31-menu-item"
+            onClick={() => {
+              window.dispatchEvent(new Event('mdi-tile'))
+              setContextMenu(null)
+            }}
+          >
+            Tile
           </div>
         </div>
       )}

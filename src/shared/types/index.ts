@@ -6,7 +6,6 @@ export interface ProgramItem {
   path: string
   icon: string
   workingDir: string
-  shortcutKey: string
   launchGroup?: number
 }
 

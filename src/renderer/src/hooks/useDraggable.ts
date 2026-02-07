@@ -34,12 +34,13 @@ export function useDraggable({
     positionRef.current = initialPosition
   }, [initialPosition.x, initialPosition.y])
 
-  const handleMouseDown = useCallback(
-    (event: React.MouseEvent) => {
+  const handlePointerDown = useCallback(
+    (event: React.PointerEvent) => {
       // Only start drag on left mouse button
       if (event.button !== 0) return
 
       event.preventDefault()
+      ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
       setIsDragging(true)
       dragStartPos.current = { x: event.clientX, y: event.clientY }
       elementStartPos.current = { ...positionRef.current }
@@ -58,7 +59,7 @@ export function useDraggable({
   useEffect(() => {
     if (!isDragging) return
 
-    const handleMouseMove = (event: MouseEvent) => {
+    const handlePointerMove = (event: PointerEvent) => {
       const dx = event.clientX - dragStartPos.current.x
       const dy = event.clientY - dragStartPos.current.y
 
@@ -96,7 +97,7 @@ export function useDraggable({
       }
     }
 
-    const handleMouseUp = () => {
+    const handlePointerUp = () => {
       setIsDragging(false)
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current)
@@ -117,12 +118,12 @@ export function useDraggable({
       onDragEnd?.(finalPosition)
     }
 
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
+    document.addEventListener('pointermove', handlePointerMove)
+    document.addEventListener('pointerup', handlePointerUp)
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
+      document.removeEventListener('pointermove', handlePointerMove)
+      document.removeEventListener('pointerup', handlePointerUp)
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current)
         frameRef.current = null
@@ -133,7 +134,7 @@ export function useDraggable({
   return {
     position,
     isDragging,
-    handleMouseDown,
+    handlePointerDown,
     setPosition
   }
 }

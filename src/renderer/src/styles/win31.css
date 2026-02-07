@@ -388,3 +388,26 @@ body {
 ::-webkit-scrollbar-corner {
   background: var(--bevel-face);
 }
+
+/* Quick Search shortcut hint */
+.shortcut-hint {
+  position: fixed;
+  bottom: 8px;
+  right: 12px;
+  font-size: 11px;
+  color: var(--text-primary);
+  opacity: 0.45;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Keyboard-accessible program items */
+.win31-program-item:focus {
+  outline: 1px dotted var(--text-primary);
+  outline-offset: 2px;
+}
+
+.win31-program-item:focus-visible {
+  outline: 1px dotted var(--text-primary);
+  outline-offset: 2px;
+}

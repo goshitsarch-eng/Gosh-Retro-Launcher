@@ -7,8 +7,12 @@ import { useProgramStore } from '@/store/programStore'
 import { useMDIStore } from '@/store/mdiStore'
 import type { ProgramItem } from '@shared/types'
 
-export const MenuBar: React.FC = () => {
-  const { activeMenu, setActiveMenu, openDialog } = useUIStore()
+interface MenuBarProps {
+  platform?: string
+}
+
+export const MenuBar: React.FC<MenuBarProps> = ({ platform = 'linux' }) => {
+  const { activeMenu, setActiveMenu, openDialog, openQuickSearch } = useUIStore()
   const { groups, settings, updateSettings } = useProgramStore()
   const {
     cascadeWindows,
@@ -180,6 +184,11 @@ export const MenuBar: React.FC = () => {
     closeMenu()
   }, [openDialog, closeMenu])
 
+  const handleQuickSearch = useCallback(() => {
+    openQuickSearch()
+    closeMenu()
+  }, [openQuickSearch, closeMenu])
+
   return (
     <div className="win31-menubar">
       {/* File Menu */}
@@ -286,6 +295,12 @@ export const MenuBar: React.FC = () => {
         onClick={() => handleMenuClick('Help')}
         onHover={() => handleMenuHover('Help')}
       >
+        <MenuItem
+          label="Quick Search..."
+          shortcut={platform === 'darwin' ? 'Cmd+Shift+Space' : 'Ctrl+Shift+Space'}
+          onClick={handleQuickSearch}
+        />
+        <MenuSeparator />
         <MenuItem
           label="About Program Manager..."
           onClick={handleAbout}

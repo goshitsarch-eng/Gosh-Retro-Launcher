@@ -26,10 +26,10 @@ export const ItemPropertiesDialog: React.FC = () => {
   const [name, setName] = useState(existingItem?.name || '')
   const [path, setPath] = useState(existingItem?.path || '')
   const [workingDir, setWorkingDir] = useState(existingItem?.workingDir || '')
-  const [shortcutKey, setShortcutKey] = useState(existingItem?.shortcutKey || '')
   const [icon, setIcon] = useState(existingItem?.icon || 'default')
   const [launchGroup, setLaunchGroup] = useState(existingItem?.launchGroup ?? 0)
   const [showIconPicker, setShowIconPicker] = useState(false)
+  const [iconSearch, setIconSearch] = useState('')
 
   useEffect(() => {
     if (!selectedGroupId && resolvedGroupId) {
@@ -80,7 +80,6 @@ export const ItemPropertiesDialog: React.FC = () => {
           name: name.trim(),
           path: path.trim(),
           workingDir: workingDir.trim(),
-          shortcutKey: shortcutKey.trim(),
           icon,
           launchGroup
         })
@@ -92,7 +91,6 @@ export const ItemPropertiesDialog: React.FC = () => {
           name: name.trim(),
           path: path.trim(),
           workingDir: workingDir.trim(),
-          shortcutKey: shortcutKey.trim(),
           icon,
           launchGroup
         })
@@ -103,7 +101,6 @@ export const ItemPropertiesDialog: React.FC = () => {
       name,
       path,
       workingDir,
-      shortcutKey,
       icon,
       launchGroup,
       selectedGroupId,
@@ -181,17 +178,6 @@ export const ItemPropertiesDialog: React.FC = () => {
         </div>
 
         <div className="win31-form-row">
-          <label htmlFor="item-shortcut">Shortcut Key:</label>
-          <TextInput
-            id="item-shortcut"
-            value={shortcutKey}
-            onChange={(e) => setShortcutKey(e.target.value)}
-            placeholder="e.g., Ctrl+Alt+F"
-            style={{ width: 150 }}
-          />
-        </div>
-
-        <div className="win31-form-row">
           <label htmlFor="item-launch-group">Launch Group:</label>
           <select
             id="item-launch-group"
@@ -225,6 +211,13 @@ export const ItemPropertiesDialog: React.FC = () => {
         </div>
 
         {showIconPicker && (
+          <div style={{ marginBottom: 10 }}>
+            <TextInput
+              value={iconSearch}
+              onChange={(e) => setIconSearch(e.target.value)}
+              placeholder="Filter icons..."
+              style={{ marginBottom: 4 }}
+            />
           <div
             style={{
               display: 'grid',
@@ -233,12 +226,13 @@ export const ItemPropertiesDialog: React.FC = () => {
               padding: 8,
               background: 'var(--win31-white)',
               border: '2px inset var(--bevel-dark)',
-              marginBottom: 10,
               maxHeight: 200,
               overflowY: 'auto'
             }}
           >
-            {BUILTIN_ICONS.map((iconOption) => (
+            {BUILTIN_ICONS.filter((i) =>
+              !iconSearch || i.name.toLowerCase().includes(iconSearch.toLowerCase())
+            ).map((iconOption) => (
               <div
                 key={iconOption.id}
                 onClick={() => setIcon(iconOption.id)}
@@ -263,6 +257,7 @@ export const ItemPropertiesDialog: React.FC = () => {
                 />
               </div>
             ))}
+          </div>
           </div>
         )}
 

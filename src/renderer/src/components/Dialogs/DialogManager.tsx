@@ -8,6 +8,7 @@ import { NewUrlDialog } from './NewUrlDialog'
 import { SettingsDialog } from './SettingsDialog'
 import { AboutDialog } from './AboutDialog'
 import { ConfirmDialog } from './ConfirmDialog'
+import { WelcomeDialog } from './WelcomeDialog'
 
 export const DialogManager: React.FC = () => {
   const activeDialog = useUIStore((state) => state.activeDialog)
@@ -30,6 +31,8 @@ export const DialogManager: React.FC = () => {
       return <AboutDialog />
     case 'confirm':
       return <ConfirmDialog />
+    case 'welcome':
+      return <WelcomeDialog />
     default:
       return null
   }

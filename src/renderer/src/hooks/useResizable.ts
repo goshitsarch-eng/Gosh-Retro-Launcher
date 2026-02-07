@@ -54,12 +54,13 @@ export function useResizable({
     positionRef.current = initialPosition
   }, [initialPosition.x, initialPosition.y])
 
-  const handleResizeMouseDown = useCallback(
-    (event: React.MouseEvent, direction: ResizeDirection) => {
+  const handleResizePointerDown = useCallback(
+    (event: React.PointerEvent, direction: ResizeDirection) => {
       if (event.button !== 0) return
 
       event.preventDefault()
       event.stopPropagation()
+      ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
       setIsResizing(true)
       resizeDirection.current = direction
       startPos.current = { x: event.clientX, y: event.clientY }
@@ -77,7 +78,7 @@ export function useResizable({
   useEffect(() => {
     if (!isResizing || !resizeDirection.current) return
 
-    const handleMouseMove = (event: MouseEvent) => {
+    const handlePointerMove = (event: PointerEvent) => {
       const dx = event.clientX - startPos.current.x
       const dy = event.clientY - startPos.current.y
       const dir = resizeDirection.current!
@@ -142,7 +143,7 @@ export function useResizable({
       }
     }
 
-    const handleMouseUp = () => {
+    const handlePointerUp = () => {
       setIsResizing(false)
       resizeDirection.current = null
       if (frameRef.current !== null) {
@@ -166,12 +167,12 @@ export function useResizable({
       onResizeEnd?.(finalSize, finalPosition)
     }
 
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
+    document.addEventListener('pointermove', handlePointerMove)
+    document.addEventListener('pointerup', handlePointerUp)
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
+      document.removeEventListener('pointermove', handlePointerMove)
+      document.removeEventListener('pointerup', handlePointerUp)
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current)
         frameRef.current = null
@@ -183,7 +184,7 @@ export function useResizable({
     size,
     position,
     isResizing,
-    handleResizeMouseDown,
+    handleResizePointerDown,
     setSize,
     setPosition
   }

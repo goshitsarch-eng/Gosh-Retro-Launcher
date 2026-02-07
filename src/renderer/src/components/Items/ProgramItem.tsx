@@ -19,10 +19,11 @@ export const ProgramItem: React.FC<ProgramItemProps> = ({
   onSelect
 }) => {
   const settings = useProgramStore((state) => state.settings)
+  const deleteItem = useProgramStore((state) => state.deleteItem)
   const openDialog = useUIStore((state) => state.openDialog)
 
   // Handle double-click to launch
-  const handleDoubleClick = useCallback(async () => {
+  const handleLaunch = useCallback(async () => {
     try {
       const result = await window.electronAPI.program.launch(item)
       if (!result.success) {
@@ -48,15 +49,46 @@ export const ProgramItem: React.FC<ProgramItemProps> = ({
     [groupId, item, onSelect, openDialog]
   )
 
+  // Handle keyboard interaction
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        handleLaunch()
+      } else if (event.key === 'Delete') {
+        event.preventDefault()
+        openDialog('confirm', {
+          confirmOptions: {
+            title: 'Delete Program Item',
+            message: `Are you sure you want to delete "${item.name}"?`,
+            onConfirm: () => deleteItem(groupId, item.id)
+          }
+        })
+      }
+    },
+    [handleLaunch, openDialog, deleteItem, groupId, item]
+  )
+
+  // Select on focus (keyboard navigation)
+  const handleFocus = useCallback(() => {
+    onSelect()
+  }, [onSelect])
+
   // Get icon path using helper that provides embedded fallbacks
   const iconSrc = getIconSrc(item.icon)
 
   return (
     <div
       className={`win31-program-item ${isSelected ? 'selected' : ''}`}
+      tabIndex={0}
+      role="option"
+      aria-selected={isSelected}
+      aria-label={item.name}
       onClick={onSelect}
-      onDoubleClick={handleDoubleClick}
+      onDoubleClick={handleLaunch}
       onContextMenu={handleContextMenu}
+      onKeyDown={handleKeyDown}
+      onFocus={handleFocus}
     >
       <Icon src={iconSrc} alt={item.name} />
       <span className={`label label-${settings.labelDisplay || 'wrap'}`}>{item.name}</span>

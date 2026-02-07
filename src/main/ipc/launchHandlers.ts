@@ -5,7 +5,7 @@ import { IPC_CHANNELS } from '@shared/constants/ipc'
 import type { ProgramItem } from '@shared/types'
 
 // Tokenize a shell-like command string, respecting quotes
-function tokenizeCommand(cmd: string): string[] {
+export function tokenizeCommand(cmd: string): string[] {
   const tokens: string[] = []
   let current = ''
   let inSingle = false
@@ -50,7 +50,7 @@ function tokenizeCommand(cmd: string): string[] {
 }
 
 // Validate that an exec path looks safe (no shell metacharacters in command name)
-function isValidExecPath(execPath: string): boolean {
+export function isValidExecPath(execPath: string): boolean {
   // Reject if empty or contains shell operators
   if (!execPath) return false
   // Only validate the command itself (first token) - reject shell metacharacters
