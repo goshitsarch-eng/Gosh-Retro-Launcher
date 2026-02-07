@@ -1,6 +1,6 @@
 appId: com.programmanager.app
 productName: Program Manager
-copyright: Copyright © 2024
+copyright: Copyright © 2025
 
 directories:
   output: dist
@@ -66,7 +66,7 @@ dmg:
 linux:
   target:
     - deb
-    - rpm
+    - AppImage
     - tar.gz
   executableName: program-manager
   category: Utility
