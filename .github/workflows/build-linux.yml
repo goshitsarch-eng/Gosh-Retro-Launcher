@@ -1,4 +1,4 @@
-name: Build Linux (deb, AppImage, tar.gz)
+name: Build Linux (deb, RPM, AppImage, tar.gz)
 
 on:
   workflow_dispatch:
@@ -19,10 +19,10 @@ jobs:
         include:
           - arch: x64
             runner: ubuntu-24.04
-            targets: deb AppImage tar.gz
+            targets: deb rpm AppImage tar.gz
           - arch: arm64
             runner: ubuntu-24.04-arm
-            targets: deb AppImage tar.gz
+            targets: deb rpm AppImage tar.gz
 
     steps:
       - name: Checkout code
@@ -32,7 +32,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libappindicator3-dev
+            libappindicator3-dev \
+            rpm
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -61,6 +62,13 @@ jobs:
           path: dist/*.deb
           retention-days: 30
 
+      - name: Upload RPM package
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-rpm-${{ matrix.arch }}
+          path: dist/*.rpm
+          retention-days: 30
+
       - name: Upload AppImage package
         uses: actions/upload-artifact@v4
         with:
@@ -81,6 +89,7 @@ jobs:
         with:
           files: |
             dist/*.deb
+            dist/*.rpm
             dist/*.AppImage
             dist/*.tar.gz
           fail_on_unmatched_files: true

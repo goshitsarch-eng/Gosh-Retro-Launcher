@@ -1,5 +1,5 @@
 appId: com.programmanager.app
-productName: Program Manager
+productName: program-manager
 copyright: Copyright © 2025
 
 directories:
@@ -33,6 +33,7 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
+  shortcutName: Program Manager
 
 # macOS Configuration
 mac:
@@ -66,6 +67,7 @@ dmg:
 linux:
   target:
     - deb
+    - rpm
     - AppImage
     - tar.gz
   executableName: program-manager
@@ -74,3 +76,5 @@ linux:
   maintainer: ""
   synopsis: Windows 3.1 Program Manager clone
   description: A nostalgic recreation of the Windows 3.1 Program Manager for launching applications
+  desktop:
+    Name: Program Manager
