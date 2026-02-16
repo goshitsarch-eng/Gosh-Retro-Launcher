@@ -275,7 +275,7 @@ This README was verified against the following source files on 2026-02-06:
 | File | Verified |
 |------|----------|
 | `package.json` | Name, version (1.0.5), all scripts, dependencies, devDependencies |
-| `LICENSE` | AGPL-3.0 (note: package.json `license` field incorrectly states "MIT") |
+| `LICENSE` | AGPL-3.0-only (matches package.json `license` field) |
 | `electron-builder.yml` | appId, productName, all platform targets and output formats |
 | `electron.vite.config.ts` | Build configuration, path aliases (@shared, @) |
 | `vitest.config.ts` | Test configuration |

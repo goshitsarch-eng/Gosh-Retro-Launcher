@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { DialogManager } from './components/Dialogs/DialogManager'
 import { QuickSearchOverlay } from './components/QuickSearch/QuickSearchOverlay'
 import { useProgramStore } from './store/programStore'
@@ -21,9 +21,15 @@ const App: React.FC = () => {
 
   const sounds = useSounds()
   const [platform, setPlatform] = useState<string>('linux')
+  const initializedRef = useRef(false)
 
   // Load data and platform on mount
   useEffect(() => {
+    if (initializedRef.current) {
+      return
+    }
+    initializedRef.current = true
+
     loadData().then(() => {
       setTimeout(() => sounds.startupChime(), 300)
     })
@@ -34,7 +40,7 @@ const App: React.FC = () => {
       localStorage.setItem('hasLaunched', 'true')
       openDialog('welcome')
     }
-  }, [loadData])
+  }, [loadData, sounds, openDialog])
 
   useEffect(() => {
     const root = document.documentElement

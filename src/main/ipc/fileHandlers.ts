@@ -1,5 +1,5 @@
 import { ipcMain, dialog } from 'electron'
-import { existsSync } from 'fs'
+import { access } from 'fs/promises'
 import { IPC_CHANNELS } from '@shared/constants/ipc'
 import { getMainWindow } from '../window'
 import type { FileFilter } from '@shared/types'
@@ -73,7 +73,8 @@ export function registerFileHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.FILE_EXISTS, async (_, filePath: string) => {
     try {
-      return existsSync(filePath)
+      await access(filePath)
+      return true
     } catch {
       return false
     }

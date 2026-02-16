@@ -4,6 +4,34 @@ import { readFile } from 'fs/promises'
 import { IPC_CHANNELS } from '@shared/constants/ipc'
 import type { ProgramItem } from '@shared/types'
 
+const MAX_BATCH_ITEMS = 200
+const MAX_LAUNCH_DELAY_MS = 10_000
+
+function isValidLaunchUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+function isProgramItem(value: unknown): value is ProgramItem {
+  if (typeof value !== 'object' || value === null) return false
+  const obj = value as Record<string, unknown>
+  return (
+    typeof obj.id === 'string' &&
+    typeof obj.name === 'string' &&
+    typeof obj.path === 'string' &&
+    typeof obj.icon === 'string' &&
+    typeof obj.workingDir === 'string' &&
+    (obj.launchGroup === undefined ||
+      (typeof obj.launchGroup === 'number' &&
+        Number.isInteger(obj.launchGroup) &&
+        obj.launchGroup >= 0))
+  )
+}
+
 // Tokenize a shell-like command string, respecting quotes
 export function tokenizeCommand(cmd: string): string[] {
   const tokens: string[] = []
@@ -127,7 +155,7 @@ export async function launchProgram(item: ProgramItem): Promise<{ success: boole
   const { path: programPath, workingDir } = item
 
   // Handle URLs
-  if (programPath.startsWith('http://') || programPath.startsWith('https://')) {
+  if (isValidLaunchUrl(programPath)) {
     try {
       await shell.openExternal(programPath)
       return { success: true }
@@ -201,13 +229,34 @@ export async function launchProgram(item: ProgramItem): Promise<{ success: boole
 }
 
 export function registerLaunchHandlers(): void {
-  ipcMain.handle(IPC_CHANNELS.PROGRAM_LAUNCH, async (_, item: ProgramItem) => {
+  ipcMain.handle(IPC_CHANNELS.PROGRAM_LAUNCH, async (_, item: unknown) => {
+    if (!isProgramItem(item)) {
+      return { success: false, error: 'Invalid program item payload' }
+    }
     return launchProgram(item)
   })
 
   ipcMain.handle(
     IPC_CHANNELS.PROGRAM_LAUNCH_BATCH,
-    async (_, items: ProgramItem[], delay: number) => {
+    async (_, items: unknown, delay: unknown) => {
+      if (!Array.isArray(items) || !items.every(isProgramItem)) {
+        return [{ id: 'unknown', success: false, error: 'Invalid program batch payload' }]
+      }
+      if (items.length > MAX_BATCH_ITEMS) {
+        return [
+          {
+            id: 'unknown',
+            success: false,
+            error: `Batch size exceeds ${MAX_BATCH_ITEMS} items`
+          }
+        ]
+      }
+
+      const clampedDelay =
+        typeof delay === 'number' && Number.isFinite(delay)
+          ? Math.max(0, Math.min(Math.floor(delay), MAX_LAUNCH_DELAY_MS))
+          : 0
+
       const results: Array<{ id: string; success: boolean; error?: string }> = []
 
       for (let i = 0; i < items.length; i++) {
@@ -216,8 +265,8 @@ export function registerLaunchHandlers(): void {
         results.push({ id: item.id, ...result })
 
         // Wait between launches (except for the last one)
-        if (i < items.length - 1 && delay > 0) {
-          await new Promise((resolve) => setTimeout(resolve, delay))
+        if (i < items.length - 1 && clampedDelay > 0) {
+          await new Promise((resolve) => setTimeout(resolve, clampedDelay))
         }
       }
 
@@ -227,8 +276,7 @@ export function registerLaunchHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.SYSTEM_OPEN_EXTERNAL, async (_, url: string) => {
     try {
-      const parsed = new URL(url)
-      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      if (!isValidLaunchUrl(url)) {
         return { success: false, error: 'Only http and https URLs are allowed' }
       }
       await shell.openExternal(url)

@@ -5,6 +5,11 @@ import { DEFAULT_SETTINGS, DEFAULT_WINDOW_STATE } from '@shared/types'
 
 let saveGroupsTimer: ReturnType<typeof setTimeout> | null = null
 let saveSettingsTimer: ReturnType<typeof setTimeout> | null = null
+const itemNameCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
+
+function sortProgramItems(items: ProgramItem[]): ProgramItem[] {
+  return [...items].sort((a, b) => itemNameCollator.compare(a.name, b.name))
+}
 
 function debouncedSaveGroups(saveGroups: () => Promise<void>): void {
   if (saveGroupsTimer) clearTimeout(saveGroupsTimer)
@@ -127,7 +132,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
 
   // Item actions
   addItem: (groupId: string, item: Omit<ProgramItem, 'id'>) => {
-    const { groups, saveGroups } = get()
+    const { groups, saveGroups, settings } = get()
     const newItem: ProgramItem = {
       ...item,
       id: uuidv4()
@@ -135,20 +140,29 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
 
     set({
       groups: groups.map((g) =>
-        g.id === groupId ? { ...g, items: [...g.items, newItem] } : g
+        g.id === groupId
+          ? {
+              ...g,
+              items: settings.autoArrange
+                ? sortProgramItems([...g.items, newItem])
+                : [...g.items, newItem]
+            }
+          : g
       )
     })
     debouncedSaveGroups(saveGroups)
   },
 
   updateItem: (groupId: string, itemId: string, updates: Partial<ProgramItem>) => {
-    const { groups, saveGroups } = get()
+    const { groups, saveGroups, settings } = get()
     set({
       groups: groups.map((g) =>
         g.id === groupId
           ? {
               ...g,
-              items: g.items.map((i) => (i.id === itemId ? { ...i, ...updates } : i))
+              items: settings.autoArrange
+                ? sortProgramItems(g.items.map((i) => (i.id === itemId ? { ...i, ...updates } : i)))
+                : g.items.map((i) => (i.id === itemId ? { ...i, ...updates } : i))
             }
           : g
       )
@@ -167,7 +181,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
   },
 
   moveItem: (fromGroupId: string, toGroupId: string, itemId: string) => {
-    const { groups, saveGroups } = get()
+    const { groups, saveGroups, settings } = get()
     const fromGroup = groups.find((g) => g.id === fromGroupId)
     const item = fromGroup?.items.find((i) => i.id === itemId)
 
@@ -179,7 +193,11 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
           return { ...g, items: g.items.filter((i) => i.id !== itemId) }
         }
         if (g.id === toGroupId) {
-          return { ...g, items: [...g.items, item] }
+          const movedItems = [...g.items, item]
+          return {
+            ...g,
+            items: settings.autoArrange ? sortProgramItems(movedItems) : movedItems
+          }
         }
         return g
       })
@@ -189,8 +207,23 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
 
   // Settings actions
   updateSettings: (updates: Partial<AppSettings>) => {
-    const { settings, saveSettings } = get()
-    set({ settings: { ...settings, ...updates } })
+    const { settings, groups, saveGroups, saveSettings } = get()
+    const nextSettings = { ...settings, ...updates }
+    const shouldArrangeNow = !settings.autoArrange && nextSettings.autoArrange
+
+    if (shouldArrangeNow) {
+      set({
+        settings: nextSettings,
+        groups: groups.map((group) => ({
+          ...group,
+          items: sortProgramItems(group.items)
+        }))
+      })
+      debouncedSaveGroups(saveGroups)
+    } else {
+      set({ settings: nextSettings })
+    }
+
     debouncedSaveSettings(saveSettings)
   }
 }))

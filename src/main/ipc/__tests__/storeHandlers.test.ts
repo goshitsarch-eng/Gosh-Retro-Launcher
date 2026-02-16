@@ -47,6 +47,22 @@ describe('isValidItem', () => {
   it('accepts items with extra fields', () => {
     expect(isValidItem({ ...validItem, shortcutKey: 'Ctrl+A' })).toBe(true)
   })
+
+  it('rejects non-string workingDir', () => {
+    expect(isValidItem({ ...validItem, workingDir: 123 })).toBe(false)
+  })
+
+  it('accepts integer launchGroup', () => {
+    expect(isValidItem({ ...validItem, launchGroup: 2 })).toBe(true)
+  })
+
+  it('rejects negative launchGroup', () => {
+    expect(isValidItem({ ...validItem, launchGroup: -1 })).toBe(false)
+  })
+
+  it('rejects non-integer launchGroup', () => {
+    expect(isValidItem({ ...validItem, launchGroup: 1.5 })).toBe(false)
+  })
 })
 
 describe('isValidGroup', () => {

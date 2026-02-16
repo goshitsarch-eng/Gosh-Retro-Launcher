@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useRef, useEffect } from 'react'
+import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react'
 import { ProgramItem } from './ProgramItem'
 import { useUIStore } from '@/store/uiStore'
 import { useProgramStore } from '@/store/programStore'
@@ -13,11 +13,18 @@ interface ItemGridProps {
 export const ItemGrid: React.FC<ItemGridProps> = ({ groupId, groupName, items }) => {
   const [isDragOver, setIsDragOver] = useState(false)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+  const settings = useProgramStore((state) => state.settings)
   const { selectedItemId, selectedGroupId, setSelectedItem, clearSelection } = useUIStore()
   const openDialog = useUIStore((state) => state.openDialog)
   const addItem = useProgramStore((state) => state.addItem)
   const gridRef = useRef<HTMLDivElement>(null)
   const contextMenuRef = useRef<HTMLDivElement>(null)
+  const displayedItems = useMemo(() => {
+    if (!settings.autoArrange) return items
+    return [...items].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+    )
+  }, [items, settings.autoArrange])
 
   // Handle item selection
   const handleSelectItem = useCallback(
@@ -121,7 +128,7 @@ export const ItemGrid: React.FC<ItemGridProps> = ({ groupId, groupName, items })
   // Arrow key navigation
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
-      if (items.length === 0) return
+      if (displayedItems.length === 0) return
       if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(event.key)) return
 
       event.preventDefault()
@@ -160,7 +167,7 @@ export const ItemGrid: React.FC<ItemGridProps> = ({ groupId, groupName, items })
         focusableItems[nextIndex].focus()
       }
     },
-    [items.length]
+    [displayedItems.length]
   )
 
   return (
@@ -176,7 +183,7 @@ export const ItemGrid: React.FC<ItemGridProps> = ({ groupId, groupName, items })
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {items.map((item) => (
+      {displayedItems.map((item) => (
         <ProgramItem
           key={item.id}
           item={item}
@@ -185,7 +192,7 @@ export const ItemGrid: React.FC<ItemGridProps> = ({ groupId, groupName, items })
           onSelect={() => handleSelectItem(item.id)}
         />
       ))}
-      {items.length === 0 && (
+      {displayedItems.length === 0 && (
         <div
           className="empty-message"
           style={{

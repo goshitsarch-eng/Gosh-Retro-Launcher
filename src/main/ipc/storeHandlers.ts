@@ -1,5 +1,5 @@
 import { ipcMain, dialog } from 'electron'
-import { writeFile, readFile } from 'fs/promises'
+import { writeFile, readFile, stat } from 'fs/promises'
 import { IPC_CHANNELS } from '@shared/constants/ipc'
 import {
   getGroups,
@@ -13,6 +13,8 @@ import { getMainWindow } from '../window'
 import { updateTrayMenu } from '../tray'
 import type { ProgramGroup, ProgramItem, AppSettings, StoreData } from '@shared/types'
 
+const MAX_IMPORT_BYTES = 10 * 1024 * 1024 // 10MB
+
 export function isValidItem(item: unknown): item is ProgramItem {
   if (typeof item !== 'object' || item === null) return false
   const obj = item as Record<string, unknown>
@@ -20,7 +22,12 @@ export function isValidItem(item: unknown): item is ProgramItem {
     typeof obj.id === 'string' &&
     typeof obj.name === 'string' &&
     typeof obj.path === 'string' &&
-    typeof obj.icon === 'string'
+    typeof obj.icon === 'string' &&
+    (obj.workingDir === undefined || typeof obj.workingDir === 'string') &&
+    (obj.launchGroup === undefined ||
+      (typeof obj.launchGroup === 'number' &&
+        Number.isInteger(obj.launchGroup) &&
+        obj.launchGroup >= 0))
   )
 }
 
@@ -139,7 +146,16 @@ export function registerStoreHandlers(): void {
     }
 
     try {
-      const content = await readFile(result.filePaths[0], 'utf-8')
+      const importPath = result.filePaths[0]
+      const fileStats = await stat(importPath)
+      if (fileStats.size > MAX_IMPORT_BYTES) {
+        return {
+          success: false,
+          error: `Import file is too large (max ${Math.round(MAX_IMPORT_BYTES / (1024 * 1024))}MB)`
+        }
+      }
+
+      const content = await readFile(importPath, 'utf-8')
       const data = JSON.parse(content) as StoreData
 
       // Validate structure

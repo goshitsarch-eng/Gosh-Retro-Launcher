@@ -69,3 +69,9 @@ artifacts/
 packages/
 pkg/
 target/
+
+# Packaging temp files
+*.blockmap
+builder-debug.yml
+builder-effective-config.yaml
+resources/*.iconset/
