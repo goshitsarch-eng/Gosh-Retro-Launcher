@@ -5,6 +5,14 @@ All notable changes to Gosh Retro Launcher are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2026-04-29
+
+### Changed
+
+- Bumped the app version to 1.0.6. The About dialog shows this version from `package.json`.
+- Simplified the README so it reads more like a human guide.
+- Replaced dash heavy wording in the main documentation with cleaner sentences and ranges.
+
 ## [1.0.5] - 2026-02-06
 
 ### Added
@@ -75,7 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- macOS notarize config updated for electron-builder v26 -- notarize option set to boolean, teamId read from `APPLE_TEAM_ID` env var (`af838e8`)
+- macOS notarize config updated for electron-builder v26. The notarize option is a boolean, and teamId is read from `APPLE_TEAM_ID` (`af838e8`)
 - CI: added `--publish never` to prevent electron-builder auto-publish during CI builds (`d72fc77`)
 - Linux CI: dropped ARM64 RPM target and added `fail-fast: false` to build matrix (`d7f5779`)
 - ARM64 RPM build: added `executableName` to electron-builder config to avoid spaces in install path (`99215c9`)
@@ -83,39 +91,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - macOS CI workflow removed in favor of local builds (`ad6584f`)
-
----
-
-## Research Log
-
-### Method
-- Ran `git log --oneline --all` to enumerate all 11 commits on `main`
-- Ran `git tag -l` to find release tags (found one: `v1.0.4`)
-- Ran `git show --stat` on each commit to identify files changed
-- Ran `git log --format="%B"` to read full commit messages for feature details
-- Ran `git log v1.0.4..HEAD` to identify unreleased commits (5 found)
-- Ran `git log v1.0.4` to identify tagged commits (6 found)
-- Cross-referenced commit messages against `--stat` output to verify claims
-
-### Findings
-- **Tag v1.0.4** points to commit `99215c9` (2026-02-02), the last CI fix
-- **package.json version** bumped to `1.0.5` for the 2026-02-06 release
-- **Two tags**: `v1.0.4` (initial release) and `v1.0.5` (feature release)
-- **11 total commits**: 6 in v1.0.4 (initial + 5 CI/build fixes), 5 in v1.0.5 (4 feature commits + 1 merge commit)
-- **PR #8** (`e203023`) is a merge commit for `95ae107`; changes attributed to the feature commit, not the merge
-- **Commit authorship**: initial + CI fixes by Goshitsarch/Vaughan; PR #8 feature commit by Claude (Anthropic); remaining 3 feature commits by Goshitsarch
-
-### Commit-to-section mapping
-| Commit | Section | Category |
-|--------|---------|----------|
-| `47893a2` Initial commit | 1.0.4 | Added |
-| `af838e8` Fix mac notarize | 1.0.4 | Fixed |
-| `ad6584f` Remove macOS CI | 1.0.4 | Removed |
-| `d72fc77` Fix --publish never | 1.0.4 | Fixed |
-| `d7f5779` Fix Linux CI | 1.0.4 | Fixed |
-| `99215c9` Fix ARM64 RPM | 1.0.4 | Fixed |
-| `95ae107` UI enhancements | Unreleased | Added/Changed |
-| `e203023` Merge PR #8 | (skip -- merge commit) | -- |
-| `105e11a` Vitest + UI/IPC | Unreleased | Added/Changed/Removed/Security |
-| `a22f256` Shell system | Unreleased | Added/Changed |
-| `ea99bf6` Sounds/animations | Unreleased | Added |

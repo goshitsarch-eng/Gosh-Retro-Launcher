@@ -2,8 +2,6 @@
 
 This document describes the complete inter-process communication (IPC) API between the Electron main process and the renderer process in Gosh Retro Launcher.
 
-> All facts in this document were verified by reading source code on 2026-02-06. See the [Research Log](#research-log) at the end for the full audit trail.
-
 ## Overview
 
 Gosh Retro Launcher uses Electron's `contextBridge` to expose a controlled API from the main process to the renderer. The renderer never has direct access to Node.js APIs.
@@ -63,11 +61,11 @@ The preload bridge is organized into six namespaces plus an event listener syste
 
 All IPC handlers are registered via `registerIpcHandlers()` in `src/main/ipc/index.ts`, which calls five registration functions in order:
 
-1. `registerWindowHandlers()` -- window management + system platform/version
-2. `registerFileHandlers()` -- file selection dialogs + file existence checks
-3. `registerStoreHandlers()` -- persistent data CRUD + import/export
-4. `registerLaunchHandlers()` -- program launching + `system:open-external`
-5. `registerAppInfoHandlers()` -- app metadata extraction
+1. `registerWindowHandlers()`: window management + system platform/version
+2. `registerFileHandlers()`: file selection dialogs + file existence checks
+3. `registerStoreHandlers()`: persistent data CRUD + import/export
+4. `registerLaunchHandlers()`: program launching + `system:open-external`
+5. `registerAppInfoHandlers()`: app metadata extraction
 
 ---
 
@@ -137,7 +135,7 @@ Opens a native file dialog for selecting an executable or application file. File
 | Linux | Desktop Entries (`.desktop`), Shell Scripts (`.sh`), All Files |
 
 - **Parameters**: None
-- **Returns**: `Promise<string | null>` -- absolute file path, or `null` if canceled
+- **Returns**: `Promise<string | null>`: absolute file path, or `null` if canceled
 - **Channel**: `file:select-executable`
 - **Handler**: Opens `dialog.showOpenDialog` with platform-specific filters and `openFile` property
 
@@ -148,15 +146,15 @@ Opens a native file dialog for selecting an image file to use as an icon.
 Filters: Images (`.png`, `.jpg`, `.jpeg`, `.gif`, `.ico`, `.svg`), Icons (`.ico`, `.icns`), All Files.
 
 - **Parameters**: None
-- **Returns**: `Promise<string | null>` -- absolute file path, or `null` if canceled
+- **Returns**: `Promise<string | null>`: absolute file path, or `null` if canceled
 - **Channel**: `file:select-icon`
 
 #### `file.exists(path)`
 
 Checks whether a file exists at the given path.
 
-- **Parameters**: `path: string` -- absolute file path to check
-- **Returns**: `Promise<boolean>` -- `true` if file exists, `false` otherwise (including on error)
+- **Parameters**: `path: string`: absolute file path to check
+- **Returns**: `Promise<boolean>`: `true` if file exists, `false` otherwise (including on error)
 - **Channel**: `file:exists`
 - **Handler**: Uses `existsSync(filePath)` wrapped in try/catch
 
@@ -170,7 +168,7 @@ Checks whether a file exists at the given path.
 
 Launches a single program. Handles URLs, platform-specific executables, and `.desktop` files.
 
-- **Parameters**: `item: ProgramItem` -- the program item to launch (see [Type Definitions](#type-definitions))
+- **Parameters**: `item: ProgramItem`: the program item to launch (see [Type Definitions](#type-definitions))
 - **Returns**: `Promise<{ success: boolean; error?: string }>`
 - **Channel**: `program:launch`
 
@@ -197,9 +195,9 @@ All spawned processes are detached (`detached: true`, `stdio: 'ignore'`) and unr
 Launches multiple programs sequentially with a configurable delay between each.
 
 - **Parameters**:
-  - `items: ProgramItem[]` -- array of program items to launch
-  - `delay: number` -- milliseconds to wait between launches
-- **Returns**: `Promise<Array<{ id: string; success: boolean; error?: string }>>` -- result for each item, keyed by item `id`
+  - `items: ProgramItem[]`: array of program items to launch
+  - `delay: number`: milliseconds to wait between launches
+- **Returns**: `Promise<Array<{ id: string; success: boolean; error?: string }>>`: result for each item, keyed by item `id`
 - **Channel**: `program:launch-batch`
 - **Handler**: Iterates items, calls `launchProgram()` for each, waits `delay` ms between launches (except after the last one)
 
@@ -215,8 +213,8 @@ The main process uses `electron-store` (file name: `program-manager-data`) for p
 
 Retrieves a value from the persistent store.
 
-- **Parameters**: `key: string` -- either `'groups'` or `'settings'`
-- **Returns**: `Promise<T>` -- `ProgramGroup[]` for `'groups'`, `AppSettings` for `'settings'`, `null` for unknown keys
+- **Parameters**: `key: string`: either `'groups'` or `'settings'`
+- **Returns**: `Promise<T>`: `ProgramGroup[]` for `'groups'`, `AppSettings` for `'settings'`, `null` for unknown keys
 - **Channel**: `store:get`
 
 #### `store.set<T>(key, value)`
@@ -224,8 +222,8 @@ Retrieves a value from the persistent store.
 Sets a value in the persistent store with validation.
 
 - **Parameters**:
-  - `key: string` -- either `'groups'` or `'settings'`
-  - `value: T` -- the data to store
+  - `key: string`: either `'groups'` or `'settings'`
+  - `value: T`: the data to store
 - **Returns**: `Promise<void>`
 - **Channel**: `store:set`
 - **Throws**: `Error('Invalid groups data')` if groups validation fails; `Error('Invalid settings data')` if settings validation fails
@@ -242,7 +240,7 @@ Sets a value in the persistent store with validation.
 Retrieves all store data (groups + settings) in one call.
 
 - **Parameters**: None
-- **Returns**: `Promise<StoreData>` -- `{ groups: ProgramGroup[], settings: AppSettings }`
+- **Returns**: `Promise<StoreData>`: `{ groups: ProgramGroup[], settings: AppSettings }`
 - **Channel**: `store:get-all`
 
 #### `store.exportData()`
@@ -250,7 +248,7 @@ Retrieves all store data (groups + settings) in one call.
 Opens a native save dialog and exports all store data to a JSON file.
 
 - **Parameters**: None
-- **Returns**: `Promise<boolean>` -- `true` if saved successfully, `false` if canceled or failed
+- **Returns**: `Promise<boolean>`: `true` if saved successfully, `false` if canceled or failed
 - **Channel**: `store:export`
 - **Default filename**: `program-manager-backup.json`
 - **Format**: Pretty-printed JSON (2-space indent)
@@ -286,7 +284,7 @@ Returns the current operating system platform.
 Returns the application version string.
 
 - **Parameters**: None
-- **Returns**: `Promise<string>` -- e.g., `"1.0.5"` (from `package.json` version field)
+- **Returns**: `Promise<string>`: e.g., `"1.0.6"` (from `package.json` version field)
 - **Channel**: `system:get-version`
 - **Handler**: Returns `app.getVersion()`
 
@@ -294,7 +292,7 @@ Returns the application version string.
 
 Opens a URL in the user's default browser.
 
-- **Parameters**: `url: string` -- the URL to open
+- **Parameters**: `url: string`: the URL to open
 - **Returns**: `Promise<{ success: boolean; error?: string }>`
 - **Channel**: `system:open-external`
 - **Security**: Validates URL via `new URL(url)` and rejects non-`http:`/`https:` protocols with error `'Only http and https URLs are allowed'`
@@ -309,8 +307,8 @@ Opens a URL in the user's default browser.
 
 Extracts application metadata from a file, including name, resolved path, icon (as data URL), and working directory. Behavior is platform-specific.
 
-- **Parameters**: `filePath: string` -- path to the application file
-- **Returns**: `Promise<AppInfo>` -- `{ name: string; path: string; icon?: string; workingDir?: string }`
+- **Parameters**: `filePath: string`: path to the application file
+- **Returns**: `Promise<AppInfo>`: `{ name: string; path: string; icon?: string; workingDir?: string }`
 - **Channel**: `app:get-info`
 
 **Platform behavior**:
@@ -340,7 +338,7 @@ The bridge provides `on()` and `off()` methods for subscribing to events pushed 
 Registers a listener for a specific IPC channel.
 
 - **Parameters**:
-  - `channel: string` -- must be in the valid channels whitelist
+  - `channel: string`: must be in the valid channels whitelist
   - `callback: (...args: unknown[]) => void`
 - **Whitelisted channels**: `quick-search:toggle` (only channel currently allowed)
 - **Deduplication**: If the same callback is already registered for the channel, the call is a no-op
@@ -351,8 +349,8 @@ Registers a listener for a specific IPC channel.
 Removes a previously registered listener.
 
 - **Parameters**:
-  - `channel: string` -- must be in the valid channels whitelist
-  - `callback: (...args: unknown[]) => void` -- the exact callback reference passed to `on()`
+  - `channel: string`: must be in the valid channels whitelist
+  - `callback: (...args: unknown[]) => void`: the exact callback reference passed to `on()`
 - **Behavior**: Removes the internal wrapper listener via `ipcRenderer.removeListener()` and cleans up tracking maps
 
 #### Quick Search Toggle (Main-to-Renderer Event)
@@ -517,29 +515,8 @@ The BrowserWindow is created with `contextIsolation: true`, `nodeIntegration: fa
 
 ## Related Documentation
 
-- [Architecture](ARCHITECTURE.md) -- system design and component overview
+- [Architecture](ARCHITECTURE.md): system design and component overview
 - [System Architecture Diagram](diagrams/system-architecture.md)
 - [Data Flow Diagram](diagrams/data-flow.md)
 - [Sequence Diagrams](diagrams/sequence-diagrams.md)
 - [Data Model Diagram](diagrams/data-model.md)
-
----
-
-## Research Log
-
-Every claim in this document was verified by reading actual source code. No information was taken from comments, READMEs, or external documentation without independent verification.
-
-| File | Lines | What Was Verified |
-|---|---|---|
-| `src/shared/constants/ipc.ts` | 1-41 | All 20 IPC channel constants and their string values |
-| `src/preload/index.ts` | 1-112 | Complete bridge API: 6 namespaces, all method signatures, return types, event listener system with whitelist |
-| `src/main/ipc/index.ts` | 1-14 | Handler registration order: window, file, store, launch, appInfo |
-| `src/main/ipc/windowHandlers.ts` | 1-38 | 7 handlers: minimize, maximize, close, quit, isMaximized, getPlatform, getVersion |
-| `src/main/ipc/fileHandlers.ts` | 1-81 | 3 handlers: selectExecutable (platform-specific filters), selectIcon (image filters), exists (existsSync) |
-| `src/main/ipc/storeHandlers.ts` | 1-162 | 5 handlers: get (switch on key), set (with validation + tray update), getAll, export (save dialog + JSON write), import (open dialog + full validation) |
-| `src/main/ipc/launchHandlers.ts` | 1-240 | 3 handlers: launch (platform-specific), launchBatch (sequential with delay), openExternal (URL protocol validation). Plus tokenizeCommand and isValidExecPath security functions |
-| `src/main/ipc/appInfoHandlers.ts` | 1-233 | 1 handler: getInfo with platform-specific extraction (macOS .app, Windows .lnk/.exe, Linux .desktop parsing) |
-| `src/main/window.ts` | 1-110 | BrowserWindow config: 800x600, security settings (contextIsolation, sandbox), tray-on-close behavior, external link protocol validation |
-| `src/main/index.ts` | 1-102 | Startup sequence, global shortcut registration (Ctrl/Cmd+Shift+Space), single instance lock, error handlers |
-| `src/shared/types/index.ts` | 1-89 | All type definitions: ProgramItem (6 fields), ProgramGroup, WindowState, AppSettings (10 fields), StoreData, AppInfo, FileFilter, ShellType, Platform, defaults |
-| `src/renderer/src/types/electron.d.ts` | 1-9 | Global Window.electronAPI type declaration importing ElectronAPI from preload |

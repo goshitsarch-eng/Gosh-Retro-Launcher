@@ -1,6 +1,6 @@
-# Program Manager -- User Guide
+# Program Manager User Guide
 
-This guide covers everything you need to know to use Program Manager, a retro-styled application launcher for Windows, macOS, and Linux.
+This guide covers everything you need to know to use Program Manager, a retro styled application launcher for Windows, macOS, and Linux.
 
 For a visual walkthrough of common workflows, see the [User Flows Diagram](diagrams/user-flows.md).
 
@@ -21,8 +21,6 @@ For a visual walkthrough of common workflows, see the [User Flows Diagram](diagr
 - [Data Storage](#data-storage)
 - [Troubleshooting](#troubleshooting)
 
----
-
 ## Getting Started
 
 ### Installing from Source
@@ -41,12 +39,12 @@ For a visual walkthrough of common workflows, see the [User Flows Diagram](diagr
 
 ### Installing from a Release
 
-Pre-built packages are available from GitHub Releases:
+Release packages are available from GitHub Releases:
 
 - **Windows**: `.exe` installer (NSIS, x64 and arm64)
 - **Linux**: `.deb`, `.rpm`, and `.tar.gz` packages (x64 and arm64)
 
-> **Note**: macOS builds can be created locally with `npm run build:mac` but are not currently available as pre-built releases.
+> **Note**: macOS builds can be created locally with `npm run build:mac` but are not currently available as release packages.
 
 ### First Launch
 
@@ -59,8 +57,6 @@ On your very first launch, a **Welcome dialog** appears with a quick overview of
 
 This dialog only appears once. After dismissing it, you will see an empty desktop with the menu bar. You can start by creating your first program group.
 
----
-
 ## Desktop Shells
 
 Program Manager includes two visual shells that change the look and feel of the entire interface. You can switch between them at any time in Settings.
@@ -69,7 +65,7 @@ Program Manager includes two visual shells that change the look and feel of the 
 
 The classic Windows 3.1 experience:
 - **Menu bar** at the top (File, Options, Window, Help)
-- **MDI (Multiple Document Interface)** desktop -- each program group opens as a draggable, resizable window on a teal desktop
+- **MDI (Multiple Document Interface)** desktop. Each program group opens as a draggable, resizable window on a teal desktop.
 - **Beveled borders** and retro styling throughout
 - Menu shortcuts via Alt+F, Alt+O, Alt+W, Alt+H
 - Window management: Shift+F4 to tile, Shift+F5 to cascade
@@ -92,8 +88,6 @@ A Windows 95-inspired interface:
 5. Click **OK** to apply
 
 The change takes effect immediately.
-
----
 
 ## Managing Groups
 
@@ -129,8 +123,8 @@ The Window menu provides standard MDI window management:
 |--------|------|----------|
 | Cascade windows | Window > Cascade | Shift+F5 |
 | Tile windows | Window > Tile | Shift+F4 |
-| Arrange icons | Window > Arrange Icons | -- |
-| Focus a specific group | Window > (group name) | -- |
+| Arrange icons | Window > Arrange Icons | None |
+| Focus a specific group | Window > (group name) | None |
 
 You can also drag group windows by their title bar and resize them from any edge or corner.
 
@@ -139,8 +133,6 @@ You can also drag group windows by their title bar and resize them from any edge
 Each group has:
 - **Name**: The display name shown in the title bar
 - **Icon**: Choose from 80+ built-in icons or use a custom icon path
-
----
 
 ## Managing Program Items
 
@@ -170,7 +162,7 @@ There are several ways to add items:
    - **Path**: Full path to the executable, script, or URL
    - **Icon**: Click to open the icon picker (80+ built-in icons with search/filter, or browse for a custom icon file)
    - **Working Directory**: The directory the program runs in
-   - **Launch Group**: Assign to a numbered group (1--8) for batch launching
+   - **Launch Group**: Assign to a numbered group from 1 to 8 for batch launching
 
 ### Deleting Items
 
@@ -185,9 +177,7 @@ The icon picker provides over 80 built-in retro-styled icons organized in a grid
 - **Click** an icon to select it
 - Icons include categories like: folders, web, music, video, games, tools, documents, system, and many more
 
-Custom icons are also supported -- you can enter a file path, data URL, or web URL for any icon.
-
----
+Custom icons are also supported. You can enter a file path, data URL, or web URL for any icon.
 
 ## Launching Programs
 
@@ -215,15 +205,13 @@ Program Manager handles different file types based on your operating system:
 
 If the **Minimize on Use** setting is enabled, the Program Manager window will minimize after you launch a program, keeping your desktop clean.
 
----
-
 ## Quick Search
 
 Quick Search lets you find and launch any program item across all groups without navigating through windows.
 
 ### Opening Quick Search
 
-- Press **Ctrl+Shift+Space** (Windows/Linux) or **Cmd+Shift+Space** (macOS) from anywhere -- even when the app is in the background
+- Press **Ctrl+Shift+Space** (Windows/Linux) or **Cmd+Shift+Space** (macOS) from anywhere, even when the app is in the background
 - Or go to **Help > Quick Search...**
 
 A hint at the bottom of the screen reminds you of the shortcut until you use it for the first time.
@@ -241,8 +229,6 @@ A hint at the bottom of the screen reminds you of the shortcut until you use it 
 
 Up to 10 results are shown at a time. If there are more matches, a count of hidden results is displayed.
 
----
-
 ## Batch Launch
 
 Batch launch lets you start multiple programs at once with a configurable delay between each.
@@ -257,11 +243,9 @@ Items with the same launch group number will launch together. Groups are launche
 
 ### Launching
 
-Go to **File > Launch All** to launch all items that have a launch group assigned. The delay between each launch is controlled by the **Batch Launch Delay** setting (100ms--5000ms, default 500ms).
+Go to **File > Launch All** to launch all items that have a launch group assigned. The delay between each launch is controlled by the **Batch Launch Delay** setting, from 100ms to 5000ms. The default is 500ms.
 
 The "Launch All" menu item is disabled if no items have a launch group assigned.
-
----
 
 ## Settings
 
@@ -318,8 +302,6 @@ The imported data replaces your current groups and settings. The application rel
 
 **Validation**: The import process validates the structure of the JSON file before applying it. If the file is malformed or contains invalid data, an error message is shown and no changes are made.
 
----
-
 ## System Tray
 
 When the **Minimize to Tray on Close** setting is enabled (default), closing the main window hides the application to the system tray instead of quitting.
@@ -327,9 +309,9 @@ When the **Minimize to Tray on Close** setting is enabled (default), closing the
 ### Tray Menu
 
 Right-click the tray icon to see:
-- **Show Program Manager** -- restore the main window
+- **Show Program Manager** restores the main window
 - A list of all your groups, each with a submenu of their items for quick launch
-- **Exit** -- quit the application
+- **Exit** quits the application
 
 ### Platform Differences
 
@@ -347,8 +329,6 @@ The application uses platform-specific tray icons from `assets/icons/`:
 - `tray-linux.png` for Linux
 
 If no icon file is found, a small fallback icon is used automatically.
-
----
 
 ## Keyboard Shortcuts
 
@@ -394,8 +374,6 @@ If no icon file is found, a small fallback icon is used automatically.
 | Enter | Launch selected result |
 | Escape | Close Quick Search |
 
----
-
 ## Accessibility
 
 Program Manager includes several accessibility features:
@@ -405,8 +383,6 @@ Program Manager includes several accessibility features:
 - **Focus indicators**: Visible focus rings on all interactive elements.
 - **Reduced motion**: All CSS animations (window open/close, dialog transitions, menu fade-in, Start menu slide) are automatically disabled when the operating system's `prefers-reduced-motion` setting is active.
 - **Sound toggle**: Sound effects can be disabled in Settings for users who prefer a silent experience.
-
----
 
 ## Data Storage
 
@@ -424,17 +400,15 @@ The data file is named `program-manager-data.json` and is stored in:
 
 ### What Is Stored
 
-The file contains two top-level keys:
+The file contains two main keys:
 - **groups**: All your program groups and their items
 - **settings**: Your application settings
 
-For the full data model, see the [Data Flow Diagram](diagrams/data-flow.md) or the [Data Model section in the README](../README.md#data-model).
+For the full data model, see the [Data Flow Diagram](diagrams/data-flow.md) or the [Data Model Diagram](diagrams/data-model.md).
 
 ### Resetting to Defaults
 
 To reset the application to its default state, delete the `program-manager-data.json` file and restart the application. A fresh file with default settings will be created.
-
----
 
 ## Troubleshooting
 
@@ -473,34 +447,3 @@ To reset the application to its default state, delete the `program-manager-data.
 
 - If the window is minimized to tray, look for the tray icon and double-click it (Windows/Linux) or click it (macOS).
 - If the tray icon is not visible, you can kill the process and relaunch the application. The `trayOnClose` setting can be changed to `false` in the data file to prevent this behavior.
-
----
-
-## Research Log
-
-This User Guide was verified against the following source files on 2026-02-06:
-
-| File | What Was Verified |
-|------|-------------------|
-| `package.json` | Scripts (dev, build, test, build:win/mac/linux, typecheck), version |
-| `electron-builder.yml` | Platform build targets and output formats |
-| `src/shared/types/index.ts` | ProgramItem fields (id, name, path, icon, workingDir, launchGroup), AppSettings fields and defaults, ShellType |
-| `src/main/index.ts` | Global shortcut registration (Ctrl/Cmd+Shift+Space), single instance lock |
-| `src/main/window.ts` | Tray-on-close behavior, DevTools env var |
-| `src/main/tray.ts` | Tray icon paths, context menu structure, platform-specific double-click |
-| `src/main/ipc/launchHandlers.ts` | Platform-specific launch logic (.exe, .lnk, .app, .desktop, URLs) |
-| `src/main/ipc/storeHandlers.ts` | Import/export validation, default filename |
-| `src/renderer/src/App.tsx` | Welcome dialog (first run via localStorage), shell resolution, theme toggle |
-| `src/renderer/src/shells/registry.ts` | Two shells: "Windows 3.1" (win31), "Windows 95" (win95) |
-| `src/renderer/src/shells/Win31Shell.tsx` | Alt+F/O/W/H shortcuts, Shift+F4/F5, Escape, shortcut hint |
-| `src/renderer/src/shells/win95/Win95Shell.tsx` | Start menu, taskbar, Escape to close Start menu |
-| `src/renderer/src/components/Menu/MenuBar.tsx` | All menu items and actions (New Group/Item/URL, Launch All, Import, Export, Settings, etc.) |
-| `src/renderer/src/components/QuickSearch/QuickSearchOverlay.tsx` | Relevance ranking algorithm, max 10 results, keyboard navigation |
-| `src/renderer/src/components/Dialogs/SettingsDialog.tsx` | All settings fields, slider ranges, shell selector, ThemePreview |
-| `src/renderer/src/components/Dialogs/WelcomeDialog.tsx` | First-run content and instructions |
-| `src/renderer/src/store/programStore.ts` | Group/item CRUD actions, debounced persistence |
-| `src/renderer/src/utils/icons.ts` | 82 built-in icons in BUILTIN_ICONS array, getIconSrc resolver |
-| `src/renderer/src/utils/sounds.ts` | 7 sound effect functions (startupChime, windowOpen, windowClose, menuClick, dialogOpen, errorBeep, buttonClick) |
-| `src/renderer/src/utils/launchGroups.ts` | Launch group options 0--8 (0 = None) |
-| `.github/workflows/build-linux.yml` | Linux x64+arm64 outputs: deb, rpm, tar.gz |
-| `.github/workflows/build-windows.yml` | Windows x64+arm64 output: NSIS .exe |

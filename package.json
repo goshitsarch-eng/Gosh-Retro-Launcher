@@ -1,6 +1,6 @@
 {
   "name": "program-manager",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A Windows 3.1 Program Manager clone built with Electron and React",
   "main": "./out/main/index.js",
   "author": "",

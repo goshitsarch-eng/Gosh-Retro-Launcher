@@ -1,16 +1,14 @@
 # Architecture
 
-This document describes the system architecture of Gosh Retro Launcher -- a cross-platform desktop application that recreates the Windows 3.1 Program Manager experience using modern web technologies inside Electron.
-
-> All facts in this document were verified by reading source code on 2026-02-06. See the [Research Log](#research-log) at the end for the full audit trail.
+This document describes the system architecture of Gosh Retro Launcher, a cross-platform desktop application that recreates the Windows 3.1 Program Manager experience using modern web technologies inside Electron.
 
 ## High-Level Overview
 
 Gosh Retro Launcher is an Electron application with three process layers:
 
-1. **Main Process** -- Node.js runtime managing window lifecycle, system tray, persistent storage, file dialogs, and program launching
-2. **Preload Script** -- Security boundary that selectively exposes main-process capabilities to the renderer via `contextBridge`
-3. **Renderer Process** -- React 19 application with Zustand state management and a pluggable shell/theme system
+1. **Main Process**: Node.js runtime managing window lifecycle, system tray, persistent storage, file dialogs, and program launching
+2. **Preload Script**: Security boundary that selectively exposes main-process capabilities to the renderer via `contextBridge`
+3. **Renderer Process**: React 19 application with Zustand state management and a pluggable shell/theme system
 
 The renderer never has direct access to Node.js APIs. All cross-boundary communication uses Electron's IPC invoke/handle pattern through explicitly defined channels.
 
@@ -165,11 +163,11 @@ Creates a system tray icon with platform-specific icons:
 - Fallback: embedded base64 PNG if asset files are missing
 
 The tray context menu structure:
-1. "Show Program Manager" -- brings window to foreground
+1. "Show Program Manager": brings window to foreground
 2. Separator
 3. One submenu per group (items launch programs directly from tray)
 4. Separator
-5. "Exit" -- calls `app.quit()`
+5. "Exit": calls `app.quit()`
 
 The tray menu is rebuilt whenever groups are updated via the `updateTrayMenu()` function, called from the `store:set` handler.
 
@@ -201,34 +199,34 @@ The renderer uses three Zustand stores, each managing a distinct concern. For a 
 
 **State**: `groups: ProgramGroup[]`, `settings: AppSettings`, `isLoading: boolean`
 
-**Persistence**: All mutations trigger debounced saves (300ms) to the main process via `window.electronAPI.store.set()`. Two independent timers exist -- one for groups, one for settings -- so rapid group changes don't delay settings saves and vice versa.
+**Persistence**: All mutations trigger debounced saves (300ms) to the main process via `window.electronAPI.store.set()`. Two independent timers exist, one for groups and one for settings, so rapid group changes do not delay settings saves and vice versa.
 
 **Data loading**: `loadData()` calls `store.getAll()` on startup, merges received settings with `DEFAULT_SETTINGS` to handle forward-compatible settings (new fields get defaults).
 
 **Group actions**:
-- `addGroup(name)` -- creates group with UUID, `'folder'` icon, cascaded window position (offset by 30px per existing group)
-- `updateGroup(id, updates)` -- partial update via spread
-- `deleteGroup(id)` -- filter by ID
-- `updateGroupWindowState(id, windowState)` -- partial window state update, only persists if `saveSettingsOnExit` is enabled
+- `addGroup(name)`: creates group with UUID, `'folder'` icon, cascaded window position (offset by 30px per existing group)
+- `updateGroup(id, updates)`: partial update via spread
+- `deleteGroup(id)`: filter by ID
+- `updateGroupWindowState(id, windowState)`: partial window state update, only persists if `saveSettingsOnExit` is enabled
 
 **Item actions**:
-- `addItem(groupId, item)` -- accepts `Omit<ProgramItem, 'id'>`, generates UUID
-- `updateItem(groupId, itemId, updates)` -- partial update
-- `deleteItem(groupId, itemId)` -- filter by ID
-- `moveItem(fromGroupId, toGroupId, itemId)` -- removes from source, appends to target
+- `addItem(groupId, item)`: accepts `Omit<ProgramItem, 'id'>`, generates UUID
+- `updateItem(groupId, itemId, updates)`: partial update
+- `deleteItem(groupId, itemId)`: filter by ID
+- `moveItem(fromGroupId, toGroupId, itemId)`: removes from source, appends to target
 
 **Settings actions**:
-- `updateSettings(updates)` -- partial update via spread
+- `updateSettings(updates)`: partial update via spread
 
 ### UI Store (`src/renderer/src/store/uiStore.ts`)
 
 **State**: Transient UI state that is not persisted to disk.
 
-- `activeMenu: string | null` -- currently open menu bar dropdown
-- `activeDialog: DialogType | null` -- which modal dialog is showing
-- `dialogData: { groupId?, group?, item?, confirmOptions?, openItemAfterCreate?, openUrlAfterCreate?, showIconPicker? }` -- context data for the active dialog
-- `quickSearchOpen: boolean` -- whether the quick search overlay is visible
-- `selectedItemId: string | null` + `selectedGroupId: string | null` -- currently selected program item
+- `activeMenu: string | null`: currently open menu bar dropdown
+- `activeDialog: DialogType | null`: which modal dialog is showing
+- `dialogData: { groupId?, group?, item?, confirmOptions?, openItemAfterCreate?, openUrlAfterCreate?, showIconPicker? }`: context data for the active dialog
+- `quickSearchOpen: boolean`: whether the quick search overlay is visible
+- `selectedItemId: string | null` + `selectedGroupId: string | null`: currently selected program item
 
 **Dialog types** (from the `DialogType` union): `newGroup`, `renameGroup`, `groupProperties`, `newItem`, `newUrl`, `itemProperties`, `settings`, `about`, `confirm`, `welcome`.
 
@@ -236,18 +234,18 @@ The renderer uses three Zustand stores, each managing a distinct concern. For a 
 
 **State**: Manages the Multiple Document Interface (MDI) window system.
 
-- `windows: MDIWindowState[]` -- open windows, each with `{ id, groupId, zIndex }`
-- `activeWindowId: string | null` -- currently focused window
-- `nextZIndex: number` -- monotonically increasing z-index counter
+- `windows: MDIWindowState[]`: open windows, each with `{ id, groupId, zIndex }`
+- `activeWindowId: string | null`: currently focused window
+- `nextZIndex: number`: monotonically increasing z-index counter
 
 **Actions**:
-- `openWindow(groupId)` -- opens new window or focuses existing one
-- `closeWindow(groupId)` -- closes and selects next-most-recent window
-- `focusWindow(groupId)` -- brings to front by assigning next z-index
-- `setActiveWindow(groupId | null)` -- sets active without z-index change
-- `cascadeWindows()` -- dispatches `CustomEvent('mdi-cascade')` for the MDI container to handle
-- `tileWindows()` -- dispatches `CustomEvent('mdi-tile')`
-- `arrangeIcons()` -- dispatches `CustomEvent('mdi-arrange-icons')`
+- `openWindow(groupId)`: opens new window or focuses existing one
+- `closeWindow(groupId)`: closes and selects next-most-recent window
+- `focusWindow(groupId)`: brings to front by assigning next z-index
+- `setActiveWindow(groupId | null)`: sets active without z-index change
+- `cascadeWindows()`: dispatches `CustomEvent('mdi-cascade')` for the MDI container to handle
+- `tileWindows()`: dispatches `CustomEvent('mdi-tile')`
+- `arrangeIcons()`: dispatches `CustomEvent('mdi-arrange-icons')`
 
 Window arrangement is delegated to the MDI container component via custom DOM events, keeping layout logic in the component that owns the DOM rather than in the store.
 
@@ -273,9 +271,9 @@ interface ShellProps {
 ```
 
 **Registry** (`src/renderer/src/shells/registry.ts`): A `Map<ShellType, ShellDefinition>` with three functions:
-- `registerShell(shell)` -- adds a shell to the registry
-- `getShell(id)` -- retrieves by ID
-- `getAllShells()` -- returns all registered shells (used by settings dialog)
+- `registerShell(shell)`: adds a shell to the registry
+- `getShell(id)`: retrieves by ID
+- `getAllShells()`: returns all registered shells (used by settings dialog)
 
 Built-in shells are registered at module load time.
 
@@ -295,12 +293,12 @@ Built-in shells are registered at module load time.
 ### Theme and Styling
 
 CSS is organized into separate files per concern:
-- `variables.css` -- CSS custom properties for theming
-- `win31.css` / `win95.css` -- Shell-specific styles
-- `mdi.css` -- MDI window system
-- `menu.css` -- Menu system
-- `dialog.css` -- Modal dialogs
-- `animations.css` -- CSS transitions and keyframe animations
+- `variables.css`: CSS custom properties for theming
+- `win31.css` / `win95.css`: Shell-specific styles
+- `mdi.css`: MDI window system
+- `menu.css`: Menu system
+- `dialog.css`: Modal dialogs
+- `animations.css`: CSS transitions and keyframe animations
 
 All animations respect `@media (prefers-reduced-motion: reduce)` by disabling transitions and keyframes.
 
@@ -326,14 +324,14 @@ Build output goes to `out/` directory.
 
 The project uses TypeScript project references with three config files:
 
-**`tsconfig.json`** -- Root config, references both sub-configs.
+**`tsconfig.json`**: Root config, references both sub-configs.
 
-**`tsconfig.node.json`** -- For main process, preload, and shared code:
+**`tsconfig.node.json`**: For main process, preload, and shared code:
 - Target: ESNext, Module: ESNext, Resolution: bundler
 - Strict mode enabled
 - Includes: `src/main/**/*`, `src/preload/**/*`, `src/shared/**/*`, `electron.vite.config.ts`
 
-**`tsconfig.web.json`** -- For renderer and shared code:
+**`tsconfig.web.json`**: For renderer and shared code:
 - Target: ESNext, Libs: ESNext + DOM + DOM.Iterable
 - JSX: react-jsx
 - `noEmit: true` (type-checking only; Vite handles compilation)
@@ -437,7 +435,7 @@ Both workflows include typecheck and test steps as quality gates before packagin
 ### Framework
 
 [Vitest](https://vitest.dev/) v4.0.18, configured in `vitest.config.ts`:
-- `globals: true` -- global test functions (no imports needed)
+- `globals: true`: global test functions (no imports needed)
 - Path alias: `@shared` -> `src/shared`
 
 ### Test Suite
@@ -493,47 +491,9 @@ The following functions are exported specifically for testing:
 
 ## Related Documentation
 
-- [API Reference](API_REFERENCE.md) -- complete IPC bridge documentation
+- [API Reference](API_REFERENCE.md): complete IPC bridge documentation
 - [System Architecture Diagram](diagrams/system-architecture.md)
 - [Data Flow Diagram](diagrams/data-flow.md)
 - [Sequence Diagrams](diagrams/sequence-diagrams.md)
 - [Data Model Diagram](diagrams/data-model.md)
 - [Deployment Diagram](diagrams/deployment.md)
-
----
-
-## Research Log
-
-Every claim in this document was verified by reading actual source code. No information was taken from comments, READMEs, or external documentation without independent verification.
-
-| File | Lines | What Was Verified |
-|---|---|---|
-| `src/main/index.ts` | 1-102 | Startup sequence order (6 steps), single instance lock, global shortcut (Ctrl/Cmd+Shift+Space), lifecycle events (activate, window-all-closed, before-quit, will-quit), error handlers |
-| `src/main/window.ts` | 1-110 | BrowserWindow config (800x600, 400x300 min, teal background), security settings (contextIsolation, nodeIntegration, sandbox), tray-on-close behavior, external link protocol validation, dev mode loading |
-| `src/main/store.ts` | 1-64 | electron-store usage, file name `program-manager-data`, schema (groups + settings), all 8 exported functions |
-| `src/main/tray.ts` | 1-117 | Platform-specific icons (mac template, win ico, linux png), fallback base64 icon, context menu structure, double-click behavior, updateTrayMenu/destroyTray |
-| `src/main/ipc/index.ts` | 1-14 | Handler registration order: window, file, store, launch, appInfo |
-| `src/main/ipc/windowHandlers.ts` | 1-38 | 7 handlers including system:get-platform and system:get-version |
-| `src/main/ipc/fileHandlers.ts` | 1-81 | Platform-specific file filters, dialog properties |
-| `src/main/ipc/storeHandlers.ts` | 1-162 | Validation functions (isValidItem, isValidGroup, isValidSettings), VALID_THEMES/VALID_SHELLS/VALID_LABEL_DISPLAYS arrays, import/export flow |
-| `src/main/ipc/launchHandlers.ts` | 1-240 | tokenizeCommand algorithm, isValidExecPath metacharacter check, platform-specific launch behavior, URL protocol validation, batch launch with delay |
-| `src/main/ipc/appInfoHandlers.ts` | 1-233 | Platform-specific app info extraction (macOS .app, Windows .lnk, Linux .desktop parsing) |
-| `src/preload/index.ts` | 1-112 | Complete bridge API, event listener whitelist, deduplication, type export |
-| `src/shared/types/index.ts` | 1-89 | All interfaces (ProgramItem 6 fields, ProgramGroup, WindowState, AppSettings 10 fields, StoreData, AppInfo, FileFilter), ShellType, Platform, DEFAULT_SETTINGS, DEFAULT_WINDOW_STATE |
-| `src/shared/constants/ipc.ts` | 1-41 | 20 IPC channel constants |
-| `src/renderer/src/store/programStore.ts` | 1-196 | ProgramState interface, debounced save (300ms, two independent timers), all group/item/settings actions, UUID generation, cascaded window positioning |
-| `src/renderer/src/store/uiStore.ts` | 1-81 | UIState interface, DialogType union (10 types), dialog data shape, quick search state, selection state |
-| `src/renderer/src/store/mdiStore.ts` | 1-94 | MDIState interface, z-index management, custom DOM events for arrangement |
-| `src/renderer/src/shells/types.ts` | 1-11 | ShellProps and ShellDefinition interfaces |
-| `src/renderer/src/shells/registry.ts` | 1-31 | Map-based registry, registerShell/getShell/getAllShells, two built-in registrations |
-| `src/renderer/src/types/electron.d.ts` | 1-9 | Global Window.electronAPI declaration |
-| `package.json` | 1-44 | Version 1.0.5, all scripts, 3 production deps, 11 dev deps with versions |
-| `electron-builder.yml` | 1-77 | App ID, all platform configs (Windows NSIS, macOS DMG+ZIP, Linux deb+rpm+tar.gz), signing config |
-| `electron.vite.config.ts` | 1-53 | Three build targets (main, preload, renderer), plugins, path aliases |
-| `tsconfig.json` | 1-7 | Project references to node and web configs |
-| `tsconfig.node.json` | 1-27 | ESNext target, bundler resolution, strict, @shared alias, includes main+preload+shared |
-| `tsconfig.web.json` | 1-28 | ESNext target, DOM libs, react-jsx, noEmit, @shared and @ aliases, includes renderer+shared |
-| `vitest.config.ts` | 1-13 | Globals true, @shared alias |
-| `.github/workflows/build-linux.yml` | full | Matrix (x64 ubuntu-24.04, arm64 ubuntu-24.04-arm), steps (checkout, deps, node 22, ci, typecheck, test, build, upload, release) |
-| `.github/workflows/build-windows.yml` | full | Runner windows-latest, steps (checkout, node 22, ci, typecheck, test, build x64+arm64, upload, release) |
-| Test run output | -- | 57 tests, 3 files, all passing (verified via `npm test`) |
