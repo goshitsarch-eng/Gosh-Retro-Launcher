@@ -35,6 +35,16 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
     sounds.windowOpen()
   }, [])
 
+  const handleAnimationEnd = useCallback((event: React.AnimationEvent<HTMLDivElement>) => {
+    if (event.currentTarget !== event.target) return
+    setAnimClass((current) => (current === 'anim-window-open' ? '' : current))
+  }, [])
+
+  const handleDragStart = useCallback(() => {
+    onFocus()
+    setAnimClass((current) => (current === 'anim-window-open' ? '' : current))
+  }, [onFocus])
+
   const { windowState } = group
 
   const handleDragEnd = useCallback(
@@ -58,18 +68,20 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
 
   const {
     position: dragPosition,
+    isDragging,
     handlePointerDown: handleDragPointerDown
   } = useDraggable({
     initialPosition: { x: windowState.x, y: windowState.y },
     containerRef,
     elementRef: windowRef,
-    onDragStart: onFocus,
+    onDragStart: handleDragStart,
     onDragEnd: handleDragEnd
   })
 
   const {
     size: resizeSize,
     position: resizePosition,
+    isResizing,
     handleResizePointerDown
   } = useResizable({
     initialSize: { width: windowState.width, height: windowState.height },
@@ -114,15 +126,15 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
     [group, openDialog]
   )
 
-  const x = resizePosition.x || dragPosition.x
-  const y = resizePosition.y || dragPosition.y
+  const x = isResizing ? resizePosition.x : dragPosition.x
+  const y = isResizing ? resizePosition.y : dragPosition.y
   const width = windowState.maximized ? '100%' : resizeSize.width
   const height = windowState.maximized ? '100%' : resizeSize.height
 
   return (
     <div
       ref={windowRef}
-      className={`win95-window ${isActive ? 'active' : 'inactive'} ${windowState.maximized ? 'maximized' : ''} ${animClass}`}
+      className={`win95-window ${isActive ? 'active' : 'inactive'} ${windowState.maximized ? 'maximized' : ''} ${isDragging ? 'dragging' : ''} ${animClass}`}
       style={{
         left: windowState.maximized ? 0 : x,
         top: windowState.maximized ? 0 : y,
@@ -131,6 +143,7 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
         zIndex
       }}
       onMouseDown={onFocus}
+      onAnimationEnd={handleAnimationEnd}
     >
       {/* Title bar */}
       <div

@@ -28,6 +28,7 @@ export function useDraggable({
   const pendingPosition = useRef<Position | null>(null)
   const frameRef = useRef<number | null>(null)
   const containerBounds = useRef<DOMRect | null>(null)
+  const elementBounds = useRef<DOMRect | null>(null)
 
   useEffect(() => {
     setPosition(initialPosition)
@@ -47,13 +48,16 @@ export function useDraggable({
       containerBounds.current = containerRef?.current
         ? containerRef.current.getBoundingClientRect()
         : null
+      elementBounds.current = elementRef?.current
+        ? elementRef.current.getBoundingClientRect()
+        : null
       onDragStart?.()
 
       if (elementRef?.current) {
         elementRef.current.style.willChange = 'transform'
       }
     },
-    [elementRef, onDragStart]
+    [containerRef, elementRef, onDragStart]
   )
 
   useEffect(() => {
@@ -66,12 +70,12 @@ export function useDraggable({
       let newX = elementStartPos.current.x + dx
       let newY = elementStartPos.current.y + dy
 
-      // Constrain to container bounds
-      if (containerBounds.current) {
+      // Constrain to container bounds using the dragged element's actual size.
+      if (containerBounds.current && elementBounds.current) {
         const minX = 0
         const minY = 0
-        const maxX = containerBounds.current.width - 100 // Leave some visible area
-        const maxY = containerBounds.current.height - 30 // Leave title bar visible
+        const maxX = Math.max(minX, containerBounds.current.width - elementBounds.current.width)
+        const maxY = Math.max(minY, containerBounds.current.height - elementBounds.current.height)
 
         newX = Math.max(minX, Math.min(maxX, newX))
         newY = Math.max(minY, Math.min(maxY, newY))
@@ -107,9 +111,12 @@ export function useDraggable({
       const finalPosition = pendingPosition.current ?? positionRef.current
       pendingPosition.current = null
       containerBounds.current = null
+      elementBounds.current = null
       positionRef.current = finalPosition
 
       if (elementRef?.current) {
+        elementRef.current.style.left = `${finalPosition.x}px`
+        elementRef.current.style.top = `${finalPosition.y}px`
         elementRef.current.style.transform = ''
         elementRef.current.style.willChange = ''
       }
@@ -128,6 +135,8 @@ export function useDraggable({
         window.cancelAnimationFrame(frameRef.current)
         frameRef.current = null
       }
+      containerBounds.current = null
+      elementBounds.current = null
     }
   }, [isDragging, containerRef, elementRef, onDragEnd])
 

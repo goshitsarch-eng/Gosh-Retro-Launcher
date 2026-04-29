@@ -35,6 +35,16 @@ export const MDIWindow: React.FC<MDIWindowProps> = ({
     sounds.windowOpen()
   }, [])
 
+  const handleAnimationEnd = useCallback((event: React.AnimationEvent<HTMLDivElement>) => {
+    if (event.currentTarget !== event.target) return
+    setAnimClass((current) => (current === 'anim-window-open' ? '' : current))
+  }, [])
+
+  const handleDragStart = useCallback(() => {
+    onFocus()
+    setAnimClass((current) => (current === 'anim-window-open' ? '' : current))
+  }, [onFocus])
+
   const { windowState } = group
 
   // Handle drag end
@@ -60,18 +70,20 @@ export const MDIWindow: React.FC<MDIWindowProps> = ({
 
   const {
     position: dragPosition,
+    isDragging,
     handlePointerDown: handleDragPointerDown
   } = useDraggable({
     initialPosition: { x: windowState.x, y: windowState.y },
     containerRef,
     elementRef: windowRef,
-    onDragStart: onFocus,
+    onDragStart: handleDragStart,
     onDragEnd: handleDragEnd
   })
 
   const {
     size: resizeSize,
     position: resizePosition,
+    isResizing,
     handleResizePointerDown
   } = useResizable({
     initialSize: { width: windowState.width, height: windowState.height },
@@ -116,16 +128,16 @@ export const MDIWindow: React.FC<MDIWindowProps> = ({
     [group, openDialog]
   )
 
-  // Use resizePosition if resizing, otherwise dragPosition
-  const x = resizePosition.x || dragPosition.x
-  const y = resizePosition.y || dragPosition.y
+  // Use resizePosition only while resizing so x/y = 0 remain valid.
+  const x = isResizing ? resizePosition.x : dragPosition.x
+  const y = isResizing ? resizePosition.y : dragPosition.y
   const width = windowState.maximized ? '100%' : resizeSize.width
   const height = windowState.maximized ? '100%' : resizeSize.height
 
   return (
     <div
       ref={windowRef}
-      className={`win31-mdi-window ${isActive ? 'active' : 'inactive'} ${windowState.maximized ? 'maximized' : ''} ${animClass}`}
+      className={`win31-mdi-window ${isActive ? 'active' : 'inactive'} ${windowState.maximized ? 'maximized' : ''} ${isDragging ? 'dragging' : ''} ${animClass}`}
       style={{
         left: windowState.maximized ? 0 : x,
         top: windowState.maximized ? 0 : y,
@@ -134,6 +146,7 @@ export const MDIWindow: React.FC<MDIWindowProps> = ({
         zIndex
       }}
       onMouseDown={onFocus}
+      onAnimationEnd={handleAnimationEnd}
     >
       {/* Title bar */}
       <div

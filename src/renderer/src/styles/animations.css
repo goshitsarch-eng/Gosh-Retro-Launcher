@@ -84,6 +84,11 @@
   animation: window-restore 200ms ease-out both;
 }
 
+.win31-mdi-window.dragging,
+.win95-window.dragging {
+  animation: none !important;
+}
+
 /* ==========================================
    DIALOG ANIMATIONS
    ========================================== */
