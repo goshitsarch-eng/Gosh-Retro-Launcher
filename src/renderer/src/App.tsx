@@ -19,6 +19,7 @@ const App: React.FC = () => {
   const selectedItemId = useUIStore((state) => state.selectedItemId)
   const selectedGroupId = useUIStore((state) => state.selectedGroupId)
   const openDialog = useUIStore((state) => state.openDialog)
+  const launchFeedbackStatus = useUIStore((state) => state.launchFeedback.status)
 
   const sounds = useSounds()
   const [platform, setPlatform] = useState<string>('linux')
@@ -47,6 +48,10 @@ const App: React.FC = () => {
     const root = document.documentElement
     root.classList.toggle('theme-dark', settings.theme === 'dark')
   }, [settings.theme])
+
+  useEffect(() => {
+    document.title = settings.shell === 'win95' ? 'Gosh 95' : 'Program Manager'
+  }, [settings.shell])
 
   // Listen for quick search toggle from main process
   useEffect(() => {
@@ -143,7 +148,9 @@ const App: React.FC = () => {
   const ShellComponent = shellDef?.component
 
   return (
-    <div className={`app shell-${settings.shell ?? 'win31'}`}>
+    <div
+      className={`app shell-${settings.shell ?? 'win31'} ${launchFeedbackStatus === 'launching' ? 'app-launching' : ''}`}
+    >
       {ShellComponent && <ShellComponent platform={platform} />}
       <LaunchFeedback />
       <DialogManager />

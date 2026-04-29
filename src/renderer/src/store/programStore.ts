@@ -39,6 +39,7 @@ interface ProgramState {
 
   // Group actions
   addGroup: (name: string) => string
+  addStarterWorkspace: () => void
   updateGroup: (id: string, updates: Partial<ProgramGroup>) => void
   deleteGroup: (id: string) => void
   updateGroupWindowState: (id: string, windowState: Partial<WindowState>) => void
@@ -102,6 +103,40 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
     set({ groups: [...groups, newGroup] })
     debouncedSaveGroups(saveGroups)
     return newGroup.id
+  },
+
+  addStarterWorkspace: () => {
+    const { groups, saveGroups } = get()
+    const starterGroups: Array<Pick<ProgramGroup, 'name' | 'icon'> & { x: number; y: number }> = [
+      { name: 'Main', icon: 'folder', x: 24, y: 24 },
+      { name: 'Accessories', icon: 'tool', x: 64, y: 72 },
+      { name: 'Games', icon: 'game', x: 104, y: 120 },
+      { name: 'Utilities', icon: 'settings', x: 144, y: 168 },
+      { name: 'Internet', icon: 'web', x: 184, y: 216 }
+    ]
+    const existingNames = new Set(groups.map((group) => group.name.toLowerCase()))
+    const newGroups: ProgramGroup[] = starterGroups
+      .filter((group) => !existingNames.has(group.name.toLowerCase()))
+      .map((group) => ({
+        id: uuidv4(),
+        name: group.name,
+        icon: group.icon,
+        windowState: {
+          ...DEFAULT_WINDOW_STATE,
+          x: group.x,
+          y: group.y,
+          width: group.name === 'Main' ? 340 : 300,
+          height: group.name === 'Main' ? 220 : 190,
+          minimized: group.name !== 'Main',
+          maximized: false
+        },
+        items: []
+      }))
+
+    if (newGroups.length === 0) return
+
+    set({ groups: [...groups, ...newGroups] })
+    debouncedSaveGroups(saveGroups)
   },
 
   updateGroup: (id: string, updates: Partial<ProgramGroup>) => {

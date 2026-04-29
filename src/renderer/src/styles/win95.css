@@ -24,6 +24,53 @@
   background-color: var(--desktop-bg);
 }
 
+.win95-desktop-icons {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  display: grid;
+  grid-auto-rows: 76px;
+  grid-template-columns: 76px;
+  gap: 7px;
+}
+
+.win95-desktop-icon {
+  appearance: none;
+  -webkit-appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 76px;
+  min-height: 72px;
+  padding: 2px;
+  color: var(--desktop-text);
+  background: transparent;
+  border: 0;
+  font-family: var(--font-system);
+  font-size: var(--font-size-base);
+  line-height: 1.05;
+  text-align: center;
+  text-shadow: 1px 1px 0 var(--window-border);
+  cursor: default;
+}
+
+.win95-desktop-icon img {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 4px;
+  image-rendering: pixelated;
+}
+
+.win95-desktop-icon:focus-visible span,
+.win95-desktop-icon:active span {
+  color: var(--selection-text);
+  background-color: var(--selection-bg);
+  outline: 1px dotted var(--selection-text);
+  outline-offset: -2px;
+  text-shadow: none;
+}
+
 /* ==========================================
    WIN95 WINDOW
    ========================================== */
@@ -140,6 +187,80 @@
   border-bottom-color: var(--bevel-light);
   border-right-color: var(--bevel-light);
   margin: 2px;
+}
+
+.win95-window-menubar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 21px;
+  margin: 0 2px;
+  padding: 0 7px;
+  color: var(--text-primary);
+  background-color: var(--bevel-face);
+  border-bottom: 1px solid var(--bevel-dark);
+  font-family: var(--font-system);
+  font-size: var(--font-size-base);
+}
+
+.win95-window-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  margin: 0 2px;
+  padding: 3px 4px;
+  background-color: var(--bevel-face);
+  border-top: 1px solid var(--bevel-light);
+  border-bottom: 1px solid var(--bevel-dark);
+  font-family: var(--font-system);
+  font-size: 12px;
+}
+
+.win95-window-toolbar button {
+  min-width: 42px;
+  height: 21px;
+  padding: 0 7px;
+  color: var(--text-primary);
+  background-color: var(--bevel-face);
+  border-style: solid;
+  border-width: 1px;
+  border-top-color: var(--bevel-light);
+  border-left-color: var(--bevel-light);
+  border-bottom-color: var(--bevel-darkest);
+  border-right-color: var(--bevel-darkest);
+  font-family: var(--font-system);
+  font-size: 12px;
+}
+
+.win95-window-toolbar button:active {
+  border-top-color: var(--bevel-darkest);
+  border-left-color: var(--bevel-darkest);
+  border-bottom-color: var(--bevel-light);
+  border-right-color: var(--bevel-light);
+}
+
+.win95-window-address-label {
+  margin-left: 4px;
+  color: var(--text-disabled);
+}
+
+.win95-window-address {
+  flex: 1;
+  min-width: 0;
+  height: 20px;
+  padding: 1px 5px;
+  overflow: hidden;
+  color: var(--text-primary);
+  background-color: var(--window-bg);
+  border-style: solid;
+  border-width: 1px;
+  border-top-color: var(--bevel-dark);
+  border-left-color: var(--bevel-dark);
+  border-bottom-color: var(--bevel-light);
+  border-right-color: var(--bevel-light);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 /* ==========================================
@@ -517,12 +638,12 @@
   border-left-color: var(--bevel-light);
   border-bottom-color: var(--bevel-darkest);
   border-right-color: var(--bevel-darkest);
-  min-width: 180px;
+  min-width: 210px;
   box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
 }
 
 .win95-start-menu-strip {
-  width: 24px;
+  width: 30px;
   background: linear-gradient(to top, #000080, #1084d0);
   display: flex;
   align-items: flex-end;
@@ -536,7 +657,7 @@
   transform: rotate(180deg);
   color: #c0c0c0;
   font-family: var(--font-system);
-  font-size: 18px;
+  font-size: 20px;
   font-weight: bold;
   letter-spacing: 1px;
   user-select: none;
@@ -550,7 +671,7 @@
   display: flex;
   flex-direction: column;
   padding: 2px 0;
-  min-width: 180px;
+  min-width: 190px;
 }
 
 .win95-start-menu-item {
@@ -610,9 +731,22 @@
   border-left-color: var(--bevel-light);
   border-bottom-color: var(--bevel-darkest);
   border-right-color: var(--bevel-darkest);
-  min-width: 140px;
+  min-width: 170px;
   padding: 2px 0;
   box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.win95-programs-submenu {
+  top: -2px;
+}
+
+.win95-program-group-submenu {
+  top: -2px;
+}
+
+.win95-start-submenu-item.has-submenu {
+  padding-right: 26px;
+  position: relative;
 }
 
 .win95-start-submenu-item {
@@ -891,4 +1025,9 @@
 
 :root.theme-dark .win95-start-menu-strip-text .brand-accent {
   color: #b0b0b0;
+}
+
+.app-launching.shell-win95,
+.app-launching.shell-win95 * {
+  cursor: wait !important;
 }

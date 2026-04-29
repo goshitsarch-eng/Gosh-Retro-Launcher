@@ -179,6 +179,20 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
         </div>
       </div>
 
+      <div className="win95-window-menubar">
+        <span>File</span>
+        <span>Edit</span>
+        <span>View</span>
+        <span>Help</span>
+      </div>
+
+      <div className="win95-window-toolbar">
+        <button type="button" onClick={(e) => e.stopPropagation()}>Back</button>
+        <button type="button" onClick={(e) => e.stopPropagation()}>Up</button>
+        <span className="win95-window-address-label">Address</span>
+        <div className="win95-window-address">{group.name}</div>
+      </div>
+
       {/* Content area */}
       <div className="win95-window-body">
         <ItemGrid groupId={group.id} groupName={group.name} items={group.items} />

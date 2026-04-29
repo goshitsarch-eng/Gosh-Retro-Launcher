@@ -101,3 +101,74 @@
 
   --desktop-text: #e6e6e6;
 }
+
+.shell-win31 {
+  --desktop-bg: #008080;
+  --window-bg: #ffffff;
+  --window-chrome: #c0c0c0;
+  --window-border: #000000;
+  --titlebar-active-bg: #000080;
+  --titlebar-active-text: #ffffff;
+  --titlebar-inactive-bg: #808080;
+  --titlebar-inactive-text: #c0c0c0;
+  --bevel-light: #ffffff;
+  --bevel-face: #c0c0c0;
+  --bevel-dark: #808080;
+  --bevel-darkest: #000000;
+  --selection-bg: #000080;
+  --selection-text: #ffffff;
+  --desktop-text: #ffffff;
+  --font-size-base: 14px;
+  --font-size-title: 14px;
+  --font-size-menu: 14px;
+  --titlebar-height: 20px;
+  --menubar-height: 22px;
+  --button-height: 24px;
+  --control-button-size: 13px;
+  --icon-tile-width: 86px;
+}
+
+.shell-win95 {
+  --desktop-bg: #008080;
+  --window-bg: #ffffff;
+  --window-chrome: #c0c0c0;
+  --window-border: #000000;
+  --titlebar-active-bg: #000080;
+  --titlebar-active-text: #ffffff;
+  --titlebar-inactive-bg: #808080;
+  --titlebar-inactive-text: #c0c0c0;
+  --bevel-light: #ffffff;
+  --bevel-face: #c0c0c0;
+  --bevel-dark: #808080;
+  --bevel-darkest: #000000;
+  --selection-bg: #000080;
+  --selection-text: #ffffff;
+  --desktop-text: #ffffff;
+  --font-size-base: 14px;
+  --font-size-title: 14px;
+  --font-size-menu: 14px;
+  --titlebar-height: 22px;
+  --menubar-height: 24px;
+  --button-height: 24px;
+  --control-button-size: 16px;
+  --icon-tile-width: 78px;
+}
+
+:root.theme-dark .shell-win31,
+:root.theme-dark .shell-win95 {
+  --desktop-bg: #0f2f2f;
+  --window-bg: #1f1f1f;
+  --window-chrome: #2b2b2b;
+  --window-border: #000000;
+  --titlebar-active-bg: #0b2a52;
+  --titlebar-active-text: #e6e6e6;
+  --titlebar-inactive-bg: #3a3a3a;
+  --titlebar-inactive-text: #b0b0b0;
+  --bevel-light: #4a4a4a;
+  --bevel-face: #2f2f2f;
+  --bevel-dark: #101010;
+  --bevel-darkest: #000000;
+  --selection-bg: #1b4f9c;
+  --selection-text: #ffffff;
+  --desktop-text: #e6e6e6;
+}

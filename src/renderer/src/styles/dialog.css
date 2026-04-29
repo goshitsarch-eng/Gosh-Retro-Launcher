@@ -187,6 +187,152 @@
   text-align: right;
 }
 
+.theme-preview {
+  position: relative;
+  width: 100%;
+  height: 104px;
+  overflow: hidden;
+  border: 1px solid var(--window-border);
+  font-family: var(--font-system);
+}
+
+.theme-preview-win31-title {
+  height: 14px;
+  padding: 0 4px;
+  font-size: 8px;
+  font-weight: bold;
+  line-height: 14px;
+  border-bottom: 1px solid #000;
+}
+
+.theme-preview-menubar {
+  display: flex;
+  gap: 12px;
+  height: 14px;
+  padding: 0 6px;
+  font-size: 7px;
+  line-height: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.45);
+}
+
+.theme-preview-window {
+  position: absolute;
+  top: 32px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  width: 62%;
+  height: 54px;
+  border: 1px solid;
+}
+
+.theme-preview-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 3px;
+  font-size: 8px;
+  font-weight: bold;
+}
+
+.theme-preview-titlebar span {
+  width: 18px;
+  height: 7px;
+  margin-left: auto;
+  background:
+    linear-gradient(to right, transparent 7px, currentColor 7px 9px, transparent 9px),
+    linear-gradient(to bottom, transparent 3px, currentColor 3px 5px, transparent 5px);
+}
+
+.theme-preview-body {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  margin: 2px;
+}
+
+.theme-preview-body i {
+  width: 12px;
+  height: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.65);
+}
+
+.theme-preview-minimized {
+  position: absolute;
+  bottom: 7px;
+  left: 12px;
+  width: 54px;
+  font-size: 7px;
+  text-align: center;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.theme-preview-win95-window {
+  top: 9px;
+  left: 40px;
+  width: 64%;
+  height: 68px;
+  border-width: 2px;
+  border-style: solid;
+}
+
+.theme-preview-toolbar {
+  height: 12px;
+  padding-left: 4px;
+  font-size: 7px;
+  line-height: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.45);
+}
+
+.theme-preview-desktop-icons {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 30px;
+  font-size: 6px;
+  text-align: center;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.theme-preview-desktop-icons i {
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: 0 auto 2px;
+  border: 1px solid #000;
+}
+
+.theme-preview-taskbar {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  height: 19px;
+  padding: 2px 3px;
+  border-top: 1px solid;
+}
+
+.theme-preview-start {
+  height: 14px;
+  padding: 0 5px;
+  border: 1px solid;
+  font-size: 7px;
+  font-weight: bold;
+  line-height: 12px;
+}
+
+.theme-preview-tray {
+  margin-left: auto;
+  padding: 0 4px;
+  font-size: 7px;
+  line-height: 12px;
+  border: 1px inset;
+}
+
 /* ==========================================
    CONFIRM DIALOG SPECIFIC
    ========================================== */

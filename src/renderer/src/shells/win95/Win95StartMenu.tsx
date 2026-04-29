@@ -28,6 +28,7 @@ export const Win95StartMenu: React.FC<Win95StartMenuProps> = ({ isOpen, onClose 
   const sounds = useSounds()
   const { shouldRender, animClass } = useAnimatedUnmount(isOpen, 80)
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null)
+  const [expandedProgramGroupId, setExpandedProgramGroupId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const launchGroups = collectLaunchGroups(groups)
 
@@ -55,7 +56,10 @@ export const Win95StartMenu: React.FC<Win95StartMenuProps> = ({ isOpen, onClose 
 
   // Reset expanded group when menu closes
   useEffect(() => {
-    if (!isOpen) setExpandedGroupId(null)
+    if (!isOpen) {
+      setExpandedGroupId(null)
+      setExpandedProgramGroupId(null)
+    }
   }, [isOpen])
 
   if (!shouldRender) return null
@@ -161,110 +165,12 @@ export const Win95StartMenu: React.FC<Win95StartMenuProps> = ({ isOpen, onClose 
 
       {/* Menu content */}
       <div className="win95-start-menu-content">
-        {/* Groups as folder entries — all groups get a submenu */}
-        {groups.map((group) => (
-          <div
-            key={group.id}
-            className="win95-start-menu-item"
-            onMouseEnter={() => setExpandedGroupId(group.id)}
-          >
-            <img
-              src={getIconSrc(group.icon) || DEFAULT_FOLDER_ICON}
-              alt=""
-              className="win95-start-menu-item-icon"
-              draggable={false}
-            />
-            <span className="win95-start-menu-item-label">{group.name}</span>
-            <span className="win95-start-menu-item-arrow">&#9658;</span>
-
-            {/* Submenu: items + management entries */}
-            {expandedGroupId === group.id && (
-              <div className="win95-start-submenu">
-                {group.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="win95-start-submenu-item"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleLaunch(item)
-                    }}
-                  >
-                    <img
-                      src={getIconSrc(item.icon)}
-                      alt=""
-                      className="win95-start-submenu-item-icon"
-                      draggable={false}
-                    />
-                    <span>{item.name}</span>
-                  </div>
-                ))}
-
-                {group.items.length > 0 && (
-                  <div className="win95-start-menu-separator" />
-                )}
-
-                <div
-                  className="win95-start-submenu-item"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    openDialog('newItem', { groupId: group.id })
-                    onClose()
-                  }}
-                >
-                  <img
-                    src={getIconSrc('default')}
-                    alt=""
-                    className="win95-start-submenu-item-icon"
-                    draggable={false}
-                  />
-                  <span>New Item...</span>
-                </div>
-
-                <div
-                  className="win95-start-submenu-item"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    openDialog('newUrl', { groupId: group.id })
-                    onClose()
-                  }}
-                >
-                  <img
-                    src={getIconSrc('web')}
-                    alt=""
-                    className="win95-start-submenu-item-icon"
-                    draggable={false}
-                  />
-                  <span>New URL...</span>
-                </div>
-
-                <div className="win95-start-menu-separator" />
-
-                <div
-                  className="win95-start-submenu-item"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleOpenFolder(group.id)
-                  }}
-                >
-                  <img
-                    src={getIconSrc('folder-open')}
-                    alt=""
-                    className="win95-start-submenu-item-icon"
-                    draggable={false}
-                  />
-                  <span>Open Folder</span>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-
-        {groups.length > 0 && <div className="win95-start-menu-separator" />}
-
         <div
           className="win95-start-menu-item"
-          onMouseEnter={() => setExpandedGroupId(null)}
-          onClick={handleNewGroup}
+          onMouseEnter={() => {
+            setExpandedGroupId('programs')
+            setExpandedProgramGroupId(null)
+          }}
         >
           <img
             src={getIconSrc('folder')}
@@ -272,7 +178,202 @@ export const Win95StartMenu: React.FC<Win95StartMenuProps> = ({ isOpen, onClose 
             className="win95-start-menu-item-icon"
             draggable={false}
           />
-          <span className="win95-start-menu-item-label">New Group...</span>
+          <span className="win95-start-menu-item-label">Programs</span>
+          <span className="win95-start-menu-item-arrow">&#9658;</span>
+
+          {expandedGroupId === 'programs' && (
+            <div className="win95-start-submenu win95-programs-submenu">
+              {groups.map((group) => (
+                <div
+                  key={group.id}
+                  className="win95-start-submenu-item has-submenu"
+                  onMouseEnter={() => setExpandedProgramGroupId(group.id)}
+                >
+                  <img
+                    src={getIconSrc(group.icon) || DEFAULT_FOLDER_ICON}
+                    alt=""
+                    className="win95-start-submenu-item-icon"
+                    draggable={false}
+                  />
+                  <span>{group.name}</span>
+                  <span className="win95-start-menu-item-arrow">&#9658;</span>
+
+                  {expandedProgramGroupId === group.id && (
+                    <div className="win95-start-submenu win95-program-group-submenu">
+                      {group.items.map((item) => (
+                        <div
+                          key={item.id}
+                          className="win95-start-submenu-item"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleLaunch(item)
+                          }}
+                        >
+                          <img
+                            src={getIconSrc(item.icon)}
+                            alt=""
+                            className="win95-start-submenu-item-icon"
+                            draggable={false}
+                          />
+                          <span>{item.name}</span>
+                        </div>
+                      ))}
+
+                      {group.items.length > 0 && <div className="win95-start-menu-separator" />}
+
+                      <div
+                        className="win95-start-submenu-item"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleOpenFolder(group.id)
+                        }}
+                      >
+                        <img
+                          src={getIconSrc('folder-open')}
+                          alt=""
+                          className="win95-start-submenu-item-icon"
+                          draggable={false}
+                        />
+                        <span>Open</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {groups.length > 0 && <div className="win95-start-menu-separator" />}
+
+              <div className="win95-start-submenu-item" onClick={handleNewGroup}>
+                <img
+                  src={getIconSrc('folder')}
+                  alt=""
+                  className="win95-start-submenu-item-icon"
+                  draggable={false}
+                />
+                <span>New Folder...</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div
+          className="win95-start-menu-item"
+          onMouseEnter={() => setExpandedGroupId('documents')}
+        >
+          <img
+            src={getIconSrc('document')}
+            alt=""
+            className="win95-start-menu-item-icon"
+            draggable={false}
+          />
+          <span className="win95-start-menu-item-label">Documents</span>
+          <span className="win95-start-menu-item-arrow">&#9658;</span>
+          {expandedGroupId === 'documents' && (
+            <div className="win95-start-submenu">
+              <div className="win95-start-submenu-item" onClick={handleNewItem}>
+                <img
+                  src={getIconSrc('default')}
+                  alt=""
+                  className="win95-start-submenu-item-icon"
+                  draggable={false}
+                />
+                <span>New Program Item...</span>
+              </div>
+              <div className="win95-start-submenu-item" onClick={handleNewUrl}>
+                <img
+                  src={getIconSrc('web')}
+                  alt=""
+                  className="win95-start-submenu-item-icon"
+                  draggable={false}
+                />
+                <span>New URL...</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div
+          className="win95-start-menu-item"
+          onMouseEnter={() => setExpandedGroupId('settings')}
+        >
+          <img
+            src={getIconSrc('settings')}
+            alt=""
+            className="win95-start-menu-item-icon"
+            draggable={false}
+          />
+          <span className="win95-start-menu-item-label">Settings</span>
+          <span className="win95-start-menu-item-arrow">&#9658;</span>
+          {expandedGroupId === 'settings' && (
+            <div className="win95-start-submenu">
+              <div
+                className="win95-start-submenu-item"
+                onClick={() => {
+                  openDialog('settings')
+                  onClose()
+                }}
+              >
+                <img
+                  src={getIconSrc('settings')}
+                  alt=""
+                  className="win95-start-submenu-item-icon"
+                  draggable={false}
+                />
+                <span>Control Panel...</span>
+              </div>
+              <div
+                className="win95-start-submenu-item"
+                onClick={() => {
+                  openDialog('settings')
+                  onClose()
+                }}
+              >
+                <img
+                  src={getIconSrc('folder')}
+                  alt=""
+                  className="win95-start-submenu-item-icon"
+                  draggable={false}
+                />
+                <span>Taskbar...</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="win95-start-menu-separator" />
+
+        <div
+          className="win95-start-menu-item"
+          onMouseEnter={() => setExpandedGroupId(null)}
+          onClick={() => {
+            openQuickSearch()
+            onClose()
+          }}
+        >
+          <img
+            src={getIconSrc('search')}
+            alt=""
+            className="win95-start-menu-item-icon"
+            draggable={false}
+          />
+          <span className="win95-start-menu-item-label">Find...</span>
+        </div>
+
+        <div
+          className="win95-start-menu-item"
+          onMouseEnter={() => setExpandedGroupId(null)}
+          onClick={() => {
+            openDialog('about')
+            onClose()
+          }}
+        >
+          <img
+            src={getIconSrc('question')}
+            alt=""
+            className="win95-start-menu-item-icon"
+            draggable={false}
+          />
+          <span className="win95-start-menu-item-label">Help</span>
         </div>
 
         <div
@@ -281,26 +382,12 @@ export const Win95StartMenu: React.FC<Win95StartMenuProps> = ({ isOpen, onClose 
           onClick={handleNewItem}
         >
           <img
-            src={getIconSrc('default')}
+            src={getIconSrc('terminal')}
             alt=""
             className="win95-start-menu-item-icon"
             draggable={false}
           />
-          <span className="win95-start-menu-item-label">New Program Item...</span>
-        </div>
-
-        <div
-          className="win95-start-menu-item"
-          onMouseEnter={() => setExpandedGroupId(null)}
-          onClick={handleNewUrl}
-        >
-          <img
-            src={getIconSrc('web')}
-            alt=""
-            className="win95-start-menu-item-icon"
-            draggable={false}
-          />
-          <span className="win95-start-menu-item-label">New URL...</span>
+          <span className="win95-start-menu-item-label">Run...</span>
         </div>
 
         <div className="win95-start-menu-separator" />
@@ -319,47 +406,9 @@ export const Win95StartMenu: React.FC<Win95StartMenuProps> = ({ isOpen, onClose 
               className="win95-start-menu-item-icon"
               draggable={false}
             />
-            <span className="win95-start-menu-item-label">Launch Groups</span>
+            <span className="win95-start-menu-item-label">Launch Groups...</span>
           </div>
         )}
-
-        {/* Quick Search */}
-        <div
-          className="win95-start-menu-item"
-          onMouseEnter={() => setExpandedGroupId(null)}
-          onClick={() => {
-            openQuickSearch()
-            onClose()
-          }}
-        >
-          <img
-            src={getIconSrc('search')}
-            alt=""
-            className="win95-start-menu-item-icon"
-            draggable={false}
-          />
-          <span className="win95-start-menu-item-label">Quick Search...</span>
-        </div>
-
-        {/* Settings */}
-        <div
-          className="win95-start-menu-item"
-          onMouseEnter={() => setExpandedGroupId(null)}
-          onClick={() => {
-            openDialog('settings')
-            onClose()
-          }}
-        >
-          <img
-            src={getIconSrc('settings')}
-            alt=""
-            className="win95-start-menu-item-icon"
-            draggable={false}
-          />
-          <span className="win95-start-menu-item-label">Settings...</span>
-        </div>
-
-        <div className="win95-start-menu-separator" />
 
         {/* Shut Down */}
         <div

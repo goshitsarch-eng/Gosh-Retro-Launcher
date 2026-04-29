@@ -3,6 +3,7 @@ import { Win95Window } from './Win95Window'
 import { useProgramStore } from '@/store/programStore'
 import { useMDIStore } from '@/store/mdiStore'
 import { useUIStore } from '@/store/uiStore'
+import { getIconSrc } from '@/utils/icons'
 
 export const Win95Desktop: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -12,6 +13,7 @@ export const Win95Desktop: React.FC = () => {
   const activeWindowId = useMDIStore((state) => state.activeWindowId)
   const focusWindow = useMDIStore((state) => state.focusWindow)
   const openDialog = useUIStore((state) => state.openDialog)
+  const openQuickSearch = useUIStore((state) => state.openQuickSearch)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
 
   // NO auto-open effect — Win95 desktop starts clean.
@@ -97,6 +99,21 @@ export const Win95Desktop: React.FC = () => {
         }
       }}
     >
+      <div className="win95-desktop-icons" aria-label="Desktop icons">
+        <button className="win95-desktop-icon" onDoubleClick={() => openDialog('settings')}>
+          <img src={getIconSrc('drive')} alt="" draggable={false} />
+          <span>My Computer</span>
+        </button>
+        <button className="win95-desktop-icon" onDoubleClick={openQuickSearch}>
+          <img src={getIconSrc('network')} alt="" draggable={false} />
+          <span>Network Neighborhood</span>
+        </button>
+        <button className="win95-desktop-icon" onDoubleClick={() => openDialog('about')}>
+          <img src={getIconSrc('trash')} alt="" draggable={false} />
+          <span>Recycle Bin</span>
+        </button>
+      </div>
+
       {visibleGroups.map((group) => (
         <Win95Window
           key={group.id}

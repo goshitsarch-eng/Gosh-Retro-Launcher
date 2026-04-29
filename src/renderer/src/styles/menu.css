@@ -93,6 +93,7 @@
 
 .win31-menu-item.disabled {
   color: var(--text-disabled);
+  text-shadow: 1px 1px 0 var(--bevel-light);
 }
 
 .win31-menu-item.disabled:hover {
@@ -108,7 +109,8 @@
 }
 
 .win31-menu-item.checkbox.checked::before {
-  content: '✓';
+  content: '√';
+  font-weight: bold;
 }
 
 /* Submenu indicator */

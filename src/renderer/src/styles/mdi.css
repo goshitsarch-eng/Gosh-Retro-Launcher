@@ -18,6 +18,14 @@
   border-right-color: var(--bevel-light);
 }
 
+.shell-win31 .win31-mdi-container {
+  margin: 0;
+  border-width: 1px;
+  border-top-color: var(--bevel-dark);
+  border-left-color: var(--bevel-dark);
+  background-color: var(--desktop-bg);
+}
+
 /* ==========================================
    MDI CHILD WINDOW
    ========================================== */
@@ -33,6 +41,19 @@
   box-shadow:
     inset 1px 1px 0 var(--bevel-light),
     inset -1px -1px 0 var(--bevel-dark);
+}
+
+.shell-win31 .win31-mdi-window {
+  border-width: 1px;
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-light),
+    inset -1px -1px 0 var(--bevel-dark);
+}
+
+.shell-win31 .win31-mdi-window .win31-titlebar {
+  margin: 2px 2px 0;
+  padding: 0 2px;
+  background-image: none;
 }
 
 .win31-mdi-window .win31-titlebar {
@@ -166,6 +187,13 @@
   background-color: transparent;
 }
 
+.shell-win31 .win31-mdi-icon-bar {
+  align-items: flex-end;
+  gap: 8px;
+  padding: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+}
+
 .win31-mdi-icon {
   display: flex;
   flex-direction: column;
@@ -199,6 +227,12 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.shell-win31 .win31-mdi-icon .label {
+  padding: 1px 3px;
+  color: var(--desktop-text);
+  text-shadow: 1px 1px 0 var(--window-border);
 }
 
 .win31-mdi-icon.selected .label {

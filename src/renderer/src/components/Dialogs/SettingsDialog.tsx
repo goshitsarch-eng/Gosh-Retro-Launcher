@@ -10,7 +10,7 @@ import type { ShellType } from '@shared/types'
 
 export const SettingsDialog: React.FC = () => {
   const closeDialog = useUIStore((state) => state.closeDialog)
-  const { settings, updateSettings } = useProgramStore()
+  const { settings, updateSettings, addStarterWorkspace } = useProgramStore()
 
   const [launchDelay, setLaunchDelay] = useState(settings.launchDelay)
   const [autoArrange, setAutoArrange] = useState(settings.autoArrange)
@@ -92,6 +92,12 @@ export const SettingsDialog: React.FC = () => {
               checked={trayOnClose}
               onChange={(e) => setTrayOnClose(e.target.checked)}
             />
+          </div>
+
+          <div style={{ marginTop: 10 }}>
+            <Button type="button" onClick={addStarterWorkspace}>
+              Add Starter Groups
+            </Button>
           </div>
         </div>
 

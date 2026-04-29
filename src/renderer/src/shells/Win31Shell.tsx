@@ -113,7 +113,13 @@ export const Win31Shell: React.FC<ShellProps> = ({ platform }) => {
   const modKey = platform === 'darwin' ? 'Cmd' : 'Ctrl'
 
   return (
-    <>
+    <div className="win31-program-manager-shell">
+      <div className="win31-program-manager-caption">
+        <span className="win31-program-manager-title">Program Manager</span>
+        <span className="win31-program-manager-status">
+          {settings.autoArrange ? 'Auto Arrange' : 'Manual Arrange'}
+        </span>
+      </div>
       <MenuBar platform={platform} />
       <MDIContainer />
       {!shortcutHintDismissed && (
@@ -121,6 +127,6 @@ export const Win31Shell: React.FC<ShellProps> = ({ platform }) => {
           Press {modKey}+Shift+Space for Quick Search
         </div>
       )}
-    </>
+    </div>
   )
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useProgramStore } from '@/store/programStore'
 import { useMDIStore } from '@/store/mdiStore'
 import { useSounds } from '@/hooks/useSounds'
-import { getIconSrc, APP_ICON } from '@/utils/icons'
+import { getIconSrc } from '@/utils/icons'
 
 interface Win95TaskbarProps {
   onStartClick: () => void
@@ -57,7 +57,7 @@ export const Win95Taskbar: React.FC<Win95TaskbarProps> = ({ onStartClick, startM
           onStartClick()
         }}
       >
-        <img src={APP_ICON} alt="" className="win95-start-button-icon" draggable={false} />
+        <img src={getIconSrc('flag')} alt="" className="win95-start-button-icon" draggable={false} />
         Start
       </button>
 
