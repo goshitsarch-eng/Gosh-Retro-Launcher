@@ -401,6 +401,91 @@ body {
   z-index: 1;
 }
 
+/* Batch launch progress */
+.launch-feedback {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 6500;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 260px;
+  max-width: min(360px, calc(100vw - 24px));
+  padding: 8px;
+  color: var(--text-primary);
+  background-color: var(--window-chrome);
+  border: var(--border-width) solid var(--window-border);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-light),
+    inset -1px -1px 0 var(--bevel-dark);
+  font-family: var(--font-system);
+  pointer-events: none;
+}
+
+.launch-feedback-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: var(--selection-text);
+  background-color: var(--selection-bg);
+  border: 1px solid var(--window-border);
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.launch-feedback-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.launch-feedback-title {
+  font-size: var(--font-size-base);
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.launch-feedback-detail {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-disabled);
+}
+
+.launch-feedback-meter {
+  height: 12px;
+  margin-top: 6px;
+  background-color: var(--window-bg);
+  border-style: solid;
+  border-width: 1px;
+  border-top-color: var(--bevel-dark);
+  border-left-color: var(--bevel-dark);
+  border-bottom-color: var(--bevel-light);
+  border-right-color: var(--bevel-light);
+  overflow: hidden;
+}
+
+.launch-feedback-meter-fill {
+  height: 100%;
+  background-color: var(--selection-bg);
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0.35) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+.launch-feedback.error .launch-feedback-icon {
+  background-color: #800000;
+}
+
 /* Keyboard-accessible program items */
 .win31-program-item:focus {
   outline: 1px dotted var(--text-primary);

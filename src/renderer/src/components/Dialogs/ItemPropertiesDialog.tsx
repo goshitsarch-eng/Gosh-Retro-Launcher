@@ -4,13 +4,16 @@ import { Button } from '../Common/Button'
 import { TextInput } from '../Common/TextInput'
 import { useUIStore } from '@/store/uiStore'
 import { useProgramStore } from '@/store/programStore'
+import { useMDIStore } from '@/store/mdiStore'
 import { getIconSrc, BUILTIN_ICONS } from '@/utils/icons'
 import { LAUNCH_GROUP_OPTIONS, formatLaunchGroup } from '@/utils/launchGroups'
 
 export const ItemPropertiesDialog: React.FC = () => {
   const { dialogData, closeDialog } = useUIStore()
-  const { addItem, updateItem, deleteItem, moveItem } = useProgramStore()
+  const { addItem, updateItem, deleteItem, moveItem, updateGroupWindowState } = useProgramStore()
   const groups = useProgramStore((state) => state.groups)
+  const settings = useProgramStore((state) => state.settings)
+  const openWindow = useMDIStore((state) => state.openWindow)
 
   const isEditing = !!dialogData.item
   const existingItem = dialogData.item
@@ -95,6 +98,10 @@ export const ItemPropertiesDialog: React.FC = () => {
           launchGroup
         })
       }
+      if (settings.shell === 'win95') {
+        updateGroupWindowState(selectedGroupId, { minimized: false })
+        openWindow(selectedGroupId)
+      }
       closeDialog()
     },
     [
@@ -110,6 +117,9 @@ export const ItemPropertiesDialog: React.FC = () => {
       addItem,
       updateItem,
       moveItem,
+      settings.shell,
+      updateGroupWindowState,
+      openWindow,
       closeDialog
     ]
   )

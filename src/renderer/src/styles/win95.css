@@ -9,6 +9,8 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  font-family: var(--font-system);
+  background-color: var(--desktop-bg);
 }
 
 /* ==========================================
@@ -41,7 +43,8 @@
   border-right-color: var(--bevel-darkest);
   box-shadow:
     inset 1px 1px 0 var(--bevel-face),
-    inset -1px -1px 0 var(--bevel-dark);
+    inset -1px -1px 0 var(--bevel-dark),
+    1px 1px 0 rgba(0, 0, 0, 0.28);
 }
 
 .win95-window-titlebar {
@@ -58,6 +61,7 @@
   user-select: none;
   -webkit-user-select: none;
   cursor: move;
+  margin: 2px 2px 0;
 }
 
 .win95-window.inactive .win95-window-titlebar {
@@ -109,6 +113,11 @@
   border-right-color: var(--bevel-darkest);
   cursor: default;
   outline: none;
+}
+
+.win95-window-control-btn:focus-visible {
+  outline: 1px dotted var(--text-primary);
+  outline-offset: -3px;
 }
 
 .win95-window-control-btn:active {
@@ -326,11 +335,13 @@
    ========================================== */
 
 .win95-taskbar {
+  position: relative;
   display: flex;
   align-items: center;
   height: 30px;
   background-color: var(--bevel-face);
-  border-top: 2px solid var(--bevel-light);
+  border-top: 1px solid var(--bevel-light);
+  box-shadow: inset 0 1px 0 var(--bevel-face);
   padding: 2px 2px;
   gap: 2px;
   flex-shrink: 0;
@@ -360,6 +371,12 @@
   flex-shrink: 0;
 }
 
+.win95-start-button:focus-visible,
+.win95-taskbar-button:focus-visible {
+  outline: 1px dotted var(--text-primary);
+  outline-offset: -5px;
+}
+
 .win95-start-button:active,
 .win95-start-button.active {
   border-top-color: var(--bevel-darkest);
@@ -379,11 +396,14 @@
 }
 
 .win95-taskbar-separator {
-  width: 2px;
+  width: 5px;
   height: 22px;
   border-left: 1px solid var(--bevel-dark);
   border-right: 1px solid var(--bevel-light);
-  margin: 0 1px;
+  box-shadow:
+    2px 0 0 var(--bevel-light),
+    3px 0 0 var(--bevel-dark);
+  margin: 0 2px;
   flex-shrink: 0;
 }
 
@@ -421,6 +441,17 @@
   overflow: hidden;
 }
 
+.win95-taskbar-button:active {
+  border-top-color: var(--bevel-darkest);
+  border-left-color: var(--bevel-darkest);
+  border-bottom-color: var(--bevel-light);
+  border-right-color: var(--bevel-light);
+  padding-top: 2px;
+  padding-left: 7px;
+  padding-bottom: 0;
+  padding-right: 5px;
+}
+
 .win95-taskbar-button.active {
   border-top-color: var(--bevel-darkest);
   border-left-color: var(--bevel-darkest);
@@ -430,10 +461,10 @@
   background-color: var(--bevel-face);
   background-image: repeating-linear-gradient(
     45deg,
-    transparent,
-    transparent 1px,
-    rgba(255, 255, 255, 0.1) 1px,
-    rgba(255, 255, 255, 0.1) 2px
+    rgba(0, 0, 0, 0.14),
+    rgba(0, 0, 0, 0.14) 1px,
+    rgba(255, 255, 255, 0.18) 1px,
+    rgba(255, 255, 255, 0.18) 2px
   );
 }
 
@@ -465,6 +496,8 @@
   font-size: 12px;
   color: var(--text-primary);
   flex-shrink: 0;
+  min-width: 58px;
+  justify-content: center;
 }
 
 /* ==========================================
@@ -485,6 +518,7 @@
   border-bottom-color: var(--bevel-darkest);
   border-right-color: var(--bevel-darkest);
   min-width: 180px;
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
 }
 
 .win95-start-menu-strip {
@@ -516,14 +550,15 @@
   display: flex;
   flex-direction: column;
   padding: 2px 0;
-  min-width: 160px;
+  min-width: 180px;
 }
 
 .win95-start-menu-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 24px 4px 6px;
+  min-height: 28px;
+  padding: 4px 26px 4px 6px;
   font-family: var(--font-system);
   font-size: var(--font-size-base);
   color: var(--text-primary);
@@ -532,7 +567,8 @@
   white-space: nowrap;
 }
 
-.win95-start-menu-item:hover {
+.win95-start-menu-item:hover,
+.win95-start-menu-item:active {
   background-color: var(--selection-bg);
   color: var(--selection-text);
 }
@@ -576,13 +612,15 @@
   border-right-color: var(--bevel-darkest);
   min-width: 140px;
   padding: 2px 0;
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
 }
 
 .win95-start-submenu-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 12px 4px 6px;
+  min-height: 24px;
+  padding: 4px 18px 4px 6px;
   font-family: var(--font-system);
   font-size: var(--font-size-base);
   color: var(--text-primary);
@@ -618,6 +656,7 @@
   border-right-color: var(--bevel-darkest);
   padding: 2px 0;
   min-width: 120px;
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
 }
 
 .win95-context-menu .win95-menu-item {
@@ -649,6 +688,184 @@
 
 .win95-shell .shortcut-hint {
   bottom: 36px;
+}
+
+/* ==========================================
+   WIN95 THEME OVERRIDES FOR SHARED SURFACES
+   ========================================== */
+
+.shell-win95 .win31-dialog {
+  background-color: var(--bevel-face);
+  border-style: solid;
+  border-width: 2px;
+  border-top-color: var(--bevel-light);
+  border-left-color: var(--bevel-light);
+  border-bottom-color: var(--bevel-darkest);
+  border-right-color: var(--bevel-darkest);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-face),
+    inset -1px -1px 0 var(--bevel-dark),
+    2px 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.shell-win95 .win31-dialog .win31-titlebar {
+  height: 20px;
+  margin: 2px 2px 0;
+  padding: 2px 3px;
+  background: linear-gradient(to right, #000080, #1084d0);
+}
+
+.shell-win95 .win31-dialog-content {
+  background-color: var(--bevel-face);
+}
+
+.shell-win95 .win31-button {
+  min-height: 23px;
+  outline: none;
+  border-width: 2px;
+  border-top-color: var(--bevel-light);
+  border-left-color: var(--bevel-light);
+  border-bottom-color: var(--bevel-darkest);
+  border-right-color: var(--bevel-darkest);
+}
+
+.shell-win95 .win31-button.default {
+  outline: 1px solid var(--window-border);
+  outline-offset: 2px;
+}
+
+.shell-win95 .win31-button:focus-visible::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  border: 1px dotted var(--text-primary);
+  pointer-events: none;
+}
+
+.shell-win95 .win31-input {
+  border-width: 2px;
+  border-top-color: var(--bevel-dark);
+  border-left-color: var(--bevel-dark);
+  border-bottom-color: var(--bevel-light);
+  border-right-color: var(--bevel-light);
+  background-color: var(--window-bg);
+}
+
+.shell-win95 .win31-groupbox {
+  border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+}
+
+.shell-win95 .win31-context-menu {
+  background-color: var(--bevel-face);
+  border-style: solid;
+  border-width: 2px;
+  border-top-color: var(--bevel-light);
+  border-left-color: var(--bevel-light);
+  border-bottom-color: var(--bevel-darkest);
+  border-right-color: var(--bevel-darkest);
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
+  padding: 2px 0;
+}
+
+.shell-win95 .win31-menu-item {
+  min-height: 22px;
+  padding: 3px 24px 3px 8px;
+}
+
+.shell-win95 .win31-menu-separator {
+  margin: 3px 4px;
+}
+
+.shell-win95 .win31-item-grid {
+  grid-template-columns: repeat(auto-fill, minmax(76px, 88px));
+  justify-content: start;
+  gap: 10px 6px;
+  padding: 10px;
+  background-color: var(--window-bg);
+}
+
+.shell-win95 .win31-program-item {
+  width: 76px;
+  min-height: 68px;
+  padding: 3px;
+  background-color: transparent;
+}
+
+.shell-win95 .win31-program-item:hover:not(.selected) {
+  background-color: transparent;
+}
+
+.shell-win95 .win31-program-item:hover:not(.selected) .label {
+  outline: 1px dotted var(--text-primary);
+  outline-offset: 1px;
+}
+
+.shell-win95 .win31-program-item:active .icon {
+  transform: translate(1px, 1px);
+}
+
+.shell-win95 .win31-program-item.selected {
+  background-color: transparent;
+}
+
+.shell-win95 .win31-program-item .label {
+  padding: 1px 3px;
+  line-height: 1.15;
+}
+
+.shell-win95 .win31-program-item.selected .label {
+  color: var(--selection-text);
+  background-color: var(--selection-bg);
+  outline: 1px dotted var(--selection-text);
+  outline-offset: -2px;
+}
+
+.shell-win95 .win31-program-item:focus,
+.shell-win95 .win31-program-item:focus-visible {
+  outline: none;
+}
+
+.shell-win95 .win31-program-item:focus-visible .label {
+  outline: 1px dotted currentColor;
+  outline-offset: 1px;
+}
+
+.shell-win95 .win31-item-grid.drag-over {
+  background-color: #e8f0ff;
+  outline: 2px dotted var(--selection-bg);
+}
+
+.shell-win95 .empty-message {
+  font-size: 12px;
+}
+
+.shell-win95 .launch-feedback {
+  right: 10px;
+  bottom: 38px;
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--bevel-light);
+  border-left-color: var(--bevel-light);
+  border-bottom-color: var(--bevel-darkest);
+  border-right-color: var(--bevel-darkest);
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.shell-win95 .launch-feedback-icon {
+  border-style: solid;
+  border-width: 2px;
+  border-top-color: var(--bevel-dark);
+  border-left-color: var(--bevel-dark);
+  border-bottom-color: var(--bevel-light);
+  border-right-color: var(--bevel-light);
+}
+
+.shell-win95 .launch-feedback-meter {
+  height: 14px;
+  border-width: 2px;
 }
 
 /* ==========================================

@@ -65,6 +65,26 @@ export const Win95Desktop: React.FC = () => {
     return win?.zIndex ?? 0
   }
 
+  const openNewItemDialog = (): void => {
+    const targetGroupId = activeWindowId || groups[0]?.id
+    if (targetGroupId) {
+      openDialog('newItem', { groupId: targetGroupId })
+    } else {
+      openDialog('newGroup', { openItemAfterCreate: true })
+    }
+    setContextMenu(null)
+  }
+
+  const openNewUrlDialog = (): void => {
+    const targetGroupId = activeWindowId || groups[0]?.id
+    if (targetGroupId) {
+      openDialog('newUrl', { groupId: targetGroupId })
+    } else {
+      openDialog('newGroup', { openUrlAfterCreate: true })
+    }
+    setContextMenu(null)
+  }
+
   return (
     <div
       ref={containerRef}
@@ -104,6 +124,12 @@ export const Win95Desktop: React.FC = () => {
             }}
           >
             New Group...
+          </div>
+          <div className="win95-menu-item" onClick={openNewItemDialog}>
+            New Program Item...
+          </div>
+          <div className="win95-menu-item" onClick={openNewUrlDialog}>
+            New URL...
           </div>
           <div className="win95-menu-separator" />
           <div

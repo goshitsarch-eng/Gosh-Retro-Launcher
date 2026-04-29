@@ -4,6 +4,7 @@ import { Button } from '../Common/Button'
 import { TextInput } from '../Common/TextInput'
 import { useUIStore } from '@/store/uiStore'
 import { useProgramStore } from '@/store/programStore'
+import { useMDIStore } from '@/store/mdiStore'
 import { LAUNCH_GROUP_OPTIONS, formatLaunchGroup } from '@/utils/launchGroups'
 
 function normalizeUrl(raw: string): string {
@@ -32,7 +33,8 @@ function deriveName(url: string): string {
 export const NewUrlDialog: React.FC = () => {
   const { dialogData, closeDialog } = useUIStore()
   const groups = useProgramStore((state) => state.groups)
-  const addItem = useProgramStore((state) => state.addItem)
+  const { addItem, updateGroupWindowState, settings } = useProgramStore()
+  const openWindow = useMDIStore((state) => state.openWindow)
 
   const resolvedGroupId = dialogData.groupId || groups[0]?.id || ''
   const [selectedGroupId, setSelectedGroupId] = useState(resolvedGroupId)
@@ -72,9 +74,25 @@ export const NewUrlDialog: React.FC = () => {
         launchGroup
       })
 
+      if (settings.shell === 'win95') {
+        updateGroupWindowState(selectedGroupId, { minimized: false })
+        openWindow(selectedGroupId)
+      }
+
       closeDialog()
     },
-    [url, name, selectedGroupId, launchGroup, addItem, closeDialog, isValidUrl]
+    [
+      url,
+      name,
+      selectedGroupId,
+      launchGroup,
+      addItem,
+      settings.shell,
+      updateGroupWindowState,
+      openWindow,
+      closeDialog,
+      isValidUrl
+    ]
   )
 
   return (

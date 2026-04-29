@@ -5,14 +5,23 @@ import { MenuSeparator } from './MenuSeparator'
 import { useUIStore } from '@/store/uiStore'
 import { useProgramStore } from '@/store/programStore'
 import { useMDIStore } from '@/store/mdiStore'
-import type { ProgramItem } from '@shared/types'
+import { useSounds } from '@/hooks/useSounds'
+import { collectLaunchGroups, launchGroupBuckets } from '@/utils/launchGroups'
 
 interface MenuBarProps {
   platform?: string
 }
 
 export const MenuBar: React.FC<MenuBarProps> = ({ platform = 'linux' }) => {
-  const { activeMenu, setActiveMenu, openDialog, openQuickSearch } = useUIStore()
+  const {
+    activeMenu,
+    setActiveMenu,
+    openDialog,
+    openQuickSearch,
+    beginLaunchFeedback,
+    updateLaunchFeedback,
+    finishLaunchFeedback
+  } = useUIStore()
   const { groups, settings, updateSettings } = useProgramStore()
   const {
     cascadeWindows,
@@ -21,9 +30,9 @@ export const MenuBar: React.FC<MenuBarProps> = ({ platform = 'linux' }) => {
     focusWindow,
     activeWindowId
   } = useMDIStore()
-  const hasLaunchItems = groups.some((group) =>
-    group.items.some((item) => (item.launchGroup ?? 0) > 0)
-  )
+  const sounds = useSounds()
+  const launchGroups = collectLaunchGroups(groups)
+  const hasLaunchItems = launchGroups.length > 0
 
   const handleMenuClick = useCallback(
     (menuName: string) => {
@@ -74,41 +83,49 @@ export const MenuBar: React.FC<MenuBarProps> = ({ platform = 'linux' }) => {
   }, [activeWindowId, groups, openDialog, closeMenu])
 
   const handleLaunchAll = useCallback(async () => {
-    const launchGroups = new Map<number, ProgramItem[]>()
-
-    for (const group of groups) {
-      for (const item of group.items) {
-        const launchGroup = item.launchGroup ?? 0
-        if (launchGroup <= 0) continue
-        const bucket = launchGroups.get(launchGroup) ?? []
-        bucket.push(item)
-        launchGroups.set(launchGroup, bucket)
-      }
-    }
-
-    if (launchGroups.size === 0) {
+    const buckets = collectLaunchGroups(groups)
+    if (buckets.length === 0) {
       closeMenu()
       return
     }
 
+    sounds.buttonClick()
+    beginLaunchFeedback(
+      buckets.length,
+      buckets.reduce((count, bucket) => count + bucket.items.length, 0)
+    )
+    closeMenu()
+
     try {
-      const results = await Promise.all(
-        Array.from(launchGroups.entries())
-          .sort(([a], [b]) => a - b)
-          .map(([_, items]) =>
-            window.electronAPI.program.launchBatch(items, settings.launchDelay)
-          )
+      const results = await launchGroupBuckets(
+        buckets,
+        settings.launchDelay,
+        ({ groupNumber, groupIndex }) => {
+          sounds.menuClick()
+          updateLaunchFeedback(groupNumber, groupIndex)
+        }
       )
       const failures = results.flat().filter((result) => !result.success)
+      finishLaunchFeedback(failures.length)
       if (failures.length > 0) {
         console.error('Failed to launch some items:', failures)
       }
+      if (settings.minimizeOnUse) {
+        window.electronAPI.window.minimize()
+      }
     } catch (error) {
+      finishLaunchFeedback(1)
       console.error('Failed to launch items:', error)
-    } finally {
-      closeMenu()
     }
-  }, [groups, settings.launchDelay, closeMenu])
+  }, [
+    groups,
+    settings.launchDelay,
+    closeMenu,
+    sounds,
+    beginLaunchFeedback,
+    updateLaunchFeedback,
+    finishLaunchFeedback
+  ])
 
   const handleExit = useCallback(() => {
     window.electronAPI.window.quit()
@@ -212,7 +229,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ platform = 'linux' }) => {
           }
         />
         <MenuItem
-          label="Launch All"
+          label="Launch Groups"
           hotkey="L"
           onClick={handleLaunchAll}
           disabled={!hasLaunchItems}

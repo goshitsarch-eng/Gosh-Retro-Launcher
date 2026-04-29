@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useProgramStore } from '@/store/programStore'
 import { useMDIStore } from '@/store/mdiStore'
+import { useSounds } from '@/hooks/useSounds'
 import { getIconSrc, APP_ICON } from '@/utils/icons'
 
 interface Win95TaskbarProps {
@@ -19,7 +20,7 @@ export const Win95Taskbar: React.FC<Win95TaskbarProps> = ({ onStartClick, startM
   const windows = useMDIStore((state) => state.windows)
   const activeWindowId = useMDIStore((state) => state.activeWindowId)
   const focusWindow = useMDIStore((state) => state.focusWindow)
-  const closeWindow = useMDIStore((state) => state.closeWindow)
+  const sounds = useSounds()
   const [clock, setClock] = useState(formatTime)
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export const Win95Taskbar: React.FC<Win95TaskbarProps> = ({ onStartClick, startM
   const taskbarGroups = groups.filter((g) => openGroupIds.has(g.id))
 
   const handleWindowButtonClick = (groupId: string, minimized: boolean): void => {
+    sounds.buttonClick()
     if (minimized) {
       // Restore and focus
       updateGroupWindowState(groupId, { minimized: false })
@@ -49,8 +51,9 @@ export const Win95Taskbar: React.FC<Win95TaskbarProps> = ({ onStartClick, startM
     <div className="win95-taskbar">
       <button
         className={`win95-start-button ${startMenuOpen ? 'active' : ''}`}
-        onMouseDown={(e) => {
+        onClick={(e) => {
           e.stopPropagation()
+          sounds.buttonClick()
           onStartClick()
         }}
       >

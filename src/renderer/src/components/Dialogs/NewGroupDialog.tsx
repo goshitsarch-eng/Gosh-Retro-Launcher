@@ -4,11 +4,13 @@ import { Button } from '../Common/Button'
 import { TextInput } from '../Common/TextInput'
 import { useUIStore } from '@/store/uiStore'
 import { useProgramStore } from '@/store/programStore'
+import { useMDIStore } from '@/store/mdiStore'
 
 export const NewGroupDialog: React.FC = () => {
   const [name, setName] = useState('')
   const { dialogData, closeDialog, openDialog } = useUIStore()
-  const addGroup = useProgramStore((state) => state.addGroup)
+  const { addGroup, updateGroupWindowState, settings } = useProgramStore()
+  const openWindow = useMDIStore((state) => state.openWindow)
   const openItemAfterCreate = dialogData.openItemAfterCreate
   const openUrlAfterCreate = dialogData.openUrlAfterCreate
 
@@ -17,6 +19,10 @@ export const NewGroupDialog: React.FC = () => {
       event.preventDefault()
       if (name.trim()) {
         const newGroupId = addGroup(name.trim())
+        if (settings.shell === 'win95') {
+          updateGroupWindowState(newGroupId, { minimized: false })
+          openWindow(newGroupId)
+        }
         if (openItemAfterCreate) {
           openDialog('newItem', { groupId: newGroupId })
         } else if (openUrlAfterCreate) {
@@ -26,7 +32,17 @@ export const NewGroupDialog: React.FC = () => {
         }
       }
     },
-    [name, addGroup, openItemAfterCreate, openUrlAfterCreate, openDialog, closeDialog]
+    [
+      name,
+      addGroup,
+      settings.shell,
+      updateGroupWindowState,
+      openWindow,
+      openItemAfterCreate,
+      openUrlAfterCreate,
+      openDialog,
+      closeDialog
+    ]
   )
 
   return (

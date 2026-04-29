@@ -11,7 +11,9 @@
   .anim-overlay-fade-in,
   .anim-start-menu-open,
   .anim-start-menu-close,
-  .anim-menu-open {
+  .anim-menu-open,
+  .launch-feedback.launching .launch-feedback-icon,
+  .launch-feedback.launching .launch-feedback-meter-fill {
     animation: none !important;
   }
 }
@@ -180,4 +182,49 @@
 
 .anim-menu-open {
   animation: menu-fade-in 80ms ease-out both;
+}
+
+/* ==========================================
+   LAUNCH FEEDBACK ANIMATIONS
+   ========================================== */
+
+@keyframes launch-feedback-enter {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes launch-feedback-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes launch-meter-stripes {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 16px 0;
+  }
+}
+
+.launch-feedback {
+  animation: launch-feedback-enter 120ms ease-out both;
+}
+
+.launch-feedback.launching .launch-feedback-icon {
+  animation: launch-feedback-pulse 650ms steps(1) infinite;
+}
+
+.launch-feedback.launching .launch-feedback-meter-fill {
+  animation: launch-meter-stripes 420ms linear infinite;
 }

@@ -5,6 +5,7 @@ import { useUIStore } from '@/store/uiStore'
 import { useSounds } from '@/hooks/useSounds'
 import { useAnimatedUnmount } from '@/hooks/useAnimatedUnmount'
 import { getIconSrc, DEFAULT_FOLDER_ICON } from '@/utils/icons'
+import { collectLaunchGroups, launchGroupBuckets } from '@/utils/launchGroups'
 
 interface Win95StartMenuProps {
   isOpen: boolean
@@ -16,12 +17,19 @@ export const Win95StartMenu: React.FC<Win95StartMenuProps> = ({ isOpen, onClose 
   const settings = useProgramStore((state) => state.settings)
   const updateGroupWindowState = useProgramStore((state) => state.updateGroupWindowState)
   const openWindow = useMDIStore((state) => state.openWindow)
-  const openQuickSearch = useUIStore((state) => state.openQuickSearch)
-  const openDialog = useUIStore((state) => state.openDialog)
+  const activeWindowId = useMDIStore((state) => state.activeWindowId)
+  const {
+    openQuickSearch,
+    openDialog,
+    beginLaunchFeedback,
+    updateLaunchFeedback,
+    finishLaunchFeedback
+  } = useUIStore()
   const sounds = useSounds()
   const { shouldRender, animClass } = useAnimatedUnmount(isOpen, 80)
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+  const launchGroups = collectLaunchGroups(groups)
 
   // Click-outside to close
   useEffect(() => {
@@ -78,6 +86,68 @@ export const Win95StartMenu: React.FC<Win95StartMenuProps> = ({ isOpen, onClose 
     updateGroupWindowState(groupId, { minimized: false })
     openWindow(groupId)
     onClose()
+  }
+
+  const handleNewGroup = (): void => {
+    sounds.menuClick()
+    openDialog('newGroup')
+    onClose()
+  }
+
+  const handleNewItem = (): void => {
+    sounds.menuClick()
+    const targetGroupId = activeWindowId || groups[0]?.id
+    if (targetGroupId) {
+      openDialog('newItem', { groupId: targetGroupId })
+    } else {
+      openDialog('newGroup', { openItemAfterCreate: true })
+    }
+    onClose()
+  }
+
+  const handleNewUrl = (): void => {
+    sounds.menuClick()
+    const targetGroupId = activeWindowId || groups[0]?.id
+    if (targetGroupId) {
+      openDialog('newUrl', { groupId: targetGroupId })
+    } else {
+      openDialog('newGroup', { openUrlAfterCreate: true })
+    }
+    onClose()
+  }
+
+  const handleLaunchGroups = async (): Promise<void> => {
+    const buckets = collectLaunchGroups(groups)
+    if (buckets.length === 0) return
+
+    sounds.buttonClick()
+    beginLaunchFeedback(
+      buckets.length,
+      buckets.reduce((count, bucket) => count + bucket.items.length, 0)
+    )
+    onClose()
+
+    try {
+      const results = await launchGroupBuckets(
+        buckets,
+        settings.launchDelay,
+        ({ groupNumber, groupIndex }) => {
+          sounds.menuClick()
+          updateLaunchFeedback(groupNumber, groupIndex)
+        }
+      )
+      const failures = results.filter((result) => !result.success)
+      finishLaunchFeedback(failures.length)
+      if (failures.length > 0) {
+        console.error('Failed to launch some items:', failures)
+      }
+      if (settings.minimizeOnUse) {
+        window.electronAPI.window.minimize()
+      }
+    } catch (error) {
+      finishLaunchFeedback(1)
+      console.error('Failed to launch items:', error)
+    }
   }
 
   return (
@@ -190,6 +260,68 @@ export const Win95StartMenu: React.FC<Win95StartMenuProps> = ({ isOpen, onClose 
         ))}
 
         {groups.length > 0 && <div className="win95-start-menu-separator" />}
+
+        <div
+          className="win95-start-menu-item"
+          onMouseEnter={() => setExpandedGroupId(null)}
+          onClick={handleNewGroup}
+        >
+          <img
+            src={getIconSrc('folder')}
+            alt=""
+            className="win95-start-menu-item-icon"
+            draggable={false}
+          />
+          <span className="win95-start-menu-item-label">New Group...</span>
+        </div>
+
+        <div
+          className="win95-start-menu-item"
+          onMouseEnter={() => setExpandedGroupId(null)}
+          onClick={handleNewItem}
+        >
+          <img
+            src={getIconSrc('default')}
+            alt=""
+            className="win95-start-menu-item-icon"
+            draggable={false}
+          />
+          <span className="win95-start-menu-item-label">New Program Item...</span>
+        </div>
+
+        <div
+          className="win95-start-menu-item"
+          onMouseEnter={() => setExpandedGroupId(null)}
+          onClick={handleNewUrl}
+        >
+          <img
+            src={getIconSrc('web')}
+            alt=""
+            className="win95-start-menu-item-icon"
+            draggable={false}
+          />
+          <span className="win95-start-menu-item-label">New URL...</span>
+        </div>
+
+        <div className="win95-start-menu-separator" />
+
+        {launchGroups.length > 0 && (
+          <div
+            className="win95-start-menu-item"
+            onMouseEnter={() => setExpandedGroupId(null)}
+            onClick={() => {
+              handleLaunchGroups()
+            }}
+          >
+            <img
+              src={getIconSrc('default')}
+              alt=""
+              className="win95-start-menu-item-icon"
+              draggable={false}
+            />
+            <span className="win95-start-menu-item-label">Launch Groups</span>
+          </div>
+        )}
 
         {/* Quick Search */}
         <div

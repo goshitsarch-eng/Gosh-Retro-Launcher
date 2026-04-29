@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import type { ProgramItem, ProgramGroup } from '@shared/types'
 
+let launchFeedbackHideTimer: ReturnType<typeof setTimeout> | null = null
+
 type DialogType =
   | 'newGroup'
   | 'renameGroup'
@@ -19,6 +21,16 @@ interface ConfirmDialogOptions {
   message: string
   onConfirm: () => void
   onCancel?: () => void
+}
+
+interface LaunchFeedbackState {
+  visible: boolean
+  totalGroups: number
+  totalItems: number
+  currentGroup: number | null
+  completedGroups: number
+  failures: number
+  status: 'idle' | 'launching' | 'complete' | 'error'
 }
 
 interface UIState {
@@ -51,6 +63,13 @@ interface UIState {
   selectedGroupId: string | null
   setSelectedItem: (itemId: string | null, groupId: string | null) => void
   clearSelection: () => void
+
+  // Batch launch feedback
+  launchFeedback: LaunchFeedbackState
+  beginLaunchFeedback: (totalGroups: number, totalItems: number) => void
+  updateLaunchFeedback: (currentGroup: number, completedGroups: number) => void
+  finishLaunchFeedback: (failures: number) => void
+  hideLaunchFeedback: () => void
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -77,5 +96,73 @@ export const useUIStore = create<UIState>((set) => ({
   selectedGroupId: null,
   setSelectedItem: (itemId, groupId) =>
     set({ selectedItemId: itemId, selectedGroupId: groupId }),
-  clearSelection: () => set({ selectedItemId: null, selectedGroupId: null })
+  clearSelection: () => set({ selectedItemId: null, selectedGroupId: null }),
+
+  // Batch launch feedback
+  launchFeedback: {
+    visible: false,
+    totalGroups: 0,
+    totalItems: 0,
+    currentGroup: null,
+    completedGroups: 0,
+    failures: 0,
+    status: 'idle'
+  },
+  beginLaunchFeedback: (totalGroups, totalItems) => {
+    if (launchFeedbackHideTimer) {
+      clearTimeout(launchFeedbackHideTimer)
+      launchFeedbackHideTimer = null
+    }
+    set({
+      launchFeedback: {
+        visible: true,
+        totalGroups,
+        totalItems,
+        currentGroup: null,
+        completedGroups: 0,
+        failures: 0,
+        status: 'launching'
+      }
+    })
+  },
+  updateLaunchFeedback: (currentGroup, completedGroups) =>
+    set((state) => ({
+      launchFeedback: {
+        ...state.launchFeedback,
+        visible: true,
+        currentGroup,
+        completedGroups,
+        status: 'launching'
+      }
+    })),
+  finishLaunchFeedback: (failures) => {
+    set((state) => ({
+      launchFeedback: {
+        ...state.launchFeedback,
+        visible: true,
+        currentGroup: null,
+        completedGroups: state.launchFeedback.totalGroups,
+        failures,
+        status: failures > 0 ? 'error' : 'complete'
+      }
+    }))
+    launchFeedbackHideTimer = setTimeout(() => {
+      launchFeedbackHideTimer = null
+      set((state) => ({
+        launchFeedback: {
+          ...state.launchFeedback,
+          visible: false,
+          status: 'idle'
+        }
+      }))
+    }, 1800)
+  },
+  hideLaunchFeedback: () =>
+    set((state) => ({
+      launchFeedback: {
+        ...state.launchFeedback,
+        visible: false,
+        status: 'idle'
+      }
+    }))
 }))

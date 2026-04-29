@@ -233,7 +233,7 @@
 }
 
 .win31-program-item.selected {
-  background-color: var(--selection-bg);
+  background-color: transparent;
 }
 
 .win31-program-item .icon {
@@ -250,6 +250,7 @@
   text-align: center;
   max-width: 100%;
   line-height: 1.2;
+  padding: 1px 3px;
 }
 
 /* Text wrapping mode - shows full name on multiple lines */
@@ -271,7 +272,18 @@
 }
 
 .win31-program-item.selected .label {
+  background-color: var(--selection-bg);
   color: var(--selection-text);
+}
+
+.win31-program-item:focus,
+.win31-program-item:focus-visible {
+  outline: none;
+}
+
+.win31-program-item:focus-visible .label {
+  outline: 1px dotted currentColor;
+  outline-offset: 1px;
 }
 
 /* ==========================================

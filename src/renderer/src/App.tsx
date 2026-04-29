@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { DialogManager } from './components/Dialogs/DialogManager'
+import { LaunchFeedback } from './components/LaunchFeedback'
 import { QuickSearchOverlay } from './components/QuickSearch/QuickSearchOverlay'
 import { useProgramStore } from './store/programStore'
 import { useUIStore } from './store/uiStore'
@@ -144,6 +145,7 @@ const App: React.FC = () => {
   return (
     <div className={`app shell-${settings.shell ?? 'win31'}`}>
       {ShellComponent && <ShellComponent platform={platform} />}
+      <LaunchFeedback />
       <DialogManager />
       {quickSearchOpen && <QuickSearchOverlay />}
     </div>
