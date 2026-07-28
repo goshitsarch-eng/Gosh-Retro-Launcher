@@ -13,18 +13,21 @@ interface ItemGridProps {
 export const ItemGrid: React.FC<ItemGridProps> = ({ groupId, groupName, items }) => {
   const [isDragOver, setIsDragOver] = useState(false)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
-  const settings = useProgramStore((state) => state.settings)
-  const { selectedItemId, selectedGroupId, setSelectedItem, clearSelection } = useUIStore()
+  const autoArrange = useProgramStore((state) => state.settings.autoArrange)
+  const selectedItemId = useUIStore((state) => state.selectedItemId)
+  const selectedGroupId = useUIStore((state) => state.selectedGroupId)
+  const setSelectedItem = useUIStore((state) => state.setSelectedItem)
+  const clearSelection = useUIStore((state) => state.clearSelection)
   const openDialog = useUIStore((state) => state.openDialog)
   const addItem = useProgramStore((state) => state.addItem)
   const gridRef = useRef<HTMLDivElement>(null)
   const contextMenuRef = useRef<HTMLDivElement>(null)
   const displayedItems = useMemo(() => {
-    if (!settings.autoArrange) return items
+    if (!autoArrange) return items
     return [...items].sort((a, b) =>
       a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
     )
-  }, [items, settings.autoArrange])
+  }, [items, autoArrange])
 
   // Handle item selection
   const handleSelectItem = useCallback(

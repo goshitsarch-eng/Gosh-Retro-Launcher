@@ -30,10 +30,17 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
   const openDialog = useUIStore((state) => state.openDialog)
   const sounds = useSounds()
   const [animClass, setAnimClass] = useState('anim-window-open')
+  const actionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     sounds.windowOpen()
-  }, [])
+    return () => {
+      if (actionTimerRef.current !== null) {
+        clearTimeout(actionTimerRef.current)
+        actionTimerRef.current = null
+      }
+    }
+  }, [sounds])
 
   const handleAnimationEnd = useCallback((event: React.AnimationEvent<HTMLDivElement>) => {
     if (event.currentTarget !== event.target) return
@@ -94,9 +101,11 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
 
   // Minimize: hide from desktop but keep in mdiStore (stays in taskbar)
   const handleMinimize = useCallback(() => {
+    if (actionTimerRef.current !== null) clearTimeout(actionTimerRef.current)
     sounds.windowClose()
     setAnimClass('anim-window-minimize')
-    setTimeout(() => {
+    actionTimerRef.current = setTimeout(() => {
+      actionTimerRef.current = null
       updateGroupWindowState(group.id, { minimized: true })
     }, 200)
     // Do NOT call closeWindow — keep the mdiStore entry so taskbar still shows it
@@ -110,9 +119,11 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
 
   // Close: remove from desktop AND taskbar entirely
   const handleClose = useCallback(() => {
+    if (actionTimerRef.current !== null) clearTimeout(actionTimerRef.current)
     sounds.windowClose()
     setAnimClass('anim-window-close')
-    setTimeout(() => {
+    actionTimerRef.current = setTimeout(() => {
+      actionTimerRef.current = null
       updateGroupWindowState(group.id, { minimized: true })
       closeWindow(group.id)
     }, 120)

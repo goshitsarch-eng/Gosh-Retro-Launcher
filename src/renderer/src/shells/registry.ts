@@ -33,7 +33,7 @@ registerShell({
     futureTargets: ['beos', 'macos9'],
     preview: {
       light: {
-        desktop: '#008080',
+        desktop: '#c0c0c0',
         windowBg: '#ffffff',
         chrome: '#c0c0c0',
         bevelLight: '#ffffff',
@@ -45,7 +45,7 @@ registerShell({
         text: '#000000'
       },
       dark: {
-        desktop: '#0f2f2f',
+        desktop: '#2b2b2b',
         windowBg: '#1f1f1f',
         chrome: '#2b2b2b',
         bevelLight: '#4a4a4a',

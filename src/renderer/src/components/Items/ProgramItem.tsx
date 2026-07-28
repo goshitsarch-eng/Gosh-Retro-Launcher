@@ -18,7 +18,8 @@ export const ProgramItem: React.FC<ProgramItemProps> = ({
   isSelected,
   onSelect
 }) => {
-  const settings = useProgramStore((state) => state.settings)
+  const minimizeOnUse = useProgramStore((state) => state.settings.minimizeOnUse)
+  const labelDisplay = useProgramStore((state) => state.settings.labelDisplay)
   const deleteItem = useProgramStore((state) => state.deleteItem)
   const openDialog = useUIStore((state) => state.openDialog)
 
@@ -31,13 +32,13 @@ export const ProgramItem: React.FC<ProgramItemProps> = ({
       }
 
       // Minimize main window if setting is enabled
-      if (settings.minimizeOnUse) {
+      if (minimizeOnUse) {
         window.electronAPI.window.minimize()
       }
     } catch (error) {
       console.error('Failed to launch program:', error)
     }
-  }, [item, settings.minimizeOnUse])
+  }, [item, minimizeOnUse])
 
   // Handle right-click context menu (properties)
   const handleContextMenu = useCallback(
@@ -91,7 +92,7 @@ export const ProgramItem: React.FC<ProgramItemProps> = ({
       onFocus={handleFocus}
     >
       <Icon src={iconSrc} alt={item.name} />
-      <span className={`label label-${settings.labelDisplay || 'wrap'}`}>{item.name}</span>
+      <span className={`label label-${labelDisplay || 'wrap'}`}>{item.name}</span>
     </div>
   )
 }

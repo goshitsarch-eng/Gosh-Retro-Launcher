@@ -1,13 +1,73 @@
 let audioCtx: AudioContext | null = null
+let suspendTimer: ReturnType<typeof setTimeout> | null = null
+let connectedToneCount = 0
+let latestToneEndTime = 0
+
+const SUSPEND_GRACE_MS = 150
 
 function getContext(): AudioContext {
-  if (!audioCtx) {
+  if (!audioCtx || audioCtx.state === 'closed') {
     audioCtx = new AudioContext()
   }
   if (audioCtx.state === 'suspended') {
-    audioCtx.resume()
+    void audioCtx.resume().catch(() => undefined)
   }
   return audioCtx
+}
+
+function cancelPendingSuspend(): void {
+  if (suspendTimer !== null) {
+    clearTimeout(suspendTimer)
+    suspendTimer = null
+  }
+}
+
+function scheduleSuspend(ctx: AudioContext, endTime: number): void {
+  latestToneEndTime = Math.max(latestToneEndTime, endTime)
+  cancelPendingSuspend()
+  const delay = Math.max(0, (latestToneEndTime - ctx.currentTime) * 1000) + SUSPEND_GRACE_MS
+  suspendTimer = setTimeout(() => {
+    suspendTimer = null
+    if (audioCtx !== ctx || ctx.state !== 'running' || connectedToneCount > 0) return
+    latestToneEndTime = 0
+    void ctx.suspend().catch(() => undefined)
+  }, delay)
+}
+
+function connectTone(
+  ctx: AudioContext,
+  osc: OscillatorNode,
+  gain: GainNode,
+  startTime: number,
+  endTime: number
+): void {
+  cancelPendingSuspend()
+  connectedToneCount += 1
+  let disconnected = false
+  const disconnect = (): void => {
+    if (disconnected) return
+    disconnected = true
+    osc.disconnect()
+    gain.disconnect()
+    connectedToneCount = Math.max(0, connectedToneCount - 1)
+    scheduleSuspend(ctx, endTime)
+  }
+
+  osc.addEventListener('ended', disconnect, { once: true })
+  osc.connect(gain)
+  gain.connect(ctx.destination)
+  osc.start(startTime)
+  osc.stop(endTime)
+  scheduleSuspend(ctx, endTime)
+}
+
+/** Suspend and release any pending audio work when the renderer is torn down. */
+export function suspendSoundContext(): void {
+  cancelPendingSuspend()
+  latestToneEndTime = 0
+  if (audioCtx?.state === 'running') {
+    void audioCtx.suspend().catch(() => undefined)
+  }
 }
 
 interface ToneParams {
@@ -32,10 +92,8 @@ function playTone({ freq, duration, type = 'square', volume = 0.08, rampTo }: To
   gain.gain.setValueAtTime(volume, ctx.currentTime)
   gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration)
 
-  osc.connect(gain)
-  gain.connect(ctx.destination)
-  osc.start(ctx.currentTime)
-  osc.stop(ctx.currentTime + duration)
+  const startTime = ctx.currentTime
+  connectTone(ctx, osc, gain, startTime, startTime + duration)
 }
 
 interface SequencedTone {
@@ -60,10 +118,8 @@ function playMultipleTones(tones: SequencedTone[]): void {
     gain.gain.setValueAtTime(tone.volume ?? 0.06, now + tone.delay)
     gain.gain.exponentialRampToValueAtTime(0.001, now + tone.delay + tone.duration)
 
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.start(now + tone.delay)
-    osc.stop(now + tone.delay + tone.duration)
+    const startTime = now + tone.delay
+    connectTone(ctx, osc, gain, startTime, startTime + tone.duration)
   }
 }
 

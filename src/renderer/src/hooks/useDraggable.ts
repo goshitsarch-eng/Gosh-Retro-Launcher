@@ -135,8 +135,13 @@ export function useDraggable({
         window.cancelAnimationFrame(frameRef.current)
         frameRef.current = null
       }
+      pendingPosition.current = null
       containerBounds.current = null
       elementBounds.current = null
+      if (elementRef?.current) {
+        elementRef.current.style.transform = ''
+        elementRef.current.style.willChange = ''
+      }
     }
   }, [isDragging, containerRef, elementRef, onDragEnd])
 

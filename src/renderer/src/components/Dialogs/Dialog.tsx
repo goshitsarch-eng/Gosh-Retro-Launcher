@@ -18,6 +18,7 @@ export const Dialog: React.FC<DialogProps> = ({
   const previousFocusRef = useRef<Element | null>(null)
   const sounds = useSounds()
   const [isClosing, setIsClosing] = useState(false)
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Save and restore focus
   useEffect(() => {
@@ -27,16 +28,24 @@ export const Dialog: React.FC<DialogProps> = ({
     sounds.dialogOpen()
 
     return () => {
+      if (closeTimerRef.current !== null) {
+        clearTimeout(closeTimerRef.current)
+        closeTimerRef.current = null
+      }
       if (previousFocusRef.current instanceof HTMLElement) {
         previousFocusRef.current.focus()
       }
     }
-  }, [])
+  }, [sounds])
 
   const handleAnimatedClose = useCallback(() => {
     if (isClosing) return
     setIsClosing(true)
-    setTimeout(() => onClose(), 100)
+    if (closeTimerRef.current !== null) clearTimeout(closeTimerRef.current)
+    closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null
+      onClose()
+    }, 100)
   }, [isClosing, onClose])
 
   // Handle escape key and focus trap
@@ -96,6 +105,18 @@ export const Dialog: React.FC<DialogProps> = ({
         tabIndex={-1}
       >
         <div className="win31-titlebar">
+          <button
+            type="button"
+            className="win31-dialog-system-button"
+            aria-label={`Close ${title}`}
+            title="Close"
+            onDoubleClick={(event) => {
+              event.stopPropagation()
+              handleAnimatedClose()
+            }}
+          >
+            <span />
+          </button>
           <span className="win31-titlebar-text">{title}</span>
         </div>
         <div className="win31-dialog-content">{children}</div>

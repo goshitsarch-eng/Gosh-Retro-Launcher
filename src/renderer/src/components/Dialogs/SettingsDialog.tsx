@@ -24,9 +24,10 @@ export const SettingsDialog: React.FC = () => {
   const [soundEnabled, setSoundEnabled] = useState(settings.soundEnabled ?? true)
 
   const handleSubmit = useCallback(
-    (event: React.FormEvent) => {
+    async (event: React.FormEvent) => {
       event.preventDefault()
-      updateSettings({
+      const shellChanged = shell !== settings.shell
+      const updates = {
         launchDelay,
         autoArrange,
         minimizeOnUse,
@@ -37,8 +38,20 @@ export const SettingsDialog: React.FC = () => {
         labelDisplay,
         shell,
         soundEnabled
-      })
+      }
+      updateSettings(updates)
       closeDialog()
+
+      if (shellChanged) {
+        try {
+          // BrowserWindow framing cannot be changed in place. Persist the complete
+          // settings object first so the replacement renderer resolves the same shell.
+          await window.electronAPI.store.set('settings', { ...settings, ...updates })
+          await window.electronAPI.window.recreateForShell(shell)
+        } catch (error) {
+          console.error('Failed to apply shell window frame:', error)
+        }
+      }
     },
     [
       launchDelay,
@@ -51,6 +64,7 @@ export const SettingsDialog: React.FC = () => {
       labelDisplay,
       shell,
       soundEnabled,
+      settings,
       updateSettings,
       closeDialog
     ]

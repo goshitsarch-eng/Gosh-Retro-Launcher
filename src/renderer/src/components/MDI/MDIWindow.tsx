@@ -30,10 +30,17 @@ export const MDIWindow: React.FC<MDIWindowProps> = ({
   const openDialog = useUIStore((state) => state.openDialog)
   const sounds = useSounds()
   const [animClass, setAnimClass] = useState('anim-window-open')
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     sounds.windowOpen()
-  }, [])
+    return () => {
+      if (closeTimerRef.current !== null) {
+        clearTimeout(closeTimerRef.current)
+        closeTimerRef.current = null
+      }
+    }
+  }, [sounds])
 
   const handleAnimationEnd = useCallback((event: React.AnimationEvent<HTMLDivElement>) => {
     if (event.currentTarget !== event.target) return
@@ -95,14 +102,18 @@ export const MDIWindow: React.FC<MDIWindowProps> = ({
   })
 
   // Window actions
-  const handleMinimize = useCallback(() => {
+  const minimizeAfterAnimation = useCallback(() => {
+    if (closeTimerRef.current !== null) clearTimeout(closeTimerRef.current)
     sounds.windowClose()
     setAnimClass('anim-window-close')
-    setTimeout(() => {
+    closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null
       updateGroupWindowState(group.id, { minimized: true })
       closeWindow(group.id)
     }, 120)
   }, [group.id, updateGroupWindowState, closeWindow, sounds])
+
+  const handleMinimize = minimizeAfterAnimation
 
   const handleMaximize = useCallback(() => {
     updateGroupWindowState(group.id, {
@@ -110,14 +121,7 @@ export const MDIWindow: React.FC<MDIWindowProps> = ({
     })
   }, [group.id, windowState.maximized, updateGroupWindowState])
 
-  const handleClose = useCallback(() => {
-    sounds.windowClose()
-    setAnimClass('anim-window-close')
-    setTimeout(() => {
-      updateGroupWindowState(group.id, { minimized: true })
-      closeWindow(group.id)
-    }, 120)
-  }, [group.id, updateGroupWindowState, closeWindow, sounds])
+  const handleClose = minimizeAfterAnimation
 
   // Handle right-click on titlebar to open group properties
   const handleTitleBarContextMenu = useCallback(
@@ -154,6 +158,19 @@ export const MDIWindow: React.FC<MDIWindowProps> = ({
         onPointerDown={windowState.maximized ? undefined : handleDragPointerDown}
         onContextMenu={handleTitleBarContextMenu}
       >
+        <button
+          type="button"
+          className="win31-mdi-system-button"
+          title="Close"
+          aria-label={`Close ${group.name}`}
+          onPointerDown={(event) => event.stopPropagation()}
+          onDoubleClick={(event) => {
+            event.stopPropagation()
+            handleClose()
+          }}
+        >
+          <span />
+        </button>
         <span className="win31-titlebar-text">{group.name}</span>
         <MDIWindowControls
           onMinimize={handleMinimize}

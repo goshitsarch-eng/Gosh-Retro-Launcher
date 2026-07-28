@@ -8,9 +8,12 @@ import { useMDIStore } from '@/store/mdiStore'
 import { getIconSrc, BUILTIN_ICONS } from '@/utils/icons'
 
 export const GroupPropertiesDialog: React.FC = () => {
-  const { dialogData, closeDialog, openDialog } = useUIStore()
-  const { updateGroup, deleteGroup } = useProgramStore()
-  const { closeWindow } = useMDIStore()
+  const dialogData = useUIStore((state) => state.dialogData)
+  const closeDialog = useUIStore((state) => state.closeDialog)
+  const openDialog = useUIStore((state) => state.openDialog)
+  const updateGroup = useProgramStore((state) => state.updateGroup)
+  const deleteGroup = useProgramStore((state) => state.deleteGroup)
+  const closeWindow = useMDIStore((state) => state.closeWindow)
 
   const group = dialogData.group
   if (!group) return null
@@ -23,11 +26,7 @@ export const GroupPropertiesDialog: React.FC = () => {
     (event: React.FormEvent) => {
       event.preventDefault()
       if (!name.trim()) return
-
-      updateGroup(group.id, {
-        name: name.trim(),
-        icon
-      })
+      updateGroup(group.id, { name: name.trim(), icon })
       closeDialog()
     },
     [name, icon, group.id, updateGroup, closeDialog]
@@ -47,86 +46,50 @@ export const GroupPropertiesDialog: React.FC = () => {
   }, [group.id, group.name, deleteGroup, closeWindow, openDialog])
 
   return (
-    <Dialog title="Program Group Properties" onClose={closeDialog} width={400}>
-      <form onSubmit={handleSubmit}>
-        <div className="win31-form-row">
-          <label htmlFor="group-name">Description:</label>
-          <TextInput
-            id="group-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoFocus
-          />
-        </div>
-
-        <div className="win31-form-row">
-          <label>Icon:</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
-            <img
-              src={getIconSrc(icon)}
-              alt="Icon"
-              width={32}
-              height={32}
-              style={{ imageRendering: 'pixelated' }}
+    <Dialog title="Program Group Properties" onClose={closeDialog} width={390}>
+      <form onSubmit={handleSubmit} className="win31-properties-layout">
+        <div className="win31-properties-fields">
+          <div className="win31-form-row">
+            <label htmlFor="group-name"><span className="hotkey">D</span>escription:</label>
+            <TextInput
+              id="group-name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              autoFocus
             />
-            <Button type="button" onClick={() => setShowIconPicker(!showIconPicker)}>
-              {showIconPicker ? 'Hide Icons' : 'Change Icon...'}
-            </Button>
           </div>
+          <div className="win31-form-row win31-icon-preview-row">
+            <label>Icon:</label>
+            <div className="win31-icon-preview-well">
+              <img src={getIconSrc(icon)} alt="Selected icon" width={32} height={32} />
+            </div>
+          </div>
+          {showIconPicker && (
+            <div className="win31-icon-picker" role="listbox" aria-label="Group icons">
+              {BUILTIN_ICONS.map((iconOption) => (
+                <button
+                  type="button"
+                  key={iconOption.id}
+                  className={`win31-icon-choice ${icon === iconOption.id ? 'selected' : ''}`}
+                  onClick={() => setIcon(iconOption.id)}
+                  title={iconOption.name}
+                  aria-label={iconOption.name}
+                  aria-selected={icon === iconOption.id}
+                  role="option"
+                >
+                  <img src={iconOption.icon} alt="" width={32} height={32} />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-
-        {showIconPicker && (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(8, 1fr)',
-              gap: 4,
-              padding: 8,
-              background: 'var(--win31-white)',
-              border: '2px inset var(--bevel-dark)',
-              marginBottom: 10,
-              maxHeight: 150,
-              overflowY: 'auto'
-            }}
-          >
-            {BUILTIN_ICONS.map((iconOption) => (
-              <div
-                key={iconOption.id}
-                onClick={() => setIcon(iconOption.id)}
-                title={iconOption.name}
-                style={{
-                  width: 36,
-                  height: 36,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  border: icon === iconOption.id ? '2px solid var(--win31-blue)' : '2px solid transparent',
-                  background: icon === iconOption.id ? 'var(--selection-bg)' : 'transparent'
-                }}
-              >
-                <img
-                  src={iconOption.icon}
-                  alt={iconOption.name}
-                  width={32}
-                  height={32}
-                  style={{ imageRendering: 'pixelated' }}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="win31-dialog-buttons">
-          <Button type="submit" isDefault disabled={!name.trim()}>
-            OK
+        <div className="win31-properties-buttons">
+          <Button type="submit" isDefault disabled={!name.trim()}>OK</Button>
+          <Button type="button" onClick={closeDialog}>Cancel</Button>
+          <Button type="button" onClick={() => setShowIconPicker((shown) => !shown)}>
+            {showIconPicker ? 'Hide Icons' : 'Change Icon...'}
           </Button>
-          <Button type="button" onClick={closeDialog}>
-            Cancel
-          </Button>
-          <Button type="button" onClick={handleDelete}>
-            Delete
-          </Button>
+          <Button type="button" onClick={handleDelete}>Delete</Button>
         </div>
       </form>
     </Dialog>

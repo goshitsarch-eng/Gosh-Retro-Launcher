@@ -16,7 +16,7 @@ export const QuickSearchOverlay: React.FC = () => {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const closeQuickSearch = useUIStore((state) => state.closeQuickSearch)
   const groups = useProgramStore((state) => state.groups)
-  const settings = useProgramStore((state) => state.settings)
+  const minimizeOnUse = useProgramStore((state) => state.settings.minimizeOnUse)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Focus input on mount
@@ -111,7 +111,7 @@ export const QuickSearchOverlay: React.FC = () => {
 
       closeQuickSearch()
 
-      if (settings.minimizeOnUse) {
+      if (minimizeOnUse) {
         try {
           window.electronAPI.window.minimize()
         } catch {
@@ -119,7 +119,7 @@ export const QuickSearchOverlay: React.FC = () => {
         }
       }
     },
-    [closeQuickSearch, settings.minimizeOnUse]
+    [closeQuickSearch, minimizeOnUse]
   )
 
   // Handle item click
@@ -144,7 +144,13 @@ export const QuickSearchOverlay: React.FC = () => {
     <div className="win31-dialog-overlay" onClick={handleOverlayClick}>
       <div className="win31-dialog quick-search-dialog" style={{ width: 400 }}>
         <div className="win31-titlebar">
-          <span className="win31-titlebar-text">Quick Search</span>
+          <button
+            type="button"
+            className="win31-dialog-system-button"
+            aria-label="Close Search"
+            onDoubleClick={closeQuickSearch}
+          ><span /></button>
+          <span className="win31-titlebar-text">Search for Program Item</span>
         </div>
         <div className="win31-dialog-content">
           <TextInput

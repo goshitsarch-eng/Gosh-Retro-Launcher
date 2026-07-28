@@ -65,8 +65,10 @@
    ========================================== */
 
 .win31-menu-item {
+  appearance: none;
   display: flex;
   align-items: center;
+  width: 100%;
   padding: var(--menu-item-padding-y) var(--menu-item-padding-x);
   font-family: var(--font-system);
   font-size: var(--font-size-menu);
@@ -74,9 +76,16 @@
   cursor: default;
   white-space: nowrap;
   position: relative;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  outline: none;
 }
 
-.win31-menu-item:hover:not(.disabled) {
+.win31-menu-item:hover:not(.disabled),
+.win31-menu-item:focus:not(.disabled),
+.win31-menu-item.active:not(.disabled) {
   background-color: var(--selection-bg);
   color: var(--selection-text);
 }
@@ -165,4 +174,104 @@
     inset -1px -1px 0 var(--bevel-dark);
   z-index: 3000;
   padding: 2px 0;
+}
+
+/* Win31 Program Manager menu metrics and states (kept separate from Win95). */
+.shell-win31 .win31-menubar {
+  flex: 0 0 var(--menubar-height);
+  height: var(--menubar-height);
+  padding: 0 3px;
+  border: 0;
+  background: var(--window-chrome);
+  -webkit-app-region: no-drag;
+}
+
+.shell-win31 .win31-menu-trigger {
+  min-width: 0;
+  padding: 0 7px;
+  line-height: var(--menubar-height);
+  outline: 0;
+}
+
+.shell-win31 .win31-menu-trigger:hover {
+  color: var(--text-primary);
+  background: transparent;
+}
+
+.shell-win31 .win31-menu.open .win31-menu-trigger,
+.shell-win31 .win31-menu-trigger:focus-visible {
+  color: var(--selection-text);
+  background: var(--selection-bg);
+}
+
+.shell-win31 .win31-dropdown,
+.shell-win31 .win31-submenu,
+.shell-win31 .win31-context-menu {
+  min-width: 166px;
+  padding: 2px;
+  border: 1px solid var(--bevel-darkest);
+  background: var(--window-chrome);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-light),
+    inset -1px -1px 0 var(--bevel-dark),
+    1px 1px 0 var(--bevel-darkest);
+}
+
+.shell-win31 .win31-dropdown {
+  top: calc(100% - 1px);
+}
+
+.shell-win31 .win31-menu-item {
+  min-height: 18px;
+  padding: 2px 18px;
+  font-size: 12px;
+  line-height: 14px;
+}
+
+.shell-win31 .win31-menu-item:hover:not(.disabled),
+.shell-win31 .win31-menu-item:focus:not(.disabled),
+.shell-win31 .win31-menu-item.active:not(.disabled) {
+  color: var(--selection-text);
+  background: var(--selection-bg);
+}
+
+.shell-win31 .win31-menu-item.disabled {
+  color: var(--bevel-dark);
+  text-shadow: 1px 1px 0 var(--bevel-light);
+}
+
+.shell-win31 .win31-menu-separator {
+  margin: 3px 1px;
+}
+
+.shell-win31 .win31-menu-item.checkbox::before {
+  width: 10px;
+  margin-left: -13px;
+  margin-right: 3px;
+}
+
+.shell-win31 .win31-menu-item.has-submenu::after {
+  padding-left: 12px;
+  font-size: 7px;
+}
+
+.shell-win31 .anim-menu-open {
+  animation: none;
+}
+
+.shell-win31 .win31-system-menu {
+  position: absolute;
+  top: 18px;
+  left: 2px;
+  z-index: 3500;
+  min-width: 150px;
+  padding: 2px;
+  border: 1px solid var(--bevel-darkest);
+  background: var(--window-chrome);
+  box-shadow: inset 1px 1px 0 var(--bevel-light), inset -1px -1px 0 var(--bevel-dark), 1px 1px 0 var(--bevel-darkest);
+  -webkit-app-region: no-drag;
+}
+
+.shell-win31 .win31-outer-system-button[aria-expanded='true'] {
+  border-color: var(--bevel-darkest) var(--bevel-light) var(--bevel-light) var(--bevel-darkest);
 }

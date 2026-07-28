@@ -23,8 +23,9 @@ export const MDIWindowControls: React.FC<MDIWindowControlsProps> = ({
           onMinimize()
         }}
         title="Minimize"
+        aria-label="Minimize"
       >
-        ▼
+        <span className="win31-glyph-minimize" />
       </Button>
       <Button
         small
@@ -33,8 +34,9 @@ export const MDIWindowControls: React.FC<MDIWindowControlsProps> = ({
           onMaximize()
         }}
         title={isMaximized ? 'Restore' : 'Maximize'}
+        aria-label={isMaximized ? 'Restore' : 'Maximize'}
       >
-        {isMaximized ? '◇' : '▲'}
+        <span className={isMaximized ? 'win31-glyph-restore' : 'win31-glyph-maximize'} />
       </Button>
     </div>
   )

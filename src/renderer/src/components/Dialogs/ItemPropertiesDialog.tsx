@@ -9,15 +9,19 @@ import { getIconSrc, BUILTIN_ICONS } from '@/utils/icons'
 import { LAUNCH_GROUP_OPTIONS, formatLaunchGroup } from '@/utils/launchGroups'
 
 export const ItemPropertiesDialog: React.FC = () => {
-  const { dialogData, closeDialog } = useUIStore()
-  const { addItem, updateItem, deleteItem, moveItem, updateGroupWindowState } = useProgramStore()
+  const dialogData = useUIStore((state) => state.dialogData)
+  const closeDialog = useUIStore((state) => state.closeDialog)
+  const addItem = useProgramStore((state) => state.addItem)
+  const updateItem = useProgramStore((state) => state.updateItem)
+  const deleteItem = useProgramStore((state) => state.deleteItem)
+  const moveItem = useProgramStore((state) => state.moveItem)
+  const updateGroupWindowState = useProgramStore((state) => state.updateGroupWindowState)
   const groups = useProgramStore((state) => state.groups)
-  const settings = useProgramStore((state) => state.settings)
+  const shell = useProgramStore((state) => state.settings.shell)
   const openWindow = useMDIStore((state) => state.openWindow)
 
   const isEditing = !!dialogData.item
   const existingItem = dialogData.item
-
   const resolvedGroupId =
     dialogData.groupId ||
     (existingItem
@@ -35,94 +39,51 @@ export const ItemPropertiesDialog: React.FC = () => {
   const [iconSearch, setIconSearch] = useState('')
 
   useEffect(() => {
-    if (!selectedGroupId && resolvedGroupId) {
-      setSelectedGroupId(resolvedGroupId)
-    }
+    if (!selectedGroupId && resolvedGroupId) setSelectedGroupId(resolvedGroupId)
   }, [resolvedGroupId, selectedGroupId])
 
   const handleBrowsePath = useCallback(async () => {
     const selectedPath = await window.electronAPI.file.selectExecutable()
-    if (selectedPath) {
-      setPath(selectedPath)
-
-      // Try to extract app info including icon
-      try {
-        const appInfo = await window.electronAPI.app.getInfo(selectedPath)
-
-        // Auto-fill name if empty
-        if (!name && appInfo.name) {
-          setName(appInfo.name)
-        }
-
-        // Auto-fill icon if app has one and current icon is default
-        if (appInfo.icon && (icon === 'default' || icon === 'default-item.png')) {
-          setIcon(appInfo.icon)
-        }
-
-        // Auto-fill working directory if empty
-        if (!workingDir && appInfo.workingDir) {
-          setWorkingDir(appInfo.workingDir)
-        }
-      } catch (e) {
-        // Fallback: just set name from filename
-        if (!name) {
-          const fileName = selectedPath.split(/[/\\]/).pop() || ''
-          setName(fileName.replace(/\.[^/.]+$/, ''))
-        }
+    if (!selectedPath) return
+    setPath(selectedPath)
+    try {
+      const appInfo = await window.electronAPI.app.getInfo(selectedPath)
+      if (!name && appInfo.name) setName(appInfo.name)
+      if (appInfo.icon && (icon === 'default' || icon === 'default-item.png')) setIcon(appInfo.icon)
+      if (!workingDir && appInfo.workingDir) setWorkingDir(appInfo.workingDir)
+    } catch {
+      if (!name) {
+        const fileName = selectedPath.split(/[/\\]/).pop() || ''
+        setName(fileName.replace(/\.[^/.]+$/, ''))
       }
     }
   }, [name, icon, workingDir])
 
-  const handleSubmit = useCallback(
-    (event: React.FormEvent) => {
-      event.preventDefault()
-      if (!name.trim() || !path.trim() || !selectedGroupId) return
-
-      if (isEditing && existingItem) {
-        updateItem(resolvedGroupId, existingItem.id, {
-          name: name.trim(),
-          path: path.trim(),
-          workingDir: workingDir.trim(),
-          icon,
-          launchGroup
-        })
-        if (resolvedGroupId && selectedGroupId !== resolvedGroupId) {
-          moveItem(resolvedGroupId, selectedGroupId, existingItem.id)
-        }
-      } else {
-        addItem(selectedGroupId, {
-          name: name.trim(),
-          path: path.trim(),
-          workingDir: workingDir.trim(),
-          icon,
-          launchGroup
-        })
-      }
-      if (settings.shell === 'win95') {
-        updateGroupWindowState(selectedGroupId, { minimized: false })
-        openWindow(selectedGroupId)
-      }
-      closeDialog()
-    },
-    [
-      name,
-      path,
-      workingDir,
+  const handleSubmit = useCallback((event: React.FormEvent) => {
+    event.preventDefault()
+    if (!name.trim() || !path.trim() || !selectedGroupId) return
+    const values = {
+      name: name.trim(),
+      path: path.trim(),
+      workingDir: workingDir.trim(),
       icon,
-      launchGroup,
-      selectedGroupId,
-      isEditing,
-      existingItem,
-      resolvedGroupId,
-      addItem,
-      updateItem,
-      moveItem,
-      settings.shell,
-      updateGroupWindowState,
-      openWindow,
-      closeDialog
-    ]
-  )
+      launchGroup
+    }
+    if (isEditing && existingItem) {
+      updateItem(resolvedGroupId, existingItem.id, values)
+      if (resolvedGroupId && selectedGroupId !== resolvedGroupId) {
+        moveItem(resolvedGroupId, selectedGroupId, existingItem.id)
+      }
+    } else {
+      addItem(selectedGroupId, values)
+    }
+    if (shell === 'win95') {
+      updateGroupWindowState(selectedGroupId, { minimized: false })
+      openWindow(selectedGroupId)
+    }
+    closeDialog()
+  }, [name, path, workingDir, icon, launchGroup, selectedGroupId, isEditing, existingItem,
+    resolvedGroupId, addItem, updateItem, moveItem, shell, updateGroupWindowState, openWindow, closeDialog])
 
   const handleDelete = useCallback(() => {
     if (existingItem && resolvedGroupId) {
@@ -131,162 +92,71 @@ export const ItemPropertiesDialog: React.FC = () => {
     }
   }, [existingItem, resolvedGroupId, deleteItem, closeDialog])
 
+  const filteredIcons = BUILTIN_ICONS.filter((candidate) =>
+    !iconSearch || candidate.name.toLowerCase().includes(iconSearch.toLowerCase())
+  )
+  const submitDisabled = !name.trim() || !path.trim() || !selectedGroupId
+
   return (
-    <Dialog
-      title={isEditing ? 'Program Item Properties' : 'New Program Item'}
-      onClose={closeDialog}
-      width={450}
-    >
-      <form onSubmit={handleSubmit}>
-        {groups.length > 1 && (
+    <Dialog title={isEditing ? 'Program Item Properties' : 'New Program Item'} onClose={closeDialog} width={470}>
+      <form onSubmit={handleSubmit} className="win31-properties-layout">
+        <div className="win31-properties-fields">
+          {groups.length > 1 && (
+            <div className="win31-form-row">
+              <label htmlFor="item-group">Program Group:</label>
+              <select id="item-group" className="win31-input" value={selectedGroupId}
+                onChange={(event) => setSelectedGroupId(event.target.value)}>
+                {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
+              </select>
+            </div>
+          )}
           <div className="win31-form-row">
-            <label htmlFor="item-group">Program Group:</label>
-            <select
-              id="item-group"
-              className="win31-input"
-              value={selectedGroupId}
-              onChange={(e) => setSelectedGroupId(e.target.value)}
-            >
-              {groups.map((group) => (
-                <option key={group.id} value={group.id}>
-                  {group.name}
-                </option>
-              ))}
+            <label htmlFor="item-name">Description:</label>
+            <TextInput id="item-name" value={name} onChange={(event) => setName(event.target.value)} autoFocus />
+          </div>
+          <div className="win31-form-row">
+            <label htmlFor="item-path">Command Line:</label>
+            <TextInput id="item-path" value={path} onChange={(event) => setPath(event.target.value)} />
+          </div>
+          <div className="win31-form-row">
+            <label htmlFor="item-workdir">Working Directory:</label>
+            <TextInput id="item-workdir" value={workingDir} onChange={(event) => setWorkingDir(event.target.value)} />
+          </div>
+          <div className="win31-form-row">
+            <label htmlFor="item-launch-group">Launch Group:</label>
+            <select id="item-launch-group" className="win31-input" value={launchGroup}
+              onChange={(event) => setLaunchGroup(Number(event.target.value))}>
+              {LAUNCH_GROUP_OPTIONS.map((value) => <option key={value} value={value}>{formatLaunchGroup(value)}</option>)}
             </select>
           </div>
-        )}
-
-        <div className="win31-form-row">
-          <label htmlFor="item-name">Description:</label>
-          <TextInput
-            id="item-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoFocus
-          />
-        </div>
-
-        <div className="win31-form-row">
-          <label htmlFor="item-path">Command Line:</label>
-          <TextInput
-            id="item-path"
-            value={path}
-            onChange={(e) => setPath(e.target.value)}
-          />
-          <Button type="button" onClick={handleBrowsePath}>
-            Browse...
-          </Button>
-        </div>
-
-        <div className="win31-form-row">
-          <label htmlFor="item-workdir">Working Directory:</label>
-          <TextInput
-            id="item-workdir"
-            value={workingDir}
-            onChange={(e) => setWorkingDir(e.target.value)}
-          />
-        </div>
-
-        <div className="win31-form-row">
-          <label htmlFor="item-launch-group">Launch Group:</label>
-          <select
-            id="item-launch-group"
-            className="win31-input"
-            value={launchGroup}
-            onChange={(e) => setLaunchGroup(Number(e.target.value))}
-            style={{ width: 150 }}
-          >
-            {LAUNCH_GROUP_OPTIONS.map((value) => (
-              <option key={value} value={value}>
-                {formatLaunchGroup(value)}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="win31-form-row">
-          <label>Icon:</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
-            <img
-              src={getIconSrc(icon)}
-              alt="Icon"
-              width={32}
-              height={32}
-              style={{ imageRendering: 'pixelated' }}
-            />
-            <Button type="button" onClick={() => setShowIconPicker(!showIconPicker)}>
-              {showIconPicker ? 'Hide Icons' : 'Change Icon...'}
-            </Button>
+          <div className="win31-form-row win31-icon-preview-row">
+            <label>Icon:</label>
+            <div className="win31-icon-preview-well"><img src={getIconSrc(icon)} alt="Selected icon" width={32} height={32} /></div>
           </div>
-        </div>
-
-        {showIconPicker && (
-          <div style={{ marginBottom: 10 }}>
-            <TextInput
-              value={iconSearch}
-              onChange={(e) => setIconSearch(e.target.value)}
-              placeholder="Filter icons..."
-              style={{ marginBottom: 4 }}
-            />
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(10, 1fr)',
-              gap: 4,
-              padding: 8,
-              background: 'var(--win31-white)',
-              border: '2px inset var(--bevel-dark)',
-              maxHeight: 200,
-              overflowY: 'auto'
-            }}
-          >
-            {BUILTIN_ICONS.filter((i) =>
-              !iconSearch || i.name.toLowerCase().includes(iconSearch.toLowerCase())
-            ).map((iconOption) => (
-              <div
-                key={iconOption.id}
-                onClick={() => setIcon(iconOption.id)}
-                title={iconOption.name}
-                style={{
-                  width: 36,
-                  height: 36,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  border: icon === iconOption.id ? '2px solid var(--win31-blue)' : '2px solid transparent',
-                  background: icon === iconOption.id ? 'var(--selection-bg)' : 'transparent'
-                }}
-              >
-                <img
-                  src={iconOption.icon}
-                  alt={iconOption.name}
-                  width={32}
-                  height={32}
-                  style={{ imageRendering: 'pixelated' }}
-                />
+          {showIconPicker && (
+            <div className="win31-icon-picker-panel">
+              <TextInput value={iconSearch} onChange={(event) => setIconSearch(event.target.value)} placeholder="Filter icons..." />
+              <div className="win31-icon-picker" role="listbox" aria-label="Program icons">
+                {filteredIcons.map((iconOption) => (
+                  <button type="button" key={iconOption.id}
+                    className={`win31-icon-choice ${icon === iconOption.id ? 'selected' : ''}`}
+                    onClick={() => setIcon(iconOption.id)} title={iconOption.name}
+                    aria-label={iconOption.name} aria-selected={icon === iconOption.id} role="option">
+                    <img src={iconOption.icon} alt="" width={32} height={32} />
+                  </button>
+                ))}
               </div>
-            ))}
-          </div>
-          </div>
-        )}
-
-        <div className="win31-dialog-buttons">
-          <Button
-            type="submit"
-            isDefault
-            disabled={!name.trim() || !path.trim() || !selectedGroupId}
-          >
-            OK
-          </Button>
-          <Button type="button" onClick={closeDialog}>
-            Cancel
-          </Button>
-          {isEditing && (
-            <Button type="button" onClick={handleDelete}>
-              Delete
-            </Button>
+            </div>
           )}
+        </div>
+        <div className="win31-properties-buttons">
+          <Button type="submit" isDefault disabled={submitDisabled}>OK</Button>
+          <Button type="button" onClick={closeDialog}>Cancel</Button>
+          <Button type="button" onClick={handleBrowsePath}>Browse...</Button>
+          <Button type="button" onClick={() => setShowIconPicker((shown) => !shown)}>
+            {showIconPicker ? 'Hide Icons' : 'Change Icon...'}
+          </Button>
+          {isEditing && <Button type="button" onClick={handleDelete}>Delete</Button>}
         </div>
       </form>
     </Dialog>

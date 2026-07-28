@@ -233,3 +233,10 @@
 .launch-feedback.launching .launch-feedback-meter-fill {
   animation: launch-meter-stripes 420ms linear infinite;
 }
+
+/* Windows 3.x feedback is stateful rather than compositor-heavy. */
+.shell-win31 .launch-feedback,
+.shell-win31 .launch-feedback.launching .launch-feedback-icon,
+.shell-win31 .launch-feedback.launching .launch-feedback-meter-fill {
+  animation: none;
+}

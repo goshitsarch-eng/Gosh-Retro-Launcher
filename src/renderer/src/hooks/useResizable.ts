@@ -177,6 +177,12 @@ export function useResizable({
         window.cancelAnimationFrame(frameRef.current)
         frameRef.current = null
       }
+      pendingSize.current = null
+      pendingPosition.current = null
+      resizeDirection.current = null
+      if (elementRef?.current) {
+        elementRef.current.style.willChange = ''
+      }
     }
   }, [isResizing, minSize, containerRef, elementRef, onResizeEnd])
 

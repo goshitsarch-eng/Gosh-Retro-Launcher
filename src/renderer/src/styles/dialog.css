@@ -355,3 +355,332 @@
   font-size: var(--font-size-base);
   line-height: 1.4;
 }
+
+/* Compact Windows 3.11 dialog composition, scoped away from Win95. */
+.shell-win31 .win31-dialog {
+  min-width: 250px;
+  border: 1px solid var(--bevel-darkest);
+  background: var(--window-chrome);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-light),
+    inset -1px -1px 0 var(--bevel-dark),
+    1px 1px 0 var(--bevel-darkest);
+  padding: 2px;
+}
+
+.shell-win31 .win31-dialog > .win31-titlebar,
+.shell-win31 .quick-search-dialog > .win31-titlebar {
+  position: relative;
+  flex: 0 0 18px;
+  height: 18px;
+  margin: 0;
+  padding: 1px 2px;
+}
+
+.shell-win31 .win31-dialog > .win31-titlebar .win31-titlebar-text,
+.shell-win31 .quick-search-dialog > .win31-titlebar .win31-titlebar-text {
+  position: absolute;
+  inset: 0 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  text-align: center;
+  pointer-events: none;
+}
+
+.win31-dialog-system-button {
+  display: none;
+}
+
+.shell-win31 .win31-dialog-system-button {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 13px;
+  height: 13px;
+  min-width: 13px;
+  padding: 0;
+  background: var(--window-chrome);
+  border-style: solid;
+  border-width: 1px;
+  border-color: var(--bevel-light) var(--bevel-darkest) var(--bevel-darkest) var(--bevel-light);
+}
+
+.shell-win31 .win31-dialog-system-button span {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  left: 3px;
+  height: 2px;
+  border-top: 1px solid var(--win31-black);
+  border-bottom: 1px solid var(--win31-black);
+}
+
+.shell-win31 .win31-dialog-content {
+  padding: 8px;
+}
+
+.shell-win31 .win31-form-row {
+  gap: 5px;
+  margin-bottom: 5px;
+}
+
+.shell-win31 .win31-form-row label {
+  min-width: 106px;
+  font-size: 12px;
+  text-align: right;
+}
+
+.shell-win31 .win31-input {
+  min-height: 19px;
+  padding: 1px 3px;
+  font-size: 12px;
+  line-height: 15px;
+  border: 1px solid var(--win31-black);
+  box-shadow: inset 1px 1px 0 var(--bevel-dark);
+}
+
+.shell-win31 select.win31-input {
+  padding: 0 2px;
+}
+
+.shell-win31 .win31-button {
+  min-width: 68px;
+  min-height: 22px;
+  padding: 2px 8px;
+  font-size: 12px;
+  line-height: 14px;
+  border-width: 1px;
+  outline: 1px solid var(--win31-black);
+}
+
+.shell-win31 .win31-button.default {
+  outline-width: 2px;
+}
+
+.shell-win31 .win31-button:disabled {
+  color: var(--bevel-dark);
+  text-shadow: 1px 1px var(--bevel-light);
+}
+
+.shell-win31 .win31-dialog-buttons {
+  gap: 7px;
+  padding: 4px 8px 8px;
+}
+
+.shell-win31 .win31-properties-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 82px;
+  gap: 10px;
+  align-items: start;
+}
+
+.shell-win31 .win31-properties-fields {
+  min-width: 0;
+}
+
+.shell-win31 .win31-properties-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.shell-win31 .win31-properties-buttons .win31-button {
+  width: 78px;
+  min-width: 78px;
+}
+
+.shell-win31 .win31-icon-preview-row {
+  align-items: flex-start;
+}
+
+.shell-win31 .win31-icon-preview-well {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--bevel-dark);
+  background: var(--window-bg);
+  box-shadow: inset 1px 1px 0 var(--bevel-darkest), inset -1px -1px 0 var(--bevel-light);
+}
+
+.shell-win31 .win31-icon-preview-well img,
+.shell-win31 .win31-icon-choice img,
+.shell-win31 .win31-about-icon {
+  image-rendering: pixelated;
+}
+
+.shell-win31 .win31-icon-picker-panel {
+  margin: 5px 0;
+}
+
+.shell-win31 .win31-icon-picker-panel > .win31-input {
+  margin-bottom: 4px;
+}
+
+.shell-win31 .win31-icon-picker {
+  display: grid;
+  grid-template-columns: repeat(7, 36px);
+  gap: 2px;
+  max-height: 146px;
+  padding: 4px;
+  overflow: auto;
+  border: 1px solid var(--bevel-darkest);
+  background: var(--window-bg);
+  box-shadow: inset 1px 1px 0 var(--bevel-dark);
+}
+
+.shell-win31 .win31-icon-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 1px;
+  border: 1px solid transparent;
+  background: transparent;
+  outline: 0;
+}
+
+.shell-win31 .win31-icon-choice.selected,
+.shell-win31 .win31-icon-choice:focus {
+  border-color: var(--selection-bg);
+  background: var(--selection-bg);
+  outline: 1px dotted var(--selection-text);
+  outline-offset: -3px;
+}
+
+.shell-win31 .win31-groupbox {
+  margin: 10px 0 7px;
+  padding: 11px 7px 7px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+  box-shadow: none;
+}
+
+.shell-win31 .win31-groupbox-label {
+  top: -7px;
+  left: 7px;
+  padding: 0 3px;
+  font-size: 12px;
+}
+
+.shell-win31 .win31-checkbox {
+  gap: 5px;
+  font-size: 12px;
+}
+
+.shell-win31 .win31-checkbox .checkmark {
+  width: 12px;
+  height: 12px;
+}
+
+.shell-win31 .win31-about-content {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 13px 12px 8px;
+  text-align: left;
+}
+
+.shell-win31 .win31-about-icon {
+  width: 48px;
+  height: 48px;
+  margin: 4px auto 0;
+}
+
+.shell-win31 .win31-about-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.shell-win31 .win31-about-rule {
+  height: 2px;
+  margin: 5px 0;
+  border-top: 1px solid var(--bevel-dark);
+  border-bottom: 1px solid var(--bevel-light);
+}
+
+.shell-win31 .win31-about-title {
+  font-size: 14px;
+}
+
+.shell-win31 .win31-about-version,
+.shell-win31 .win31-about-info,
+.shell-win31 .win31-about-copyright {
+  font-size: 12px;
+  line-height: 14px;
+}
+
+.shell-win31 .win31-confirm-content {
+  gap: 10px;
+  padding: 12px 10px 8px;
+}
+
+.shell-win31 .win31-confirm-message {
+  font-size: 12px;
+  line-height: 15px;
+}
+
+.shell-win31 .theme-preview {
+  height: 88px;
+}
+
+.shell-win31 .win31-slider-row {
+  gap: 7px;
+  font-size: 12px;
+}
+
+.shell-win31 .quick-search-dialog .win31-dialog-content {
+  padding: 8px;
+}
+
+.shell-win31 .quick-search-item {
+  min-height: 22px;
+  padding: 2px 5px !important;
+  gap: 5px !important;
+}
+
+.shell-win31 .anim-dialog-open,
+.shell-win31 .anim-dialog-close,
+.shell-win31 .anim-overlay-fade-in {
+  animation: none;
+  transform: none;
+}
+
+.shell-win31 .win31-slider-row input[type='range'] {
+  appearance: none;
+  height: 18px;
+  background: transparent;
+}
+
+.shell-win31 .win31-slider-row input[type='range']::-webkit-slider-runnable-track {
+  height: 4px;
+  border-top: 1px solid var(--bevel-dark);
+  border-left: 1px solid var(--bevel-dark);
+  border-bottom: 1px solid var(--bevel-light);
+  border-right: 1px solid var(--bevel-light);
+  background: var(--window-chrome);
+}
+
+.shell-win31 .win31-slider-row input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 9px;
+  height: 16px;
+  margin-top: -7px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: var(--bevel-light) var(--bevel-darkest) var(--bevel-darkest) var(--bevel-light);
+  background: var(--window-chrome);
+  border-radius: 0;
+}
+
+.shell-win31 select.win31-input {
+  appearance: auto;
+  background: var(--window-bg);
+}

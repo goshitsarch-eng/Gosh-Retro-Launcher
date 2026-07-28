@@ -103,7 +103,7 @@
 }
 
 .shell-win31 {
-  --desktop-bg: #008080;
+  --desktop-bg: #c0c0c0;
   --window-bg: #ffffff;
   --window-chrome: #c0c0c0;
   --window-border: #000000;
@@ -117,15 +117,21 @@
   --bevel-darkest: #000000;
   --selection-bg: #000080;
   --selection-text: #ffffff;
-  --desktop-text: #ffffff;
-  --font-size-base: 14px;
-  --font-size-title: 14px;
-  --font-size-menu: 14px;
-  --titlebar-height: 20px;
-  --menubar-height: 22px;
-  --button-height: 24px;
+  --desktop-text: #000000;
+  --font-size-base: 12px;
+  --font-size-title: 12px;
+  --font-size-menu: 12px;
+  --line-height-base: 1.15;
+  --titlebar-height: 18px;
+  --menubar-height: 19px;
+  --button-height: 22px;
+  --button-min-width: 68px;
   --control-button-size: 13px;
-  --icon-tile-width: 86px;
+  --icon-tile-width: 72px;
+  --mdi-icon-width: 80px;
+  --dialog-padding: 8px;
+  --menu-item-padding-x: 18px;
+  --menu-item-padding-y: 2px;
 }
 
 .shell-win95 {

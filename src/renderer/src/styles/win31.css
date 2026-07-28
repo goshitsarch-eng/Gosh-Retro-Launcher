@@ -567,3 +567,126 @@ body {
   outline: 1px dotted var(--text-primary);
   outline-offset: 2px;
 }
+
+/* ==========================================
+   AUTHENTIC WIN31 OUTER PROGRAM MANAGER FRAME
+   ========================================== */
+.shell-win31 .win31-program-manager-shell {
+  position: relative;
+  padding: 2px;
+  border: 1px solid var(--win31-black);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-light),
+    inset -1px -1px 0 var(--bevel-dark);
+  -webkit-font-smoothing: none;
+  text-rendering: geometricPrecision;
+}
+
+.shell-win31 .win31-program-manager-caption {
+  position: relative;
+  flex: 0 0 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  padding: 1px 2px;
+  justify-content: space-between;
+  border: 0;
+  background: var(--titlebar-active-bg);
+  -webkit-app-region: drag;
+}
+
+.shell-win31 .win31-program-manager-title {
+  position: absolute;
+  inset: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.shell-win31 .win31-outer-system-button,
+.shell-win31 .win31-outer-control-button {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  margin: 1px 0;
+  padding: 0;
+  color: var(--win31-black);
+  background: var(--window-chrome);
+  border-style: solid;
+  border-width: 1px;
+  border-color: var(--bevel-light) var(--bevel-darkest) var(--bevel-darkest) var(--bevel-light);
+  outline: 0;
+  -webkit-app-region: no-drag;
+}
+
+.shell-win31 .win31-outer-system-button:active,
+.shell-win31 .win31-outer-control-button:active {
+  border-color: var(--bevel-darkest) var(--bevel-light) var(--bevel-light) var(--bevel-darkest);
+}
+
+.shell-win31 .win31-outer-system-button > span {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  left: 3px;
+  height: 2px;
+  border-top: 1px solid var(--win31-black);
+  border-bottom: 1px solid var(--win31-black);
+}
+
+.shell-win31 .win31-outer-caption-controls {
+  display: flex;
+  margin-left: auto;
+  gap: 2px;
+  -webkit-app-region: no-drag;
+}
+
+.shell-win31 .win31-glyph-minimize,
+.shell-win31 .win31-glyph-maximize,
+.shell-win31 .win31-glyph-restore {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.shell-win31 .win31-glyph-minimize::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 4px;
+  border-top: 5px solid var(--win31-black);
+  border-right: 3px solid transparent;
+  border-left: 3px solid transparent;
+}
+
+.shell-win31 .win31-glyph-maximize::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  border-right: 3px solid transparent;
+  border-bottom: 5px solid var(--win31-black);
+  border-left: 3px solid transparent;
+}
+
+.shell-win31 .win31-glyph-restore::before,
+.shell-win31 .win31-glyph-restore::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 5px;
+  border: 1px solid var(--win31-black);
+  background: var(--window-chrome);
+}
+.shell-win31 .win31-glyph-restore::before { top: 3px; left: 5px; }
+.shell-win31 .win31-glyph-restore::after { top: 5px; left: 3px; }
+
+.shell-win31 .shortcut-hint {
+  display: none;
+}

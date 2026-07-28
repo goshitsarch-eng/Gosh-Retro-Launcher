@@ -6,61 +6,38 @@ import { APP_ICON } from '@/utils/icons'
 
 export const AboutDialog: React.FC = () => {
   const closeDialog = useUIStore((state) => state.closeDialog)
-  const [platform, setPlatform] = useState<string>('')
-  const [version, setVersion] = useState<string>('')
+  const [platform, setPlatform] = useState('')
+  const [version, setVersion] = useState('')
 
   useEffect(() => {
-    window.electronAPI.system.getPlatform().then((p) => {
-      const platformNames: Record<string, string> = {
-        win32: 'Windows',
-        darwin: 'macOS',
-        linux: 'Linux'
-      }
-      setPlatform(platformNames[p] || p)
-    }).catch(() => {
-      setPlatform('Unknown')
-    })
-    window.electronAPI.system.getVersion().then(setVersion).catch(() => {
-      setVersion('Unknown')
-    })
+    let cancelled = false
+    void window.electronAPI.system.getPlatform().then((value) => {
+      if (cancelled) return
+      const names: Record<string, string> = { win32: 'Windows', darwin: 'macOS', linux: 'Linux' }
+      setPlatform(names[value] || value)
+    }).catch(() => !cancelled && setPlatform('Unknown'))
+    void window.electronAPI.system.getVersion().then((value) => {
+      if (!cancelled) setVersion(value)
+    }).catch(() => !cancelled && setVersion('Unknown'))
+    return () => { cancelled = true }
   }, [])
 
   return (
-    <Dialog title="About Program Manager" onClose={closeDialog} width={350}>
+    <Dialog title="About Program Manager" onClose={closeDialog} width={360}>
       <div className="win31-about-content">
-        <img
-          src={APP_ICON}
-          alt="Program Manager"
-          className="win31-about-icon"
-          style={{ width: 48, height: 48, imageRendering: 'pixelated' }}
-        />
-
-        <div className="win31-about-title">Program Manager</div>
-        <div className="win31-about-version">Version {version}</div>
-
-        <hr className="win31-about-separator" />
-
-        <div className="win31-about-info">
-          A Windows 3.1 Program Manager clone
-          <br />
-          built with Electron and React.
-        </div>
-
-        <div className="win31-about-info" style={{ marginTop: 8 }}>
-          Running on {platform}
-        </div>
-
-        <hr className="win31-about-separator" />
-
-        <div className="win31-about-info" style={{ fontSize: 10 }}>
-          © 2025. Made with nostalgia.
+        <img src={APP_ICON} alt="Program Manager" className="win31-about-icon" />
+        <div className="win31-about-copy">
+          <div className="win31-about-title">Program Manager</div>
+          <div className="win31-about-version">Version {version}</div>
+          <div className="win31-about-copyright">Copyright © 2025</div>
+          <div className="win31-about-rule" />
+          <div className="win31-about-info">Windows 3.11 Program Manager-compatible launcher</div>
+          <div className="win31-about-rule" />
+          <div className="win31-about-info">Running on {platform}</div>
         </div>
       </div>
-
       <div className="win31-dialog-buttons">
-        <Button onClick={closeDialog} isDefault autoFocus>
-          OK
-        </Button>
+        <Button onClick={closeDialog} isDefault autoFocus>OK</Button>
       </div>
     </Dialog>
   )

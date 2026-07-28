@@ -5,6 +5,7 @@ import { QuickSearchOverlay } from './components/QuickSearch/QuickSearchOverlay'
 import { useProgramStore } from './store/programStore'
 import { useUIStore } from './store/uiStore'
 import { useSounds } from './hooks/useSounds'
+import { suspendSoundContext } from './utils/sounds'
 import { getShell } from './shells'
 
 const App: React.FC = () => {
@@ -23,24 +24,39 @@ const App: React.FC = () => {
 
   const sounds = useSounds()
   const [platform, setPlatform] = useState<string>('linux')
-  const initializedRef = useRef(false)
+  const startupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const startupScheduledRef = useRef(false)
 
-  // Load data and platform on mount
+  // Load data and platform on mount. All delayed work is canceled on teardown.
   useEffect(() => {
-    if (initializedRef.current) {
-      return
-    }
-    initializedRef.current = true
+    let cancelled = false
 
-    loadData().then(() => {
-      setTimeout(() => sounds.startupChime(), 300)
+    void loadData().then(() => {
+      if (cancelled || startupScheduledRef.current) return
+      startupScheduledRef.current = true
+      startupTimerRef.current = setTimeout(() => {
+        startupTimerRef.current = null
+        sounds.startupChime()
+      }, 300)
     })
-    window.electronAPI.system.getPlatform().then(setPlatform)
+    void window.electronAPI.system.getPlatform().then((nextPlatform) => {
+      if (!cancelled) setPlatform(nextPlatform)
+    })
 
     // Show welcome dialog on first run
     if (!localStorage.getItem('hasLaunched')) {
       localStorage.setItem('hasLaunched', 'true')
       openDialog('welcome')
+    }
+
+    return () => {
+      cancelled = true
+      if (startupTimerRef.current !== null) {
+        clearTimeout(startupTimerRef.current)
+        startupTimerRef.current = null
+      }
+      startupScheduledRef.current = false
+      suspendSoundContext()
     }
   }, [loadData, sounds, openDialog])
 

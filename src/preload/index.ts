@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC_CHANNELS } from '@shared/constants/ipc'
-import type { ProgramItem, ProgramGroup, AppSettings, StoreData, AppInfo } from '@shared/types'
+import type { ProgramItem, ProgramGroup, AppSettings, StoreData, AppInfo, ShellType } from '@shared/types'
 
 const ipcListenerMap = new Map<string, Map<(...args: unknown[]) => void, (...args: unknown[]) => void>>()
 
@@ -12,7 +12,9 @@ const electronAPI = {
     maximize: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_MAXIMIZE),
     close: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_CLOSE),
     quit: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_QUIT),
-    isMaximized: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_IS_MAXIMIZED) as Promise<boolean>
+    isMaximized: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_IS_MAXIMIZED) as Promise<boolean>,
+    recreateForShell: (shell: ShellType) =>
+      ipcRenderer.invoke(IPC_CHANNELS.WINDOW_RECREATE_FOR_SHELL, shell) as Promise<boolean>
   },
 
   // File Operations

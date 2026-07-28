@@ -3,7 +3,6 @@ import { MDIWindow } from './MDIWindow'
 import { useProgramStore } from '@/store/programStore'
 import { useMDIStore } from '@/store/mdiStore'
 import { useUIStore } from '@/store/uiStore'
-import { getIconSrc } from '@/utils/icons'
 import type { ProgramGroup } from '@shared/types'
 
 export const MDIContainer: React.FC = () => {
@@ -219,7 +218,16 @@ export const MDIContainer: React.FC = () => {
             <div
               key={group.id}
               className="win31-mdi-icon"
+              role="button"
+              tabIndex={0}
+              aria-label={`Restore ${group.name}`}
               onDoubleClick={() => restoreGroup(group)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  restoreGroup(group)
+                }
+              }}
               onContextMenu={(event) => {
                 event.preventDefault()
                 event.stopPropagation()
@@ -230,12 +238,9 @@ export const MDIContainer: React.FC = () => {
                 })
               }}
             >
-              <img
-                src={getIconSrc(group.icon)}
-                alt={group.name}
-                className="icon"
-                draggable={false}
-              />
+              <span className="win31-group-window-glyph" aria-hidden="true">
+                <span />
+              </span>
               <span className="label">{group.name}</span>
             </div>
           ))}

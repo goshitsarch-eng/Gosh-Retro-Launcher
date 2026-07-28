@@ -8,6 +8,7 @@ export const IPC_CHANNELS = {
   WINDOW_CLOSE: 'window:close',
   WINDOW_QUIT: 'window:quit',
   WINDOW_IS_MAXIMIZED: 'window:is-maximized',
+  WINDOW_RECREATE_FOR_SHELL: 'window:recreate-for-shell',
 
   // File Operations
   FILE_SELECT_EXECUTABLE: 'file:select-executable',

@@ -1,21 +1,38 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, shell, type Rectangle } from 'electron'
 import { join } from 'path'
 import { getSettings } from './store'
+import type { ShellType } from '@shared/types'
 
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
+
+interface CreateWindowOptions {
+  shell?: ShellType
+  bounds?: Rectangle
+  maximized?: boolean
+}
+
+export function usesNativeWindowFrame(shellType: ShellType): boolean {
+  return shellType !== 'win31'
+}
 
 export function setQuitting(value: boolean): void {
   isQuitting = value
 }
 
-export function createWindow(): BrowserWindow {
-  mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+export function createWindow(options: CreateWindowOptions = {}): BrowserWindow {
+  const shellType = options.shell ?? getSettings().shell ?? 'win31'
+  const useNativeFrame = usesNativeWindowFrame(shellType)
+  const bounds = options.bounds
+  const browserWindow = new BrowserWindow({
+    width: bounds?.width ?? 800,
+    height: bounds?.height ?? 600,
+    x: bounds?.x,
+    y: bounds?.y,
     minWidth: 400,
     minHeight: 300,
-    backgroundColor: '#008080', // Win 3.1 teal
+    frame: useNativeFrame,
+    backgroundColor: shellType === 'win31' ? '#c0c0c0' : '#008080',
     show: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -24,27 +41,34 @@ export function createWindow(): BrowserWindow {
       sandbox: true
     }
   })
+  mainWindow = browserWindow
 
   // Handle window ready-to-show
-  mainWindow.on('ready-to-show', () => {
-    mainWindow?.show()
+  browserWindow.once('ready-to-show', () => {
+    if (browserWindow.isDestroyed()) return
+    if (options.maximized) browserWindow.maximize()
+    browserWindow.show()
   })
 
   // Handle close behavior - minimize to tray instead of quitting (unless actually quitting)
-  mainWindow.on('close', (event) => {
+  browserWindow.on('close', (event) => {
     const settings = getSettings()
     if (!isQuitting && settings.trayOnClose !== false) {
       event.preventDefault()
-      mainWindow?.hide()
+      browserWindow.hide()
     }
   })
 
+  browserWindow.on('closed', () => {
+    if (mainWindow === browserWindow) mainWindow = null
+  })
+
   // Open external links in browser (only allow http/https protocols)
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  browserWindow.webContents.setWindowOpenHandler(({ url }) => {
     try {
       const parsed = new URL(url)
       if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-        shell.openExternal(url)
+        void shell.openExternal(url)
       }
     } catch {
       // Invalid URL, ignore
@@ -55,17 +79,33 @@ export function createWindow(): BrowserWindow {
   // Load the app
   const isDev = !app.isPackaged
   if (isDev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    void browserWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    void browserWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
   // Open DevTools only when explicitly requested
   if (isDev && process.env['ELECTRON_OPEN_DEVTOOLS'] === '1') {
-    mainWindow.webContents.openDevTools()
+    browserWindow.webContents.openDevTools()
   }
 
-  return mainWindow
+  return browserWindow
+}
+
+export function recreateWindowForShell(shellType: ShellType): BrowserWindow {
+  const previousWindow = mainWindow
+  const maximized = previousWindow?.isMaximized() ?? false
+  const bounds = previousWindow && !previousWindow.isDestroyed()
+    ? maximized ? previousWindow.getNormalBounds() : previousWindow.getBounds()
+    : undefined
+
+  if (previousWindow && !previousWindow.isDestroyed()) {
+    // destroy() intentionally bypasses close-to-tray interception. The tray itself
+    // remains alive and is reused by the replacement BrowserWindow.
+    previousWindow.destroy()
+  }
+
+  return createWindow({ shell: shellType, bounds, maximized })
 }
 
 export function getMainWindow(): BrowserWindow | null {
