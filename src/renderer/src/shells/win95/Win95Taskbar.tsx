@@ -3,6 +3,7 @@ import { useProgramStore } from '@/store/programStore'
 import { useMDIStore } from '@/store/mdiStore'
 import { useSounds } from '@/hooks/useSounds'
 import { getIconSrc } from '@/utils/icons'
+import { getGroupWindowState } from '@shared/types'
 
 interface Win95TaskbarProps {
   onStartClick: () => void
@@ -36,11 +37,11 @@ export const Win95Taskbar: React.FC<Win95TaskbarProps> = ({ onStartClick, startM
     sounds.buttonClick()
     if (minimized) {
       // Restore and focus
-      updateGroupWindowState(groupId, { minimized: false })
+      updateGroupWindowState(groupId, { minimized: false }, 'win95')
       focusWindow(groupId)
     } else if (activeWindowId === groupId) {
       // Currently focused + visible -> minimize to taskbar
-      updateGroupWindowState(groupId, { minimized: true })
+      updateGroupWindowState(groupId, { minimized: true }, 'win95')
     } else {
       // Visible but not focused -> focus
       focusWindow(groupId)
@@ -65,12 +66,13 @@ export const Win95Taskbar: React.FC<Win95TaskbarProps> = ({ onStartClick, startM
 
       <div className="win95-taskbar-windows">
         {taskbarGroups.map((group) => {
-          const isActive = activeWindowId === group.id && !group.windowState.minimized
+          const windowState = getGroupWindowState(group, 'win95')
+          const isActive = activeWindowId === group.id && !windowState.minimized
           return (
             <button
               key={group.id}
               className={`win95-taskbar-button ${isActive ? 'active' : ''}`}
-              onClick={() => handleWindowButtonClick(group.id, group.windowState.minimized)}
+              onClick={() => handleWindowButtonClick(group.id, windowState.minimized)}
               title={group.name}
             >
               <img

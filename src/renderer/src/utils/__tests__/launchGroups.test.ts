@@ -16,6 +16,10 @@ const group = (id: string, items: ProgramItem[]): ProgramGroup => ({
   name: id,
   icon: 'folder',
   windowState: { x: 0, y: 0, width: 300, height: 200, minimized: false, maximized: false },
+  shellWindowState: {
+    win31: { x: 0, y: 0, width: 300, height: 200, minimized: false, maximized: false },
+    win95: { x: 0, y: 0, width: 300, height: 200, minimized: false, maximized: false }
+  },
   items
 })
 

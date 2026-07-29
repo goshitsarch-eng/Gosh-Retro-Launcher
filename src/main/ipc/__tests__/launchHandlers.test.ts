@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { tokenizeCommand, isValidExecPath } from '../launchHandlers'
+import { tokenizeCommand, isValidExecPath, parseEnvironment } from '../launchHandlers'
 
 describe('tokenizeCommand', () => {
   it('tokenizes a simple command', () => {
@@ -26,8 +26,23 @@ describe('tokenizeCommand', () => {
     expect(tokenizeCommand(`cmd 'a b' "c d"`)).toEqual(['cmd', 'a b', 'c d'])
   })
 
+  it('preserves Windows path separators in arguments', () => {
+    expect(tokenizeCommand('C:\\Temp\\input.txt "C:\\Long Path\\output.txt"')).toEqual([
+      'C:\\Temp\\input.txt', 'C:\\Long Path\\output.txt'
+    ])
+  })
+
   it('collapses multiple spaces', () => {
     expect(tokenizeCommand('a   b')).toEqual(['a', 'b'])
+  })
+})
+
+describe('parseEnvironment', () => {
+  it('merges valid KEY=VALUE lines and ignores comments or malformed lines', () => {
+    const environment = parseEnvironment('ALPHA=one\n# comment\nINVALID\nBETA=two=parts')
+    expect(environment.ALPHA).toBe('one')
+    expect(environment.BETA).toBe('two=parts')
+    expect(environment.INVALID).toBeUndefined()
   })
 })
 

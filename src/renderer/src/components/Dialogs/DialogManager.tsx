@@ -9,6 +9,14 @@ import { SettingsDialog } from './SettingsDialog'
 import { AboutDialog } from './AboutDialog'
 import { ConfirmDialog } from './ConfirmDialog'
 import { WelcomeDialog } from './WelcomeDialog'
+import {
+  ChangeIconDialog,
+  ExitWindowsDialog,
+  MoveCopyProgramItemDialog,
+  NewProgramObjectDialog,
+  ProgramManagerHelpDialog,
+  RunProgramDialog
+} from './Win31CanonicalDialogs'
 
 export const DialogManager: React.FC = () => {
   const activeDialog = useUIStore((state) => state.activeDialog)
@@ -33,6 +41,20 @@ export const DialogManager: React.FC = () => {
       return <ConfirmDialog />
     case 'welcome':
       return <WelcomeDialog />
+    case 'newObject':
+      return <NewProgramObjectDialog />
+    case 'moveItem':
+      return <MoveCopyProgramItemDialog copy={false} />
+    case 'copyItem':
+      return <MoveCopyProgramItemDialog copy />
+    case 'run':
+      return <RunProgramDialog />
+    case 'help':
+      return <ProgramManagerHelpDialog />
+    case 'changeIcon':
+      return <ChangeIconDialog />
+    case 'exitWindows':
+      return <ExitWindowsDialog />
     default:
       return null
   }

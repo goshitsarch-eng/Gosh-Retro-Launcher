@@ -6,6 +6,7 @@ import { useUIStore } from '@/store/uiStore'
 import { useProgramStore } from '@/store/programStore'
 import { useMDIStore } from '@/store/mdiStore'
 import { getIconSrc, BUILTIN_ICONS } from '@/utils/icons'
+import { getWfwIconSrc, WFW_ICON_IDS } from '@/shells/win31/iconCatalog'
 
 export const GroupPropertiesDialog: React.FC = () => {
   const dialogData = useUIStore((state) => state.dialogData)
@@ -14,6 +15,7 @@ export const GroupPropertiesDialog: React.FC = () => {
   const updateGroup = useProgramStore((state) => state.updateGroup)
   const deleteGroup = useProgramStore((state) => state.deleteGroup)
   const closeWindow = useMDIStore((state) => state.closeWindow)
+  const shell = useProgramStore((state) => state.settings.shell)
 
   const group = dialogData.group
   if (!group) return null
@@ -58,15 +60,32 @@ export const GroupPropertiesDialog: React.FC = () => {
               autoFocus
             />
           </div>
+          <div className="win31-form-row">
+            <label htmlFor="group-file">Group File:</label>
+            <TextInput id="group-file" value={`${name.replace(/[^a-z0-9]+/gi, '').slice(0, 8) || 'GROUP'}.GRP`.toUpperCase()} readOnly />
+          </div>
           <div className="win31-form-row win31-icon-preview-row">
             <label>Icon:</label>
             <div className="win31-icon-preview-well">
-              <img src={getIconSrc(icon)} alt="Selected icon" width={32} height={32} />
+              <img src={shell === 'win31' ? getWfwIconSrc(icon, 1) : getIconSrc(icon)} alt="Selected icon" width={32} height={32} />
             </div>
           </div>
           {showIconPicker && (
             <div className="win31-icon-picker" role="listbox" aria-label="Group icons">
-              {BUILTIN_ICONS.map((iconOption) => (
+              {shell === 'win31' ? WFW_ICON_IDS.map((iconId) => (
+                <button
+                  type="button"
+                  key={iconId}
+                  className={`win31-icon-choice ${icon === iconId ? 'selected' : ''}`}
+                  onClick={() => setIcon(iconId)}
+                  title={iconId}
+                  aria-label={iconId}
+                  aria-selected={icon === iconId}
+                  role="option"
+                >
+                  <img src={getWfwIconSrc(iconId, 1)} alt="" width={32} height={32} />
+                </button>
+              )) : BUILTIN_ICONS.map((iconOption) => (
                 <button
                   type="button"
                   key={iconOption.id}
@@ -90,6 +109,7 @@ export const GroupPropertiesDialog: React.FC = () => {
             {showIconPicker ? 'Hide Icons' : 'Change Icon...'}
           </Button>
           <Button type="button" onClick={handleDelete}>Delete</Button>
+          {shell === 'win31' && <Button type="button" onClick={() => openDialog('help', { helpTopic: 'contents' })}>Help</Button>}
         </div>
       </form>
     </Dialog>

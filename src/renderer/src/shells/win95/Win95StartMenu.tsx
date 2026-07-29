@@ -87,7 +87,7 @@ export const Win95StartMenu: React.FC<Win95StartMenuProps> = ({ isOpen, onClose 
   }
 
   const handleOpenFolder = (groupId: string): void => {
-    updateGroupWindowState(groupId, { minimized: false })
+    updateGroupWindowState(groupId, { minimized: false }, 'win95')
     openWindow(groupId)
     onClose()
   }

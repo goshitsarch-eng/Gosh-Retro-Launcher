@@ -3,7 +3,7 @@ import type { ProgramItem, ProgramGroup } from '@shared/types'
 
 let launchFeedbackHideTimer: ReturnType<typeof setTimeout> | null = null
 
-type DialogType =
+export type DialogType =
   | 'newGroup'
   | 'renameGroup'
   | 'groupProperties'
@@ -14,6 +14,18 @@ type DialogType =
   | 'about'
   | 'confirm'
   | 'welcome'
+  | 'newObject'
+  | 'moveItem'
+  | 'copyItem'
+  | 'run'
+  | 'changeIcon'
+  | 'help'
+  | 'exitWindows'
+  | null
+
+export type Win31Selection =
+  | { kind: 'item'; groupId: string; itemId: string }
+  | { kind: 'groupIcon'; groupId: string }
   | null
 
 interface ConfirmDialogOptions {
@@ -48,6 +60,8 @@ interface UIState {
     openItemAfterCreate?: boolean
     openUrlAfterCreate?: boolean
     showIconPicker?: boolean
+    copyMode?: boolean
+    helpTopic?: 'contents' | 'search' | 'using'
   }
   openDialog: (type: DialogType, data?: UIState['dialogData']) => void
   closeDialog: () => void
@@ -63,6 +77,8 @@ interface UIState {
   selectedGroupId: string | null
   setSelectedItem: (itemId: string | null, groupId: string | null) => void
   clearSelection: () => void
+  win31Selection: Win31Selection
+  setWin31Selection: (selection: Win31Selection) => void
 
   // Batch launch feedback
   launchFeedback: LaunchFeedbackState
@@ -96,7 +112,9 @@ export const useUIStore = create<UIState>((set) => ({
   selectedGroupId: null,
   setSelectedItem: (itemId, groupId) =>
     set({ selectedItemId: itemId, selectedGroupId: groupId }),
-  clearSelection: () => set({ selectedItemId: null, selectedGroupId: null }),
+  clearSelection: () => set({ selectedItemId: null, selectedGroupId: null, win31Selection: null }),
+  win31Selection: null,
+  setWin31Selection: (selection) => set({ win31Selection: selection }),
 
   // Batch launch feedback
   launchFeedback: {

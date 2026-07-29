@@ -25,6 +25,7 @@ out/
 .cache/
 .parcel-cache/
 coverage/
+wfw-smoke.png
 
 # Optional: editor + OS noise
 .DS_Store

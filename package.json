@@ -19,7 +19,12 @@
     "typecheck:renderer": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:main && npm run typecheck:preload && npm run typecheck:renderer",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "capture:wfw": "npm run build && electron scripts/capture-wfw.cjs",
+    "test:visual:wfw": "npm run build && electron scripts/capture-wfw.cjs artifacts/wfw-reference.png reference tests/visual/baselines/wfw-reference.png",
+    "test:visual:wfw-desktop": "npm run build && electron scripts/capture-wfw.cjs artifacts/wfw-desktop.png desktop tests/visual/baselines/wfw-desktop.png && electron scripts/capture-wfw.cjs artifacts/wfw-desktop-minimized.png desktop-minimized tests/visual/baselines/wfw-desktop-minimized.png",
+    "test:visual:win95": "npm run build && electron scripts/capture-wfw.cjs artifacts/win95-reference.png win95 tests/visual/baselines/win95-reference.png",
+    "test:visual": "npm run test:visual:wfw && npm run test:visual:wfw-desktop && npm run test:visual:win95"
   },
   "dependencies": {
     "electron-store": "^8.1.0",

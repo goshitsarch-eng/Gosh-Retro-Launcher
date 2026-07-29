@@ -1,233 +1,135 @@
-import { ipcMain, app, nativeImage, shell } from 'electron'
+import { ipcMain, app, nativeImage, shell, type NativeImage } from 'electron'
 import { readFile } from 'fs/promises'
-import { basename, dirname, extname } from 'path'
+import { basename, dirname, extname, isAbsolute } from 'path'
 import { IPC_CHANNELS } from '@shared/constants/ipc'
 import type { AppInfo } from '@shared/types'
 
-/**
- * Extract app info from a macOS .app bundle
- */
-async function getMacAppInfo(appPath: string): Promise<AppInfo> {
-  const name = basename(appPath, '.app')
-  let icon: string | undefined
+const WFW_PALETTE = [
+  [0, 0, 0], [128, 128, 128], [192, 192, 192], [255, 255, 255],
+  [0, 0, 128], [0, 0, 255], [0, 128, 0], [0, 128, 128],
+  [128, 0, 0], [128, 0, 128], [128, 128, 0], [255, 0, 0],
+  [0, 255, 0], [255, 255, 0], [0, 255, 255], [255, 0, 255]
+] as const
 
-  try {
-    // Get app icon using Electron's app.getFileIcon
-    const image = await app.getFileIcon(appPath, { size: 'normal' })
-    if (image && !image.isEmpty()) {
-      icon = image.toDataURL()
+function paletteLimitedIcon(image: NativeImage): string | undefined {
+  if (image.isEmpty()) return undefined
+  const resized = image.resize({ width: 32, height: 32, quality: 'best' })
+  const bitmap = Buffer.from(resized.toBitmap())
+  for (let offset = 0; offset + 3 < bitmap.length; offset += 4) {
+    if (bitmap[offset + 3] < 16) continue
+    const blue = bitmap[offset]
+    const green = bitmap[offset + 1]
+    const red = bitmap[offset + 2]
+    let best: readonly [number, number, number] = WFW_PALETTE[0]
+    let distance = Number.POSITIVE_INFINITY
+    for (const candidate of WFW_PALETTE) {
+      const next = (red - candidate[0]) ** 2 + (green - candidate[1]) ** 2 + (blue - candidate[2]) ** 2
+      if (next < distance) {
+        best = candidate
+        distance = next
+      }
     }
-  } catch (e) {
-    console.warn('Failed to extract macOS app icon:', e)
+    bitmap[offset] = best[2]
+    bitmap[offset + 1] = best[1]
+    bitmap[offset + 2] = best[0]
   }
-
-  return { name, path: appPath, icon }
+  return nativeImage.createFromBitmap(bitmap, { width: 32, height: 32 }).toDataURL()
 }
 
-/**
- * Extract app info from Windows executables and shortcuts
- */
+async function loadBestIcon(filePath: string): Promise<{ icon?: string; win31Icon?: string }> {
+  try {
+    const imageExtension = ['.png', '.jpg', '.jpeg', '.gif', '.ico', '.icns', '.webp', '.bmp'].includes(extname(filePath).toLowerCase())
+    let image = imageExtension ? nativeImage.createFromPath(filePath) : await app.getFileIcon(filePath, { size: 'large' })
+    if (image.isEmpty() && imageExtension) image = await app.getFileIcon(filePath, { size: 'large' })
+    if (image.isEmpty()) return {}
+    const fullSize = image.getSize()
+    const full = fullSize.width === 128 && fullSize.height === 128
+      ? image
+      : image.resize({ width: 128, height: 128, quality: 'best' })
+    return { icon: full.toDataURL(), win31Icon: paletteLimitedIcon(image) }
+  } catch (error) {
+    console.warn(`Failed to extract icon for ${filePath}:`, error)
+    return {}
+  }
+}
+
 async function getWindowsAppInfo(filePath: string): Promise<AppInfo> {
-  const ext = extname(filePath).toLowerCase()
-
-  if (ext === '.lnk') {
+  const extension = extname(filePath).toLowerCase()
+  if (extension === '.lnk') {
     try {
-      // Use Electron's shell.readShortcutLink to resolve Windows shortcuts
       const details = shell.readShortcutLink(filePath)
-      const name = basename(filePath, '.lnk')
-
-      let icon: string | undefined
-      try {
-        const targetPath = details.target || filePath
-        const image = await app.getFileIcon(targetPath, { size: 'normal' })
-        if (image && !image.isEmpty()) {
-          icon = image.toDataURL()
-        }
-      } catch (e) {
-        console.warn('Failed to extract Windows shortcut icon:', e)
-      }
-
+      const target = details.target || filePath
       return {
-        name,
-        path: details.target || filePath,
-        icon,
-        workingDir: details.cwd || dirname(details.target || filePath)
+        name: basename(filePath, '.lnk'),
+        path: target,
+        ...(await loadBestIcon(target)),
+        workingDir: details.cwd || dirname(target),
+        ...(details.args ? { arguments: details.args } : {})
       }
-    } catch (e) {
-      console.warn('Failed to read Windows shortcut:', e)
-      // Fall through to default handling
+    } catch (error) {
+      console.warn('Failed to read Windows shortcut:', error)
     }
   }
-
-  // For .exe, .bat, .cmd, .msi files
-  const name = basename(filePath, ext)
-  let icon: string | undefined
-
-  try {
-    const image = await app.getFileIcon(filePath, { size: 'normal' })
-    if (image && !image.isEmpty()) {
-      icon = image.toDataURL()
-    }
-  } catch (e) {
-    console.warn('Failed to extract executable icon:', e)
+  return {
+    name: basename(filePath, extension),
+    path: filePath,
+    ...(await loadBestIcon(filePath)),
+    workingDir: dirname(filePath)
   }
-
-  return { name, path: filePath, icon, workingDir: dirname(filePath) }
 }
 
-/**
- * Extract app info from Linux .desktop files or executables
- */
-async function getLinuxAppInfo(filePath: string): Promise<AppInfo> {
-  if (!filePath.endsWith('.desktop')) {
-    // For regular executables
-    const name = basename(filePath)
-    let icon: string | undefined
-
-    try {
-      const image = await app.getFileIcon(filePath, { size: 'normal' })
-      if (image && !image.isEmpty()) {
-        icon = image.toDataURL()
-      }
-    } catch (e) {
-      console.warn('Failed to extract Linux executable icon:', e)
-    }
-
-    return { name, path: filePath, icon, workingDir: dirname(filePath) }
-  }
-
-  // Parse .desktop file
+async function getDesktopEntry(filePath: string): Promise<AppInfo> {
   try {
-    const content = await readFile(filePath, 'utf-8')
-    const lines = content.split('\n')
-
+    const lines = (await readFile(filePath, 'utf8')).split(/\r?\n/)
     let name = basename(filePath, '.desktop')
-    let exec = ''
+    let command = ''
     let iconPath = ''
-    let inDesktopEntry = false
-
+    let inEntry = false
     for (const line of lines) {
-      const trimmed = line.trim()
-
-      if (trimmed === '[Desktop Entry]') {
-        inDesktopEntry = true
-        continue
-      }
-      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-        inDesktopEntry = false
-        continue
-      }
-      if (!inDesktopEntry) continue
-
-      if (trimmed.startsWith('Name=')) {
-        name = trimmed.substring(5)
-      } else if (trimmed.startsWith('Exec=')) {
-        // Remove field codes like %f, %F, %u, %U, etc.
-        exec = trimmed
-          .substring(5)
-          .replace(/%[fFuUdDnNickvm]/g, '')
-          .trim()
-      } else if (trimmed.startsWith('Icon=')) {
-        iconPath = trimmed.substring(5)
-      }
+      const value = line.trim()
+      if (value === '[Desktop Entry]') { inEntry = true; continue }
+      if (value.startsWith('[')) { inEntry = false; continue }
+      if (!inEntry) continue
+      if (value.startsWith('Name=')) name = value.slice(5)
+      else if (value.startsWith('Exec=')) command = value.slice(5).replace(/%[fFuUdDnNickvm]/g, '').trim()
+      else if (value.startsWith('Icon=')) iconPath = value.slice(5)
     }
-
-    let icon: string | undefined
-    if (iconPath) {
-      try {
-        // Try to load icon if it's an absolute path
-        if (iconPath.startsWith('/')) {
-          const image = nativeImage.createFromPath(iconPath)
-          if (!image.isEmpty()) {
-            icon = image.toDataURL()
-          }
-        }
-        // For icon names without paths, we'd need to search icon themes
-        // which is complex, so we skip that for now
-      } catch (e) {
-        console.warn('Failed to load Linux desktop icon:', e)
-      }
-    }
-
-    return { name, path: exec || filePath, icon }
-  } catch (e) {
-    console.warn('Failed to parse .desktop file:', e)
+    const first = command.startsWith('"')
+      ? command.slice(1, command.indexOf('"', 1))
+      : command.split(/\s+/)[0]
+    const args = command.slice(command.startsWith('"') ? command.indexOf('"', 1) + 1 : first.length).trim()
+    const iconTarget = iconPath && isAbsolute(iconPath) ? iconPath : filePath
     return {
-      name: basename(filePath, '.desktop'),
-      path: filePath
+      name,
+      path: first || filePath,
+      ...(await loadBestIcon(iconTarget)),
+      ...(args ? { arguments: args } : {})
     }
+  } catch {
+    return { name: basename(filePath, '.desktop'), path: filePath, ...(await loadBestIcon(filePath)) }
   }
 }
 
-/**
- * Get app info based on platform
- */
-async function getAppInfo(filePath: string): Promise<AppInfo> {
+export async function getAppInfo(filePath: string): Promise<AppInfo> {
+  const extension = extname(filePath).toLowerCase()
   try {
-    switch (process.platform) {
-      case 'darwin': {
-        if (filePath.endsWith('.app')) {
-          return await getMacAppInfo(filePath)
-        }
-        // For other files on macOS, try to get icon
-        const name = basename(filePath).replace(/\.[^/.]+$/, '')
-        let icon: string | undefined
-        try {
-          const image = await app.getFileIcon(filePath, { size: 'normal' })
-          if (image && !image.isEmpty()) {
-            icon = image.toDataURL()
-          }
-        } catch (e) {
-          // Ignore
-        }
-        return { name, path: filePath, icon }
-      }
-
-      case 'win32': {
-        const ext = extname(filePath).toLowerCase()
-        if (['.lnk', '.exe', '.bat', '.cmd', '.msi'].includes(ext)) {
-          return await getWindowsAppInfo(filePath)
-        }
-        // For other files on Windows
-        const name = basename(filePath).replace(/\.[^/.]+$/, '')
-        let icon: string | undefined
-        try {
-          const image = await app.getFileIcon(filePath, { size: 'normal' })
-          if (image && !image.isEmpty()) {
-            icon = image.toDataURL()
-          }
-        } catch (e) {
-          // Ignore
-        }
-        return { name, path: filePath, icon }
-      }
-
-      case 'linux': {
-        return await getLinuxAppInfo(filePath)
-      }
-
-      default: {
-        // Default fallback for unknown platforms
-        return {
-          name: basename(filePath).replace(/\.[^/.]+$/, ''),
-          path: filePath
-        }
-      }
+    if (process.platform === 'win32') return getWindowsAppInfo(filePath)
+    if (process.platform === 'linux' && extension === '.desktop') return getDesktopEntry(filePath)
+    return {
+      name: basename(filePath, extension || undefined),
+      path: filePath,
+      ...(await loadBestIcon(filePath)),
+      workingDir: extension ? dirname(filePath) : undefined
     }
   } catch (error) {
     console.error('Failed to get app info:', error)
-    return {
-      name: basename(filePath).replace(/\.[^/.]+$/, ''),
-      path: filePath
-    }
+    return { name: basename(filePath, extension || undefined), path: filePath }
   }
 }
 
-/**
- * Register IPC handlers for app info extraction
- */
 export function registerAppInfoHandlers(): void {
-  ipcMain.handle(IPC_CHANNELS.APP_GET_INFO, async (_, filePath: string) => {
-    return await getAppInfo(filePath)
+  ipcMain.handle(IPC_CHANNELS.APP_GET_INFO, async (_, filePath: unknown) => {
+    if (typeof filePath !== 'string' || !filePath) throw new Error('Invalid application path')
+    return getAppInfo(filePath)
   })
 }

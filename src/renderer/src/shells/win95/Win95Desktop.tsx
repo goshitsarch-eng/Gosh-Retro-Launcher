@@ -4,6 +4,7 @@ import { useProgramStore } from '@/store/programStore'
 import { useMDIStore } from '@/store/mdiStore'
 import { useUIStore } from '@/store/uiStore'
 import { getIconSrc } from '@/utils/icons'
+import { getGroupWindowState } from '@shared/types'
 
 export const Win95Desktop: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -59,7 +60,7 @@ export const Win95Desktop: React.FC = () => {
   // Only show windows that exist in mdiStore AND whose group is not minimized
   const openGroupIds = new Set(windows.map((w) => w.groupId))
   const visibleGroups = groups.filter(
-    (g) => openGroupIds.has(g.id) && !g.windowState.minimized
+    (g) => openGroupIds.has(g.id) && !getGroupWindowState(g, 'win95').minimized
   )
 
   const getZIndex = (groupId: string): number => {

@@ -6,7 +6,7 @@ import { ThemePreview } from './ThemePreview'
 import { useUIStore } from '@/store/uiStore'
 import { useProgramStore } from '@/store/programStore'
 import { getAllShells } from '@/shells'
-import type { ShellType } from '@shared/types'
+import type { ShellType, Win31ScalePreference } from '@shared/types'
 
 export const SettingsDialog: React.FC = () => {
   const closeDialog = useUIStore((state) => state.closeDialog)
@@ -18,6 +18,7 @@ export const SettingsDialog: React.FC = () => {
   const [saveSettingsOnExit, setSaveSettingsOnExit] = useState(settings.saveSettingsOnExit)
   const [trayOnClose, setTrayOnClose] = useState(settings.trayOnClose)
   const [groupChromeScale, setGroupChromeScale] = useState(settings.groupChromeScale)
+  const [win31Scale, setWin31Scale] = useState<Win31ScalePreference>(settings.win31Scale)
   const [theme, setTheme] = useState(settings.theme)
   const [labelDisplay, setLabelDisplay] = useState(settings.labelDisplay || 'wrap')
   const [shell, setShell] = useState<ShellType>(settings.shell || 'win31')
@@ -34,6 +35,7 @@ export const SettingsDialog: React.FC = () => {
         saveSettingsOnExit,
         trayOnClose,
         groupChromeScale,
+        win31Scale,
         theme,
         labelDisplay,
         shell,
@@ -60,6 +62,7 @@ export const SettingsDialog: React.FC = () => {
       saveSettingsOnExit,
       trayOnClose,
       groupChromeScale,
+      win31Scale,
       theme,
       labelDisplay,
       shell,
@@ -162,19 +165,39 @@ export const SettingsDialog: React.FC = () => {
             <ThemePreview shell={shell} theme={theme} groupChromeScale={groupChromeScale} />
           </div>
 
-          <div className="win31-slider-row">
-            <label>Group Title Bar Size:</label>
-            <input
-              type="range"
-              min={1}
-              max={1.6}
-              step={0.05}
-              value={groupChromeScale}
-              onChange={(e) => setGroupChromeScale(Number(e.target.value))}
-              style={{ flex: 1 }}
-            />
-            <span className="value">{Math.round(groupChromeScale * 100)}%</span>
-          </div>
+          {shell === 'win31' ? (
+            <div className="win31-form-row">
+              <label htmlFor="win31-scale">Program Manager Scale:</label>
+              <select
+                id="win31-scale"
+                className="win31-input"
+                value={win31Scale}
+                onChange={(event) => setWin31Scale(event.target.value === 'auto'
+                  ? 'auto'
+                  : Number(event.target.value) as 1 | 2 | 3 | 4)}
+              >
+                <option value="auto">Auto</option>
+                <option value={1}>1×</option>
+                <option value={2}>2×</option>
+                <option value={3}>3×</option>
+                <option value={4}>4×</option>
+              </select>
+            </div>
+          ) : (
+            <div className="win31-slider-row">
+              <label>Group Title Bar Size:</label>
+              <input
+                type="range"
+                min={1}
+                max={1.6}
+                step={0.05}
+                value={groupChromeScale}
+                onChange={(e) => setGroupChromeScale(Number(e.target.value))}
+                style={{ flex: 1 }}
+              />
+              <span className="value">{Math.round(groupChromeScale * 100)}%</span>
+            </div>
+          )}
         </div>
 
         <div className="win31-groupbox">

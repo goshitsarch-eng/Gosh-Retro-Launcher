@@ -7,7 +7,7 @@ import { useMDIStore } from '@/store/mdiStore'
 import { useUIStore } from '@/store/uiStore'
 import { useSounds } from '@/hooks/useSounds'
 import { getIconSrc } from '@/utils/icons'
-import type { ProgramGroup } from '@shared/types'
+import { getGroupWindowState, type ProgramGroup } from '@shared/types'
 
 interface Win95WindowProps {
   group: ProgramGroup
@@ -52,11 +52,11 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
     setAnimClass((current) => (current === 'anim-window-open' ? '' : current))
   }, [onFocus])
 
-  const { windowState } = group
+  const windowState = getGroupWindowState(group, 'win95')
 
   const handleDragEnd = useCallback(
     (position: { x: number; y: number }) => {
-      updateGroupWindowState(group.id, { x: position.x, y: position.y })
+      updateGroupWindowState(group.id, { x: position.x, y: position.y }, 'win95')
     },
     [group.id, updateGroupWindowState]
   )
@@ -68,7 +68,7 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
         height: size.height,
         x: position.x,
         y: position.y
-      })
+      }, 'win95')
     },
     [group.id, updateGroupWindowState]
   )
@@ -106,7 +106,7 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
     setAnimClass('anim-window-minimize')
     actionTimerRef.current = setTimeout(() => {
       actionTimerRef.current = null
-      updateGroupWindowState(group.id, { minimized: true })
+      updateGroupWindowState(group.id, { minimized: true }, 'win95')
     }, 200)
     // Do NOT call closeWindow — keep the mdiStore entry so taskbar still shows it
   }, [group.id, updateGroupWindowState, sounds])
@@ -114,7 +114,7 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
   const handleMaximize = useCallback(() => {
     updateGroupWindowState(group.id, {
       maximized: !windowState.maximized
-    })
+    }, 'win95')
   }, [group.id, windowState.maximized, updateGroupWindowState])
 
   // Close: remove from desktop AND taskbar entirely
@@ -124,7 +124,7 @@ export const Win95Window: React.FC<Win95WindowProps> = ({
     setAnimClass('anim-window-close')
     actionTimerRef.current = setTimeout(() => {
       actionTimerRef.current = null
-      updateGroupWindowState(group.id, { minimized: true })
+      updateGroupWindowState(group.id, { minimized: true }, 'win95')
       closeWindow(group.id)
     }, 120)
   }, [group.id, updateGroupWindowState, closeWindow, sounds])

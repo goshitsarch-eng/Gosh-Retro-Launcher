@@ -5,10 +5,21 @@ import {
   maximizeMainWindow,
   closeMainWindow,
   isMaximized,
-  recreateWindowForShell
+  recreateWindowForShell,
+  getMainWindow,
+  getActiveDisplayWorkArea,
+  createLauncherToolsWindow
 } from '../window'
 import { getSettings } from '../store'
-import type { ShellType } from '@shared/types'
+import type { HostWindowBounds, ShellType } from '@shared/types'
+
+function isHostWindowBounds(value: unknown): value is HostWindowBounds {
+  if (typeof value !== 'object' || value === null) return false
+  const bounds = value as Record<string, unknown>
+  return ['x', 'y', 'width', 'height'].every((key) =>
+    typeof bounds[key] === 'number' && Number.isFinite(bounds[key])) &&
+    (bounds.width as number) >= 400 && (bounds.height as number) >= 300
+}
 
 export function isValidShellFrameRequest(value: unknown): value is ShellType {
   return value === 'win31' || value === 'win95'
@@ -33,6 +44,25 @@ export function registerWindowHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.WINDOW_IS_MAXIMIZED, () => {
     return isMaximized()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.WINDOW_GET_BOUNDS, () => {
+    return getMainWindow()?.getBounds() ?? { x: 0, y: 0, width: 800, height: 600 }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.WINDOW_SET_BOUNDS, (_, requestedBounds: unknown) => {
+    if (!isHostWindowBounds(requestedBounds)) throw new Error('Invalid window bounds')
+    getMainWindow()?.setBounds(requestedBounds)
+    return true
+  })
+
+  ipcMain.handle(IPC_CHANNELS.WINDOW_GET_DISPLAY_WORK_AREA, () => {
+    return getActiveDisplayWorkArea()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.APP_OPEN_LAUNCHER_TOOLS, () => {
+    createLauncherToolsWindow()
+    return true
   })
 
   ipcMain.handle(IPC_CHANNELS.WINDOW_RECREATE_FOR_SHELL, (_, requestedShell: unknown) => {

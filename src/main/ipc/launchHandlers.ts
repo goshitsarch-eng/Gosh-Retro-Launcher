@@ -25,6 +25,10 @@ function isProgramItem(value: unknown): value is ProgramItem {
     typeof obj.path === 'string' &&
     typeof obj.icon === 'string' &&
     typeof obj.workingDir === 'string' &&
+    (obj.arguments === undefined || typeof obj.arguments === 'string') &&
+    (obj.environment === undefined || typeof obj.environment === 'string') &&
+    (obj.runMode === undefined || ['normal', 'minimized', 'maximized'].includes(obj.runMode as string)) &&
+    (obj.runMinimized === undefined || typeof obj.runMinimized === 'boolean') &&
     (obj.launchGroup === undefined ||
       (typeof obj.launchGroup === 'number' &&
         Number.isInteger(obj.launchGroup) &&
@@ -38,38 +42,27 @@ export function tokenizeCommand(cmd: string): string[] {
   let current = ''
   let inSingle = false
   let inDouble = false
-  let escape = false
 
-  for (const ch of cmd) {
-    if (escape) {
-      current += ch
-      escape = false
-      continue
-    }
-
+  for (let index = 0; index < cmd.length; index += 1) {
+    const ch = cmd[index]
+    const next = cmd[index + 1]
     if (ch === '\\' && !inSingle) {
-      escape = true
-      continue
-    }
-
-    if (ch === "'" && !inDouble) {
-      inSingle = !inSingle
-      continue
-    }
-
-    if (ch === '"' && !inSingle) {
-      inDouble = !inDouble
-      continue
-    }
-
-    if (/\s/.test(ch) && !inSingle && !inDouble) {
-      if (current) {
-        tokens.push(current)
-        current = ''
+      // Preserve ordinary Windows path separators; only escape characters that
+      // are meaningful to this tokenizer.
+      if (next && (/\s/.test(next) || next === '"' || next === "'" || next === '\\')) {
+        current += next
+        index += 1
+      } else {
+        current += ch
       }
       continue
     }
-
+    if (ch === "'" && !inDouble) { inSingle = !inSingle; continue }
+    if (ch === '"' && !inSingle) { inDouble = !inDouble; continue }
+    if (/\s/.test(ch) && !inSingle && !inDouble) {
+      if (current) { tokens.push(current); current = '' }
+      continue
+    }
     current += ch
   }
 
@@ -137,12 +130,14 @@ async function parseDesktopFile(filePath: string): Promise<{ exec: string; name:
 function spawnDetached(
   command: string,
   args: string[],
-  options: { cwd?: string }
+  options: { cwd?: string; env?: NodeJS.ProcessEnv; windowsHide?: boolean }
 ): void {
   const child = spawn(command, args, {
     cwd: options.cwd,
     detached: true,
-    stdio: 'ignore'
+    stdio: 'ignore',
+    env: options.env,
+    windowsHide: options.windowsHide
   })
   child.on('error', (err) => {
     console.error(`Failed to spawn ${command}:`, err.message)
@@ -150,9 +145,29 @@ function spawnDetached(
   child.unref()
 }
 
+export function parseEnvironment(value = ''): NodeJS.ProcessEnv {
+  const additions: NodeJS.ProcessEnv = {}
+  for (const line of value.split(/\r?\n/)) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const separator = trimmed.indexOf('=')
+    if (separator <= 0) continue
+    additions[trimmed.slice(0, separator).trim()] = trimmed.slice(separator + 1)
+  }
+  return { ...process.env, ...additions }
+}
+
 // Launch a program based on platform
 export async function launchProgram(item: ProgramItem): Promise<{ success: boolean; error?: string }> {
   const { path: programPath, workingDir } = item
+  const itemArguments = tokenizeCommand(item.arguments ?? '')
+  const environment = parseEnvironment(item.environment)
+  const runMode = item.runMode ?? (item.runMinimized ? 'minimized' : 'normal')
+  const spawnOptions = {
+    cwd: workingDir || undefined,
+    env: environment,
+    windowsHide: runMode === 'minimized'
+  }
 
   // Handle URLs
   if (isValidLaunchUrl(programPath)) {
@@ -173,15 +188,26 @@ export async function launchProgram(item: ProgramItem): Promise<{ success: boole
         if (ext === 'lnk') {
           // Read shortcut and launch target
           const details = shell.readShortcutLink(programPath)
-          const args = details.args ? tokenizeCommand(details.args) : []
+          const args = [...(details.args ? tokenizeCommand(details.args) : []), ...itemArguments]
           spawnDetached(details.target, args, {
+            ...spawnOptions,
             cwd: details.cwd || workingDir || undefined
           })
+        } else if (['exe', 'com'].includes(ext ?? '') && runMode !== 'normal') {
+          const windowStyle = runMode === 'maximized' ? 'Maximized' : 'Minimized'
+          const script = `$launch=@{FilePath=$args[0];WindowStyle='${windowStyle}'}; ` +
+            `if($args.Count -gt 1){$launch.ArgumentList=$args[1..($args.Count-1)]}; ` +
+            `if($env:GOSH_LAUNCH_CWD){$launch.WorkingDirectory=$env:GOSH_LAUNCH_CWD}; Start-Process @launch`
+          spawnDetached('powershell.exe', [
+            '-NoLogo', '-NoProfile', '-NonInteractive', '-Command', script, programPath, ...itemArguments
+          ], { ...spawnOptions, env: { ...environment, GOSH_LAUNCH_CWD: workingDir || '' } })
+        } else if (['exe', 'com'].includes(ext ?? '') && (itemArguments.length > 0 || item.environment)) {
+          spawnDetached(programPath, itemArguments, spawnOptions)
+        } else if (['bat', 'cmd'].includes(ext ?? '')) {
+          spawnDetached(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', programPath, ...itemArguments], spawnOptions)
         } else {
           const error = await shell.openPath(programPath)
-          if (error) {
-            return { success: false, error }
-          }
+          if (error) return { success: false, error }
         }
         break
       }
@@ -189,11 +215,9 @@ export async function launchProgram(item: ProgramItem): Promise<{ success: boole
       case 'darwin': {
         // macOS: Use 'open' for .app bundles, spawn for executables
         if (programPath.endsWith('.app')) {
-          spawnDetached('open', ['-a', programPath], {})
+          spawnDetached('open', ['-a', programPath, ...(itemArguments.length ? ['--args', ...itemArguments] : [])], spawnOptions)
         } else {
-          spawnDetached(programPath, [], {
-            cwd: workingDir || undefined
-          })
+          spawnDetached(programPath, itemArguments, spawnOptions)
         }
         break
       }
@@ -207,16 +231,12 @@ export async function launchProgram(item: ProgramItem): Promise<{ success: boole
             if (parts.length === 0 || !isValidExecPath(parts[0])) {
               return { success: false, error: 'Invalid Exec command in .desktop file' }
             }
-            spawnDetached(parts[0], parts.slice(1), {
-              cwd: workingDir || undefined
-            })
+            spawnDetached(parts[0], [...parts.slice(1), ...itemArguments], spawnOptions)
           } else {
             return { success: false, error: 'Could not parse .desktop file' }
           }
         } else {
-          spawnDetached(programPath, [], {
-            cwd: workingDir || undefined
-          })
+          spawnDetached(programPath, itemArguments, spawnOptions)
         }
         break
       }

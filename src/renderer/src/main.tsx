@@ -8,6 +8,8 @@ import './styles/menu.css'
 import './styles/dialog.css'
 import './styles/mdi.css'
 import './styles/animations.css'
+import './styles/wfw.css'
+import './styles/launcher-tools.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

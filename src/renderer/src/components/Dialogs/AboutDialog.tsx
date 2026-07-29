@@ -3,9 +3,12 @@ import { Dialog } from './Dialog'
 import { Button } from '../Common/Button'
 import { useUIStore } from '@/store/uiStore'
 import { APP_ICON } from '@/utils/icons'
+import { useProgramStore } from '@/store/programStore'
+import { getWfwIconSrc } from '@/shells/win31/iconCatalog'
 
 export const AboutDialog: React.FC = () => {
   const closeDialog = useUIStore((state) => state.closeDialog)
+  const shell = useProgramStore((state) => state.settings.shell)
   const [platform, setPlatform] = useState('')
   const [version, setVersion] = useState('')
 
@@ -25,7 +28,7 @@ export const AboutDialog: React.FC = () => {
   return (
     <Dialog title="About Program Manager" onClose={closeDialog} width={360}>
       <div className="win31-about-content">
-        <img src={APP_ICON} alt="Program Manager" className="win31-about-icon" />
+        <img src={shell === 'win31' ? getWfwIconSrc('program-manager', 1) : APP_ICON} alt="Program Manager" className="win31-about-icon" />
         <div className="win31-about-copy">
           <div className="win31-about-title">Program Manager</div>
           <div className="win31-about-version">Version {version}</div>

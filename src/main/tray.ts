@@ -1,6 +1,6 @@
 import { app, Tray, Menu, nativeImage } from 'electron'
 import { join } from 'path'
-import { showMainWindow } from './window'
+import { createLauncherToolsWindow, showMainWindow } from './window'
 import { getGroups } from './store'
 import { launchProgram } from './ipc/launchHandlers'
 import type { ProgramItem } from '@shared/types'
@@ -35,6 +35,10 @@ function buildTrayMenu(): Menu {
     {
       label: 'Show Program Manager',
       click: showMainWindow
+    },
+    {
+      label: 'Launcher Tools...',
+      click: () => { createLauncherToolsWindow() }
     },
     { type: 'separator' }
   ]

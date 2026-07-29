@@ -11,8 +11,12 @@ Version 1.0.6 is shown in the app About dialog and comes from `package.json`.
 3. Drag files into a group window to add them quickly.
 4. Launch items from the desktop, quick search, or the system tray.
 5. Batch launch numbered groups from 1 to 8 with a delay you control.
-6. Back up and restore your launcher setup as JSON.
-7. Toggle light or dark theme, sound effects, label wrapping, and tray behavior.
+6. Import and export original Windows 3.x `.GRP` files.
+7. Save named workspace profiles with independent Win31 and Win95 layouts.
+8. Configure PIF-style arguments, environment variables, working directories, run modes, and shortcut keys.
+9. Use the separate Launcher Tools window for URLs, batch metadata, profiles, shell options, and JSON transfer.
+10. Recover from automatic versioned backups or create manual restore points.
+11. Optionally place Program Manager on a gray WfW desktop and minimize it to its classic desktop icon.
 
 ## Install And Run
 
@@ -43,6 +47,7 @@ npm run dev
 npm run typecheck
 npm test
 npm run test:watch
+npm run test:visual
 ```
 
 To open DevTools during development, run:
@@ -73,9 +78,9 @@ Shared types and IPC channel names live in `src/shared`.
 
 ## Notes
 
-Settings are saved automatically. Window positions are saved on close when that option is enabled.
+Settings are saved automatically. Window positions are saved when that option is enabled. Automatic restore points are retained under the app user-data directory, with the newest 12 backups kept.
 
-The tray menu updates when groups are saved. If you only rename an item inside a group, the tray may not show that change until the group data is saved again.
+Use **Launcher Tools...** from the tray for modern management features. The canonical WfW Program Manager menus intentionally contain only period-appropriate commands.
 
 ## License
 
