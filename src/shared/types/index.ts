@@ -3,10 +3,16 @@
 export type ShellType = 'win31' | 'win95'
 export type Platform = 'win32' | 'darwin' | 'linux'
 export type Win31ScalePreference = 'auto' | 1 | 2 | 3 | 4
+export type Win95ScalePreference = 'auto' | 1 | 2 | 3 | 4
 export const WIN31_SCALE_FACTORS = [1, 2, 3, 4] as const
+export const WIN95_SCALE_FACTORS = [1, 2, 3, 4] as const
 
 export function isWin31ScalePreference(value: unknown): value is Win31ScalePreference {
   return value === 'auto' || WIN31_SCALE_FACTORS.includes(value as 1 | 2 | 3 | 4)
+}
+
+export function isWin95ScalePreference(value: unknown): value is Win95ScalePreference {
+  return value === 'auto' || WIN95_SCALE_FACTORS.includes(value as 1 | 2 | 3 | 4)
 }
 
 export interface LogicalPosition {
@@ -39,6 +45,8 @@ export interface ProgramItem {
   runMinimized?: boolean
   /** Unscaled WfW Program Manager coordinates used when Auto Arrange is off. */
   win31Position?: LogicalPosition
+  /** Unscaled Win95 Icon/Small Icon view coordinates used when Auto Arrange is off. */
+  win95Position?: LogicalPosition
 }
 
 export interface WindowState {
@@ -94,10 +102,14 @@ export interface AppSettings {
   saveSettingsOnExit: boolean
   launchDelay: number
   trayOnClose: boolean
-  /** Win95's existing fractional group-caption option. */
+  /** Legacy fractional Win95 caption option retained for saved-data compatibility; RTM shell ignores it. */
   groupChromeScale: number
   /** WfW shell-owned whole-UI scale. */
   win31Scale: Win31ScalePreference
+  /** Windows 95 shell-owned whole-UI scale. */
+  win95Scale: Win95ScalePreference
+  /** Unscaled manual positions for shell-owned Win95 desktop objects. */
+  win95DesktopIconPositions: Record<string, LogicalPosition>
   /** Show the gray WfW desktop around an internal Program Manager window. */
   win31DesktopMode: boolean
   win31ProgramManagerBounds: LogicalRect
@@ -115,7 +127,7 @@ export interface StoreData {
   workspaceProfiles: WorkspaceProfile[]
 }
 
-export const CURRENT_SCHEMA_VERSION = 3
+export const CURRENT_SCHEMA_VERSION = 5
 
 export const DEFAULT_SETTINGS: AppSettings = {
   autoArrange: true,
@@ -125,6 +137,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   trayOnClose: true,
   groupChromeScale: 1,
   win31Scale: 'auto',
+  win95Scale: 'auto',
+  win95DesktopIconPositions: {},
   win31DesktopMode: false,
   win31ProgramManagerBounds: { x: 68, y: 49, width: 511, height: 335 },
   win31ProgramManagerMinimized: false,

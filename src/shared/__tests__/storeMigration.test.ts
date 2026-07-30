@@ -54,6 +54,41 @@ describe('store migration', () => {
     expect(migrated.workspaceProfiles[0].groups).not.toBe(migrated.groups)
   })
 
+  it('adds an independent Win95 scale without changing legacy Win31 scale', () => {
+    const migrated = migrateStoreData({
+      groups: [],
+      settings: { ...DEFAULT_SETTINGS, win31Scale: 3, win95Scale: 2 }
+    })
+    expect(migrated.settings.win31Scale).toBe(3)
+    expect(migrated.settings.win95Scale).toBe(2)
+
+    const legacy = migrateStoreData({ groups: [], settings: { win31Scale: 4 } })
+    expect(legacy.settings.win31Scale).toBe(4)
+    expect(legacy.settings.win95Scale).toBe('auto')
+  })
+
+  it('retains valid Win95 desktop and item positions while rejecting malformed coordinates', () => {
+    const migrated = migrateStoreData({
+      groups: [{
+        id: 'main', name: 'Main', icon: 'folder', windowState: legacyWindow,
+        items: [
+          { id: 'one', name: 'One', path: 'one.exe', icon: 'application', workingDir: '', win95Position: { x: 123, y: 45 } },
+          { id: 'two', name: 'Two', path: 'two.exe', icon: 'application', workingDir: '', win95Position: { x: 'bad', y: 2 } }
+        ]
+      }],
+      settings: {
+        ...DEFAULT_SETTINGS,
+        win95DesktopIconPositions: {
+          'my-computer': { x: 7, y: 9 },
+          broken: { x: Number.NaN, y: 3 }
+        }
+      }
+    })
+    expect(migrated.groups[0].items[0].win95Position).toEqual({ x: 123, y: 45 })
+    expect(migrated.groups[0].items[1].win95Position).toBeUndefined()
+    expect(migrated.settings.win95DesktopIconPositions).toEqual({ 'my-computer': { x: 7, y: 9 } })
+  })
+
   it('normalizes invalid scale and malformed persisted objects', () => {
     const migrated = migrateStoreData({
       groups: [null, { id: 3 }, {
@@ -66,6 +101,7 @@ describe('store migration', () => {
     })
 
     expect(migrated.settings.win31Scale).toBe('auto')
+    expect(migrated.settings.win95Scale).toBe('auto')
     expect(migrated.groups).toHaveLength(1)
     expect(migrated.groups[0].items).toEqual([])
     expect(migrated.groups[0].shellWindowState.win31.width).toBeGreaterThanOrEqual(150)

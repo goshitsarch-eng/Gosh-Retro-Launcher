@@ -4,6 +4,7 @@ import {
   DEFAULT_WINDOW_STATE,
   createShellWindowState,
   isWin31ScalePreference,
+  isWin95ScalePreference,
   type AppSettings,
   type LogicalPosition,
   type ProgramGroup,
@@ -45,6 +46,13 @@ function normalizePosition(value: unknown): LogicalPosition | undefined {
   return { x: candidate.x, y: candidate.y }
 }
 
+function normalizePositionMap(value: unknown): Record<string, LogicalPosition> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {}
+  return Object.fromEntries(Object.entries(value)
+    .map(([key, position]) => [key, normalizePosition(position)] as const)
+    .filter((entry): entry is [string, LogicalPosition] => entry[1] !== undefined))
+}
+
 function normalizeItem(value: unknown): ProgramItem | null {
   if (typeof value !== 'object' || value === null) return null
   const item = value as Record<string, unknown>
@@ -68,6 +76,9 @@ function normalizeItem(value: unknown): ProgramItem | null {
     ...(typeof item.runMinimized === 'boolean' ? { runMinimized: item.runMinimized } : {}),
     ...(normalizePosition(item.win31Position)
       ? { win31Position: normalizePosition(item.win31Position) }
+      : {}),
+    ...(normalizePosition(item.win95Position)
+      ? { win95Position: normalizePosition(item.win95Position) }
       : {})
   }
 }
@@ -133,6 +144,10 @@ export function migrateStoreData(value: unknown): StoreData {
     win31Scale: isWin31ScalePreference(rawSettings.win31Scale)
       ? rawSettings.win31Scale
       : 'auto',
+    win95Scale: isWin95ScalePreference(rawSettings.win95Scale)
+      ? rawSettings.win95Scale
+      : 'auto',
+    win95DesktopIconPositions: normalizePositionMap(rawSettings.win95DesktopIconPositions),
     win31DesktopMode: typeof rawSettings.win31DesktopMode === 'boolean'
       ? rawSettings.win31DesktopMode
       : false,

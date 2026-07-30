@@ -6,6 +6,9 @@ export type Win31Command =
   | 'delete'
   | 'properties'
   | 'run'
+  | 'launch-all'
+  | `launch-group:${number}`
+  | 'launcher-tools'
   | 'exit'
   | 'auto-arrange'
   | 'minimize-on-use'

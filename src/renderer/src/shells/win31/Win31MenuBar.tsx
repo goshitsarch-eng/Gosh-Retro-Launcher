@@ -11,7 +11,7 @@ export interface Win31MenuItemModel {
 }
 
 interface MenuDefinition {
-  id: 'file' | 'options' | 'window' | 'help'
+  id: 'file' | 'options' | 'window' | 'launcher' | 'help'
   label: string
   mnemonic: string
   items: Win31MenuItemModel[]
@@ -115,6 +115,14 @@ export function Win31MenuBar({
 }): JSX.Element {
   const [activeMenu, setActiveMenu] = useState<MenuDefinition['id'] | null>(null)
   const menuBarRef = useRef<HTMLDivElement>(null)
+  const launchGroups = useMemo(() => {
+    const counts = new Map<number, number>()
+    groups.forEach((group) => group.items.forEach((item) => {
+      const groupNumber = item.launchGroup ?? 0
+      if (groupNumber > 0) counts.set(groupNumber, (counts.get(groupNumber) ?? 0) + 1)
+    }))
+    return [...counts.entries()].sort(([left], [right]) => left - right)
+  }, [groups])
 
   const definitions = useMemo<MenuDefinition[]>(() => [
     {
@@ -155,6 +163,20 @@ export function Win31MenuBar({
       ]
     },
     {
+      id: 'launcher', label: '&Launcher', mnemonic: 'l', items: [
+        { command: 'launch-all', label: 'Launch &All', disabled: launchGroups.length === 0 },
+        ...(launchGroups.length ? [
+          { separator: true } as Win31MenuItemModel,
+          ...launchGroups.map(([groupNumber, itemCount]): Win31MenuItemModel => ({
+            command: `launch-group:${groupNumber}`,
+            label: `Launch Group &${groupNumber} (${itemCount} ${itemCount === 1 ? 'item' : 'items'})`
+          }))
+        ] : []),
+        { separator: true },
+        { command: 'launcher-tools', label: 'Launcher &Tools...' }
+      ]
+    },
+    {
       id: 'help', label: '&Help', mnemonic: 'h', items: [
         { command: 'help-contents', label: '&Contents' },
         { command: 'help-search', label: '&Search for Help On...' },
@@ -163,7 +185,7 @@ export function Win31MenuBar({
         { command: 'about', label: '&About Program Manager...' }
       ]
     }
-  ], [activeGroupId, commandState, groups])
+  ], [activeGroupId, commandState, groups, launchGroups])
 
   const execute = (command: Win31Command): void => {
     setActiveMenu(null)

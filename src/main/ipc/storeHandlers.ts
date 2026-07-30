@@ -14,7 +14,7 @@ import {
 import { getMainWindow } from '../window'
 import { updateTrayMenu } from '../tray'
 import type { ProgramGroup, ProgramItem, AppSettings, StoreData, WindowState, WorkspaceProfile } from '@shared/types'
-import { isWin31ScalePreference } from '@shared/types'
+import { isWin31ScalePreference, isWin95ScalePreference } from '@shared/types'
 import { migrateStoreData } from '@shared/storeMigration'
 import { createBackup, listBackups, readBackup } from '../backups'
 
@@ -33,6 +33,11 @@ function isPosition(value: unknown): boolean {
   const position = value as Record<string, unknown>
   return typeof position.x === 'number' && Number.isFinite(position.x) &&
     typeof position.y === 'number' && Number.isFinite(position.y)
+}
+
+function isPositionMap(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  return Object.values(value as Record<string, unknown>).every(isPosition)
 }
 
 function isWindowState(value: unknown): value is WindowState {
@@ -62,7 +67,8 @@ export function isValidItem(item: unknown): item is ProgramItem {
       (typeof obj.launchGroup === 'number' && Number.isInteger(obj.launchGroup) && obj.launchGroup >= 0)) &&
     (obj.shortcutKey === undefined || typeof obj.shortcutKey === 'string') &&
     (obj.runMinimized === undefined || typeof obj.runMinimized === 'boolean') &&
-    (obj.win31Position === undefined || isPosition(obj.win31Position))
+    (obj.win31Position === undefined || isPosition(obj.win31Position)) &&
+    (obj.win95Position === undefined || isPosition(obj.win95Position))
   )
 }
 
@@ -109,6 +115,8 @@ export function isValidSettings(settings: unknown): settings is AppSettings {
     typeof obj.groupChromeScale === 'number' &&
     obj.groupChromeScale > 0 &&
     (obj.win31Scale === undefined || isWin31ScalePreference(obj.win31Scale)) &&
+    (obj.win95Scale === undefined || isWin95ScalePreference(obj.win95Scale)) &&
+    (obj.win95DesktopIconPositions === undefined || isPositionMap(obj.win95DesktopIconPositions)) &&
     (obj.win31DesktopMode === undefined || typeof obj.win31DesktopMode === 'boolean') &&
     (obj.win31ProgramManagerMinimized === undefined || typeof obj.win31ProgramManagerMinimized === 'boolean') &&
     (obj.win31ProgramManagerBounds === undefined || (

@@ -5,6 +5,37 @@ All notable changes to Gosh Retro Launcher are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Rebuilt the Windows 95 shell against the RTM retail layout with clean-room bitmap icons/font assets, canonical desktop/taskbar/Start hierarchy, Explorer-style launcher windows, and Win95-owned launcher dialogs.
+- Added the primary **Start → Programs → group → app** launch path, My Computer group browsing, launcher Find/Run, complete task buttons, system menus, and keyboard navigation.
+- Added independent Windows 95 Auto/1×/2×/3×/4× whole-shell scaling with logical geometry and explicit bitmap variants for modern high-resolution displays.
+- Added `Launcher Tools...` under Windows 95 Start → Settings while retaining tray and Ctrl+Alt+T access from both shells.
+- Added 39 deterministic Win95 visual states and pure tests for RTM tokens/bitmap text, independent icon families, shell shortcuts, nested menus, extended selection, list layouts, scrollbars, Find filters, dialog defaults, z-order/restore, persisted positions, and remainder/DPI geometry.
+- Added a centralized Win95 menu/input controller with classic tracking/cascades, bare-Alt mode, Windows-key accelerators, menu-bar/system/context behavior, and priority routing across modal, menu, window, and desktop surfaces.
+- Added multi-selection, marquee/type selection, active/inactive `ILD_BLEND50`-style icon masks, drag images, Auto Arrange/Line Up, manual position persistence, all four list views, report headers, and deterministic captured scrollbars.
+- Added a single-instance modeless RTM-style Find primary window, exact 347×163 Run and 347×222 Shut Down frames, tabbed property sheets, and a Create Shortcut wizard.
+- Restored visible Win31 launcher controls for launching all numbered groups, launching one group, and opening Launcher Tools.
+- Restored the Launch Group field in Win31 program item properties and added runnable group controls to Launcher Tools.
+
+### Changed
+
+- Isolated Win95 dialogs, item views, menus, controls, bitmap text, icons, scaling, input routing, persisted positions, and open-window state from Win31 presentation primitives and the shared MDI store.
+- Replaced mechanically shared icon geometry with separately authored 16×16 and 32×32 clean-room designs plus strict nearest-neighbor 2×–4× variants.
+- Replaced browser-rasterized static Win95 chrome text with monochrome normal/bold bitmap output while retaining semantic text and ARIA.
+- Removed post-RTM Win95 caption gradients, address bar composition, dark/fractional chrome, animations, synthetic interaction tones, onboarding hint, batch Start entry, and modern empty-state text.
+
+### Fixed
+
+- Made shell switching persist the complete settings payload before recreating the host window and roll back both disk and renderer state on errors.
+- Corrected RTM frame/bevel edge order, taskbar top rows, Start/tray/menu dimensions, set-state checker patterns, caption controls, and dialog focus/default/cancel order.
+- Covered non-divisible viewport remainders, selected DPR-aware raster variants, and rounded saved logical geometry without changing the canonical 1× grid.
+- Improved program-item label wrapping, keyboard grid navigation, and Window > Tile geometry.
+- Removed the conflicting scrollbars from the Win31 group icon picker.
+- Made the full Launcher Tools window vertically scrollable with a visible status footer.
+
 ## [1.0.6] - 2026-04-29
 
 ### Changed

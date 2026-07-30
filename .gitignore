@@ -27,6 +27,9 @@ out/
 coverage/
 wfw-smoke.png
 
+# User-supplied licensed Windows 95 RTM resource pack (never redistribute)
+src/renderer/src/assets/win95-rtm-local/
+
 # Optional: editor + OS noise
 .DS_Store
 Thumbs.db

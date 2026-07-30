@@ -418,7 +418,10 @@
 }
 
 .shell-win31 .win31-dialog-content {
+  min-height: 0;
   padding: 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .shell-win31 .win31-form-row {
@@ -524,9 +527,9 @@
   display: grid;
   grid-template-columns: repeat(7, 36px);
   gap: 2px;
-  max-height: 146px;
+  max-height: none;
   padding: 4px;
-  overflow: auto;
+  overflow: visible;
   border: 1px solid var(--bevel-darkest);
   background: var(--window-bg);
   box-shadow: inset 1px 1px 0 var(--bevel-dark);

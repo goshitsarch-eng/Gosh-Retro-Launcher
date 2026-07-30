@@ -70,15 +70,16 @@ export function createWindow(options: CreateWindowOptions = {}): BrowserWindow {
   const bounds = options.bounds
   let defaultWidth = 800
   let defaultHeight = 600
-  if (shellType === 'win31' && !bounds) {
+  if (!bounds && (shellType === 'win31' || shellType === 'win95')) {
     const workArea = screen.getPrimaryDisplay().workAreaSize
     const autoScale = Math.max(1, Math.min(4, Math.floor(Math.min(
       workArea.width / 640,
       workArea.height / 480
     ))))
-    const scale = settings.win31Scale === 'auto' ? autoScale : settings.win31Scale
-    defaultWidth = 640 * scale
-    defaultHeight = 480 * scale
+    const preference = shellType === 'win31' ? settings.win31Scale : settings.win95Scale
+    const scale = preference === 'auto' ? autoScale : preference
+    defaultWidth = Math.min(workArea.width, 640 * scale)
+    defaultHeight = Math.min(workArea.height, 480 * scale)
   }
   const browserWindow = new BrowserWindow({
     width: bounds?.width ?? defaultWidth,
@@ -88,6 +89,9 @@ export function createWindow(options: CreateWindowOptions = {}): BrowserWindow {
     minWidth: 400,
     minHeight: 300,
     frame: useNativeFrame,
+    // New Win95 windows size their emulated desktop by content pixels; saved
+    // switch bounds remain outer-window bounds so recreation is lossless.
+    useContentSize: shellType === 'win95' && !bounds,
     backgroundColor: shellType === 'win31' ? '#c0c0c0' : '#008080',
     show: false,
     webPreferences: {

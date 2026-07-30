@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState, type JSX } from 'react'
-import type { BackupInfo, ProgramRunMode, ShellType, Win31ScalePreference } from '@shared/types'
+import type {
+  BackupInfo,
+  ProgramRunMode,
+  ShellType,
+  Win31ScalePreference,
+  Win95ScalePreference
+} from '@shared/types'
 import { useProgramStore } from '@/store/programStore'
+import { collectLaunchGroups, launchGroupBuckets, type LaunchGroupBucket } from '@/utils/launchGroups'
+import { applyShellSettingsTransaction } from '@/utils/shellSwitch'
 
 export function LauncherTools(): JSX.Element {
   const groups = useProgramStore((state) => state.groups)
@@ -19,6 +27,7 @@ export function LauncherTools(): JSX.Element {
 
   const [shell, setShell] = useState<ShellType>(settings.shell)
   const [scale, setScale] = useState<Win31ScalePreference>(settings.win31Scale)
+  const [win95Scale, setWin95Scale] = useState<Win95ScalePreference>(settings.win95Scale)
   const [desktopMode, setDesktopMode] = useState(settings.win31DesktopMode)
   const [sound, setSound] = useState(settings.soundEnabled)
   const [tray, setTray] = useState(settings.trayOnClose)
@@ -30,11 +39,13 @@ export function LauncherTools(): JSX.Element {
   const [urlValue, setUrlValue] = useState('https://')
   const [selectedItemKey, setSelectedItemKey] = useState('')
   const [backups, setBackups] = useState<BackupInfo[]>([])
+  const [launching, setLaunching] = useState(false)
   const [status, setStatus] = useState('Ready.')
 
   useEffect(() => {
     setShell(settings.shell)
     setScale(settings.win31Scale)
+    setWin95Scale(settings.win95Scale)
     setDesktopMode(settings.win31DesktopMode)
     setSound(settings.soundEnabled)
     setTray(settings.trayOnClose)
@@ -53,6 +64,7 @@ export function LauncherTools(): JSX.Element {
   }, [profiles, selectedProfile])
 
   const selectedProfileEntry = profiles.find((profile) => profile.id === selectedProfile)
+  const launchGroups = useMemo(() => collectLaunchGroups(groups), [groups])
   const selectedItem = useMemo(() => {
     const [groupId, itemId] = selectedItemKey.split(':')
     const group = groups.find((entry) => entry.id === groupId)
@@ -63,11 +75,27 @@ export function LauncherTools(): JSX.Element {
   useEffect(() => { void refreshBackups() }, [])
 
   const applyAppearance = async (): Promise<void> => {
-    const next = { ...settings, shell, win31Scale: scale, win31DesktopMode: desktopMode, soundEnabled: sound, trayOnClose: tray }
-    updateSettings(next)
-    await window.electronAPI.store.set('settings', next)
-    if (shell !== settings.shell) await window.electronAPI.window.recreateForShell(shell)
-    setStatus('Appearance settings applied.')
+    const previousSettings = settings
+    const next = {
+      ...settings,
+      shell,
+      win31Scale: scale,
+      win95Scale,
+      win31DesktopMode: desktopMode,
+      soundEnabled: sound,
+      trayOnClose: tray
+    }
+    const result = await applyShellSettingsTransaction(previousSettings, next, {
+      persist: (value) => window.electronAPI.store.set('settings', value),
+      updateRenderer: updateSettings,
+      recreate: (value) => window.electronAPI.window.recreateForShell(value)
+    })
+    if (result.success) {
+      setStatus(`Appearance settings applied. Active shell: ${shell === 'win95' ? 'Windows 95' : 'Windows for Workgroups 3.11'}.`)
+    } else {
+      setShell(previousSettings.shell)
+      setStatus(`Could not switch shells: ${result.error}`)
+    }
   }
 
   const importGrp = async (): Promise<void> => {
@@ -115,6 +143,24 @@ export function LauncherTools(): JSX.Element {
     setStatus('URL launcher added.')
   }
 
+  const launchBuckets = async (buckets: LaunchGroupBucket[]): Promise<void> => {
+    if (launching || buckets.length === 0) return
+    setLaunching(true)
+    setStatus(`Launching ${buckets.length === 1 ? `Group ${buckets[0].groupNumber}` : 'all groups'}...`)
+    try {
+      const results = await launchGroupBuckets(buckets, settings.launchDelay)
+      const failures = results.filter((result) => !result.success).length
+      setStatus(failures
+        ? `Launch finished with ${failures} ${failures === 1 ? 'failure' : 'failures'}.`
+        : `Launched ${results.length} ${results.length === 1 ? 'item' : 'items'}.`)
+    } catch (error) {
+      console.error('Failed to launch grouped items:', error)
+      setStatus('Could not launch the selected group.')
+    } finally {
+      setLaunching(false)
+    }
+  }
+
   return (
     <main className="launcher-tools">
       <header>
@@ -124,6 +170,7 @@ export function LauncherTools(): JSX.Element {
 
       <section>
         <h2>Shell and appearance</h2>
+        <p><strong>Active shell:</strong> {settings.shell === 'win95' ? 'Windows 95' : 'Windows for Workgroups 3.11'}</p>
         <div className="tools-grid">
           <label>Shell
             <select value={shell} onChange={(event) => setShell(event.target.value as ShellType)}>
@@ -131,11 +178,19 @@ export function LauncherTools(): JSX.Element {
               <option value="win95">Windows 95</option>
             </select>
           </label>
-          <label>WfW scale
-            <select value={scale} onChange={(event) => setScale(event.target.value === 'auto' ? 'auto' : Number(event.target.value) as 1 | 2 | 3 | 4)}>
-              <option value="auto">Auto</option>{[1, 2, 3, 4].map((value) => <option value={value} key={value}>{value}×</option>)}
-            </select>
-          </label>
+          {shell === 'win31' ? (
+            <label>WfW scale
+              <select value={scale} onChange={(event) => setScale(event.target.value === 'auto' ? 'auto' : Number(event.target.value) as 1 | 2 | 3 | 4)}>
+                <option value="auto">Auto</option>{[1, 2, 3, 4].map((value) => <option value={value} key={value}>{value}×</option>)}
+              </select>
+            </label>
+          ) : (
+            <label>Windows 95 scale
+              <select value={win95Scale} onChange={(event) => setWin95Scale(event.target.value === 'auto' ? 'auto' : Number(event.target.value) as 1 | 2 | 3 | 4)}>
+                <option value="auto">Auto</option>{[1, 2, 3, 4].map((value) => <option value={value} key={value}>{value}×</option>)}
+              </select>
+            </label>
+          )}
         </div>
         <div className="tools-checks">
           <label><input type="checkbox" checked={desktopMode} onChange={(event) => setDesktopMode(event.target.checked)} /> WfW gray desktop mode</label>
@@ -171,6 +226,27 @@ export function LauncherTools(): JSX.Element {
           </select></label>
         </div>
         <button disabled={!groups.length || !urlName.trim()} onClick={addUrl}>Add URL</button>
+      </section>
+
+      <section>
+        <h2>Launch groups</h2>
+        <div className="tools-row">
+          <label>Delay between items
+            <input type="number" min={100} max={5000} step={100} value={settings.launchDelay}
+              onChange={(event) => updateSettings({ launchDelay: Math.max(100, Math.min(5000, Number(event.target.value) || 100)) })} />
+          </label>
+          <button disabled={launching || launchGroups.length === 0} onClick={() => void launchBuckets(launchGroups)}>
+            {launching ? 'Launching...' : 'Launch All'}
+          </button>
+        </div>
+        <div className="tools-launch-groups">
+          {launchGroups.map((bucket) => (
+            <button key={bucket.groupNumber} disabled={launching} onClick={() => void launchBuckets([bucket])}>
+              Launch Group {bucket.groupNumber} ({bucket.items.length} {bucket.items.length === 1 ? 'item' : 'items'})
+            </button>
+          ))}
+          {!launchGroups.length && <p>No launch groups are assigned. Assign one to a program below.</p>}
+        </div>
       </section>
 
       <section>
@@ -256,7 +332,7 @@ function LaunchProfileEditor({ item, onSave }: {
       <label>Run mode<select value={runMode} onChange={(event) => setRunMode(event.target.value as ProgramRunMode)}>
         <option value="normal">Normal</option><option value="minimized">Minimized</option><option value="maximized">Maximized</option>
       </select></label>
-      <label>Batch group<input type="number" min={0} max={99} value={launchGroup} onChange={(event) => setLaunchGroup(Number(event.target.value))} /></label>
+      <label>Batch group<input type="number" min={0} max={8} value={launchGroup} onChange={(event) => setLaunchGroup(Math.max(0, Math.min(8, Number(event.target.value) || 0)))} /></label>
       <button onClick={() => onSave({ arguments: args, workingDir, environment, runMode, launchGroup })}>Save launch profile</button>
     </div>
   )

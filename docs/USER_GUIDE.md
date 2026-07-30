@@ -48,14 +48,7 @@ Release packages are available from GitHub Releases:
 
 ### First Launch
 
-On your very first launch, a **Welcome dialog** appears with a quick overview of how to use the application:
-
-- Drag files into a group window to add programs
-- Use **File > New** to create items or groups
-- Double-click an item to launch it
-- Right-click items for properties
-
-This dialog only appears once. After dismissing it, you will see an empty desktop with the menu bar. You can start by creating your first program group.
+The application starts with an empty user workspace; historical reference groups are never added to your data automatically. In Windows 95, use **Start → Settings → Launcher Tools...** to create/import groups or switch shells. In WfW 3.11, the canonical Program Manager workspace remains unobscured.
 
 ## Desktop Shells
 
@@ -72,22 +65,26 @@ The classic Windows 3.1 experience:
 
 ### Windows 95 Shell
 
-A Windows 95-inspired interface:
-- **Taskbar** at the bottom with a Start button
-- **Start menu** for accessing groups and items
-- **Desktop windows** for program groups with Win95-styled chrome (minimize, maximize, close buttons)
-- Status bar showing item count per group
-- Resize grip in the bottom-right corner of windows
+A clean-room Windows 95 RTM retail launcher presentation:
+- The canonical teal desktop, 28px taskbar, Start button, notification-area clock, and My Computer / Network Neighborhood / Recycle Bin icons
+- **Start → Programs → group → app** as the primary launch hierarchy
+- My Computer as a launcher browser containing your program groups
+- Explorer-style group windows with active/inactive captions, system menus, task buttons, distinct Icon/Small Icon/List/Details views, resizable report columns, and deterministic Win95 scrollbars
+- Ctrl/Shift disjoint and range selection, Ctrl+A, white-space marquee selection, type-to-select, manual icon placement, Line Up, and Auto Arrange
+- One menu/input model for Start, menu bars, cascades, system menus, and context menus, including press-drag-release tracking and per-level keyboard cancellation
+- A single-instance modeless Find primary window, exact-size Run and Shut Down dialogs, tabbed property sheets, and a Create Shortcut wizard
+- Outline move/eight-edge size, explicit restore/maximize/minimize states, task contexts, drag-hover task activation, and independent crisp whole-shell scaling at Auto or 1×–4×
+
+Network Neighborhood, Recycle Bin storage, Control Panel, Printers, file dates, computer restart, MS-DOS mode, and logon are not emulated. Unsupported operations are disabled or display a Windows 95-style availability notice. My Computer and Programs intentionally map to launcher groups/items; Shut Down quits or restarts only the launcher.
 
 ### Switching Shells
 
-1. Open **File > Settings** (or **Help > Settings** depending on context)
-2. In the **Appearance** section, find the **Desktop Shell** dropdown
-3. Select either "Windows 3.1" or "Windows 95"
-4. A live **Theme Preview** shows what the shell will look like
-5. Click **OK** to apply
+1. Open **Launcher Tools...** from the native tray, press **Ctrl+Alt+T** in either shell, or choose **Start → Settings → Launcher Tools...** in Windows 95.
+2. Under **Shell and appearance**, choose Windows for Workgroups 3.11 or Windows 95.
+3. Choose the selected shell's Auto/1×/2×/3×/4× scale.
+4. Click **Apply**.
 
-The change takes effect immediately.
+The complete settings payload is saved before the main Electron window is recreated. Its normal bounds/maximized state is retained, program data stays shared, and each shell keeps independent group-window geometry.
 
 ## Managing Groups
 
@@ -212,22 +209,23 @@ Quick Search lets you find and launch any program item across all groups without
 ### Opening Quick Search
 
 - Press **Ctrl+Shift+Space** (Windows/Linux) or **Cmd+Shift+Space** (macOS) from anywhere, even when the app is in the background
-- Or go to **Help > Quick Search...**
+- In Windows 95, choose **Start → Find → Files or Folders...**
 
-A hint at the bottom of the screen reminds you of the shortcut until you use it for the first time.
+Windows 95 opens or reactivates a modeless **Find: All Files** primary window and task button. WfW retains `QuickSearchOverlay` unchanged.
 
-### Using Quick Search
+### Using Find in Windows 95
 
-1. Type your search term in the text field
-2. Results appear instantly, ranked by relevance:
-   - **Highest**: Items whose name starts with your search term
-   - **Medium**: Items whose name contains your search term
-   - **Lower**: Items whose path or group name contains your search term
-3. Use **Arrow Up/Down** to navigate results
-4. Press **Enter** to launch the selected item
-5. Press **Escape** to close Quick Search
+1. On **Name & Location**, enter a `Named` value. `*` and `?` wildcards are supported; choose a launcher group in `Look in` if desired.
+2. On **Advanced**, optionally filter Application versus Internet Shortcut, containing text, or path text.
+3. The **Date Modified** page is visible for RTM composition but its predicates are disabled because launcher items do not store fabricated file dates.
+4. Choose **Find Now**. **Stop** cancels an in-progress search and **New Search** resets the criteria.
+5. Use click/Ctrl/Shift, Arrow keys, Home/End/Page keys, or Ctrl+A in results. Double-click or press Enter to launch.
 
-Up to 10 results are shown at a time. If there are more matches, a count of hidden results is displayed.
+Start Find, Windows+F, and the global Quick Search shortcut all reuse the same Win95 Find window.
+
+### Using Quick Search in WfW
+
+Type a search term, use Arrow Up/Down to navigate ranked results, press Enter to launch, and press Escape to close. Up to 10 results are shown at a time.
 
 ## Batch Launch
 
@@ -235,7 +233,7 @@ Batch launch lets you start multiple programs at once with a configurable delay 
 
 ### Setting Up Launch Groups
 
-1. Open the properties of a program item (right-click > Properties)
+1. Select a program item and open **File > Properties...** (or use Launcher Tools)
 2. Set the **Launch Group** field to a number from 1 to 8
 3. Repeat for other items you want to batch-launch
 
@@ -243,9 +241,9 @@ Items with the same launch group number will launch together. Groups are launche
 
 ### Launching
 
-Go to **File > Launch All** to launch all items that have a launch group assigned. The delay between each launch is controlled by the **Batch Launch Delay** setting, from 100ms to 5000ms. The default is 500ms.
+In the Win31 shell, open **Launcher > Launch All** to run every assigned group in order, or choose a numbered group to run only that group. The same controls are available in **Launcher Tools**. Windows 95 keeps batch extensions out of its canonical Start menu; open Launcher Tools from **Start → Settings** or the tray.
 
-The "Launch All" menu item is disabled if no items have a launch group assigned.
+The delay between launches is configurable from 100ms to 5000ms and defaults to 500ms. **Launch All** is disabled when no items have a launch group assigned.
 
 ## Settings
 
@@ -268,9 +266,10 @@ Open Settings from **File > Settings...**. Settings are organized into three sec
 | **Wrap item labels** | Show full item names (wrap) or truncate with ellipsis | Wrap |
 | **Sound Effects** | Enable retro sound effects (startup chime, window sounds, clicks) | On |
 | **Desktop Shell** | Choose between "Windows 3.1" and "Windows 95" | Windows 3.1 |
-| **Group Title Bar Size** | Scale the window title bar from 100% to 160% | 100% |
+| **WfW scale** | Auto or force 1×–4× whole-shell scaling | Auto |
+| **Windows 95 scale** | Auto or force 1×–4× whole-shell scaling | Auto |
 
-A **Theme Preview** below the shell selector shows a miniature rendering of what the selected shell and theme combination will look like.
+The Windows 95 shell always uses the fixed RTM palette and control metrics; dark mode and fractional title-bar scaling do not alter its canonical surface. Use Launcher Tools for shell and scale selection.
 
 ### Batch Launch
 
@@ -310,6 +309,7 @@ When the **Minimize to Tray on Close** setting is enabled (default), closing the
 
 Right-click the tray icon to see:
 - **Show Program Manager** restores the main window
+- **Launcher Tools...** opens shell switching and launcher configuration
 - A list of all your groups, each with a submenu of their items for quick launch
 - **Exit** quits the application
 
@@ -336,7 +336,8 @@ If no icon file is found, a small fallback icon is used automatically.
 
 | Shortcut | Action |
 |----------|--------|
-| Ctrl+Shift+Space (Cmd+Shift+Space on macOS) | Toggle Quick Search (works even when app is in background) |
+| Ctrl+Shift+Space (Cmd+Shift+Space on macOS) | Toggle Quick Search/Win95 Find (works even when app is in background) |
+| Ctrl+Alt+T | Open Launcher Tools from either shell |
 | Enter | Launch the selected program item |
 | Delete | Delete the selected program item (with confirmation) |
 | Arrow keys | Navigate between items in the grid |
@@ -357,7 +358,20 @@ If no icon file is found, a small fallback icon is used automatically.
 
 | Shortcut | Action |
 |----------|--------|
-| Escape | Close the Start menu (when open) |
+| Windows key or Ctrl+Escape | Open/close Start |
+| Windows+R / Windows+F / Windows+E | Open Run / Find / My Computer |
+| Windows+Tab or Alt+Tab (Shift reverses) | Cycle launcher primary windows |
+| Arrow keys, Home, End, Page Up/Down | Navigate desktop icons, Start menus, folder items, and results |
+| Enter | Open the selected folder or launch the selected app |
+| Delete | Confirm deletion of the selected launcher item |
+| Escape | Close the current submenu, menu, or dialog |
+| Alt+Space | Open the active window's system menu |
+| Alt+F4 | Close the active launcher window/dialog |
+| Bare Alt, Alt+F / Alt+E / Alt+V / Alt+H | Enter menu-bar mode or open File/Edit/View/Help |
+| Shift+F10 or Application/Menu key | Open the selected object's context menu |
+| Ctrl+A | Select all objects/results in the active list view |
+| Ctrl+click / Shift+click | Toggle disjoint items / extend an anchor range |
+| Enter or Escape during Move/Size | Commit or cancel the outline operation |
 
 ### In Dialogs
 
@@ -401,8 +415,8 @@ The data file is named `program-manager-data.json` and is stored in:
 ### What Is Stored
 
 The file contains two main keys:
-- **groups**: All your program groups and their items
-- **settings**: Your application settings
+- **groups**: All program groups/items, independent Win31/Win95 window geometry, and optional shell-specific manual item positions
+- **settings**: Application settings, including independent integer shell scales and persisted Win95 desktop-object positions
 
 For the full data model, see the [Data Flow Diagram](diagrams/data-flow.md) or the [Data Model Diagram](diagrams/data-model.md).
 

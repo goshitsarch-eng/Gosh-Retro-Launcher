@@ -20,10 +20,12 @@
     "typecheck": "npm run typecheck:main && npm run typecheck:preload && npm run typecheck:renderer",
     "test": "vitest run",
     "test:watch": "vitest",
+    "generate:win95-assets": "node scripts/generate-win95-assets.cjs",
     "capture:wfw": "npm run build && electron scripts/capture-wfw.cjs",
     "test:visual:wfw": "npm run build && electron scripts/capture-wfw.cjs artifacts/wfw-reference.png reference tests/visual/baselines/wfw-reference.png",
     "test:visual:wfw-desktop": "npm run build && electron scripts/capture-wfw.cjs artifacts/wfw-desktop.png desktop tests/visual/baselines/wfw-desktop.png && electron scripts/capture-wfw.cjs artifacts/wfw-desktop-minimized.png desktop-minimized tests/visual/baselines/wfw-desktop-minimized.png",
-    "test:visual:win95": "npm run build && electron scripts/capture-wfw.cjs artifacts/win95-reference.png win95 tests/visual/baselines/win95-reference.png",
+    "test:visual:win95": "npm run build && node scripts/run-win95-visuals.cjs",
+    "update:visual:win95": "npm run build && node scripts/run-win95-visuals.cjs --update",
     "test:visual": "npm run test:visual:wfw && npm run test:visual:wfw-desktop && npm run test:visual:win95"
   },
   "dependencies": {

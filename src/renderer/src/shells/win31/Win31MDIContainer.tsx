@@ -6,6 +6,7 @@ import { useUIStore } from '@/store/uiStore'
 import { useWin31Scale } from './Win31ScaleContext'
 import { WFW_METRICS } from './tokens'
 import { getWfwIconSrc } from './iconCatalog'
+import { calculateWin31TileLayout } from './layout'
 import { Win31MDIWindow } from './Win31MDIWindow'
 
 export function Win31MDIContainer(): JSX.Element {
@@ -83,15 +84,9 @@ export function Win31MDIContainer(): JSX.Element {
       const restorable = groups.filter((group) => !getGroupWindowState(group, 'win31').minimized)
       if (restorable.length === 0) return
       const availableHeight = Math.max(92, clientSize.height - reservedBottom)
-      const tileColumns = Math.ceil(Math.sqrt(restorable.length))
-      const rows = Math.ceil(restorable.length / tileColumns)
-      const width = Math.floor(clientSize.width / tileColumns)
-      const height = Math.floor(availableHeight / rows)
+      const layout = calculateWin31TileLayout(restorable.length, clientSize.width, availableHeight)
       restorable.forEach((group, index) => updateState(group.id, {
-        x: (index % tileColumns) * width,
-        y: Math.floor(index / tileColumns) * height,
-        width,
-        height,
+        ...layout[index],
         maximized: false
       }, 'win31'))
     }

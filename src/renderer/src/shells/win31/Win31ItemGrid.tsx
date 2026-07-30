@@ -80,7 +80,9 @@ export function Win31ItemGrid({ group }: { group: ProgramGroup }): JSX.Element {
         const current = selection?.kind === 'item' && selection.groupId === group.id
           ? group.items.findIndex((item) => item.id === selection.itemId)
           : -1
-        const columns = Math.max(1, Math.floor((logicalSize.width - 8) / WFW_METRICS.programCellWidth))
+        const columns = Math.max(1, Math.floor(
+          (logicalSize.width - WFW_METRICS.programGridInsetX * 2) / WFW_METRICS.programCellWidth
+        ))
         let next = current
         if (event.key === 'ArrowRight') next = Math.min(group.items.length - 1, Math.max(0, current + 1))
         else if (event.key === 'ArrowLeft') next = Math.max(0, current - 1)

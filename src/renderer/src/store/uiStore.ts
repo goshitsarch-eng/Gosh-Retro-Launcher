@@ -21,6 +21,7 @@ export type DialogType =
   | 'changeIcon'
   | 'help'
   | 'exitWindows'
+  | 'unavailable'
   | null
 
 export type Win31Selection =
@@ -62,6 +63,8 @@ interface UIState {
     showIconPicker?: boolean
     copyMode?: boolean
     helpTopic?: 'contents' | 'search' | 'using'
+    title?: string
+    message?: string
   }
   openDialog: (type: DialogType, data?: UIState['dialogData']) => void
   closeDialog: () => void

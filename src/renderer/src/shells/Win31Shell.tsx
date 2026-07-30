@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type JSX,
@@ -24,6 +25,8 @@ import { Win31MDIContainer } from './win31/Win31MDIContainer'
 import { Win31ScaleProvider, useWin31Scale } from './win31/Win31ScaleContext'
 import type { Win31Command, Win31CommandState } from './win31/commands'
 import { getWfwIconSrc } from './win31/iconCatalog'
+import { useSounds } from '../hooks/useSounds'
+import { collectLaunchGroups, launchGroupBuckets, type LaunchGroupBucket } from '../utils/launchGroups'
 
 const DEFAULT_HOST_STATE: HostWindowState = {
   focused: true,
@@ -64,12 +67,17 @@ function Win31ProgramManager({ platform }: ShellProps): JSX.Element {
   const setSelection = useUIStore((state) => state.setWin31Selection)
   const openDialog = useUIStore((state) => state.openDialog)
   const activeDialog = useUIStore((state) => state.activeDialog)
+  const beginLaunchFeedback = useUIStore((state) => state.beginLaunchFeedback)
+  const updateLaunchFeedback = useUIStore((state) => state.updateLaunchFeedback)
+  const finishLaunchFeedback = useUIStore((state) => state.finishLaunchFeedback)
   const activeGroupId = useMDIStore((state) => state.activeWindowId)
   const focusWindow = useMDIStore((state) => state.focusWindow)
   const cascadeWindows = useMDIStore((state) => state.cascadeWindows)
   const tileWindows = useMDIStore((state) => state.tileWindows)
   const arrangeIcons = useMDIStore((state) => state.arrangeIcons)
   const { scale } = useWin31Scale()
+  const sounds = useSounds()
+  const launchInProgressRef = useRef(false)
   const [hostState, setHostState] = useState(DEFAULT_HOST_STATE)
   const [systemMenuOpen, setSystemMenuOpen] = useState(false)
   const [desktopBounds, setDesktopBounds] = useState(settings.win31ProgramManagerBounds)
@@ -165,6 +173,40 @@ function Win31ProgramManager({ platform }: ShellProps): JSX.Element {
     }
   }, [openDialog, selected.group, settings.minimizeOnUse, updateGroupWindowState])
 
+  const launchBuckets = useCallback(async (requestedBuckets: LaunchGroupBucket[]): Promise<void> => {
+    if (launchInProgressRef.current || requestedBuckets.length === 0) return
+
+    // Let the menu close paint before starting sounds, progress updates, and IPC work.
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()))
+    if (launchInProgressRef.current) return
+    launchInProgressRef.current = true
+    sounds.buttonClick()
+    beginLaunchFeedback(
+      requestedBuckets.length,
+      requestedBuckets.reduce((count, bucket) => count + bucket.items.length, 0)
+    )
+
+    try {
+      const results = await launchGroupBuckets(
+        requestedBuckets,
+        settings.launchDelay,
+        ({ groupNumber, groupIndex }) => {
+          sounds.menuClick()
+          updateLaunchFeedback(groupNumber, groupIndex)
+        }
+      )
+      const failures = results.filter((result) => !result.success)
+      finishLaunchFeedback(failures.length)
+      if (failures.length) console.error('Failed to launch some grouped items:', failures)
+      if (settings.minimizeOnUse) void window.electronAPI.window.minimize()
+    } catch (error) {
+      finishLaunchFeedback(1)
+      console.error('Failed to launch grouped items:', error)
+    } finally {
+      launchInProgressRef.current = false
+    }
+  }, [beginLaunchFeedback, finishLaunchFeedback, settings.launchDelay, settings.minimizeOnUse, sounds, updateLaunchFeedback])
+
   useEffect(() => {
     const keyboard = (event: KeyboardEvent): void => {
       if (activeDialog) return
@@ -224,7 +266,7 @@ function Win31ProgramManager({ platform }: ShellProps): JSX.Element {
       }
 
       if (event.altKey && !event.ctrlKey && !event.shiftKey && !event.metaKey &&
-        ['f', 'o', 'w', 'h', ' ', '-', 'enter'].includes(event.key.toLowerCase())) return
+        ['f', 'o', 'w', 'l', 'h', ' ', '-', 'enter'].includes(event.key.toLowerCase())) return
 
       const shortcut = groups.flatMap((group) => group.items.map((item) => ({ group, item })))
         .find(({ item }) => shortcutMatches(item.shortcutKey, event))
@@ -273,6 +315,12 @@ function Win31ProgramManager({ platform }: ShellProps): JSX.Element {
       if (group) restoreGroup(group)
       return
     }
+    if (command.startsWith('launch-group:')) {
+      const groupNumber = Number(command.slice('launch-group:'.length))
+      const bucket = collectLaunchGroups(groups).find((entry) => entry.groupNumber === groupNumber)
+      if (bucket) void launchBuckets([bucket])
+      return
+    }
     switch (command) {
       case 'new':
         openDialog('newObject', { groupId: selected.group?.id })
@@ -319,6 +367,12 @@ function Win31ProgramManager({ platform }: ShellProps): JSX.Element {
         break
       case 'run':
         openDialog('run')
+        break
+      case 'launch-all':
+        void launchBuckets(collectLaunchGroups(groups))
+        break
+      case 'launcher-tools':
+        void window.electronAPI.app.openLauncherTools()
         break
       case 'exit':
         openDialog('exitWindows')
@@ -371,7 +425,7 @@ function Win31ProgramManager({ platform }: ShellProps): JSX.Element {
         else void window.electronAPI.window.close()
         break
     }
-  }, [arrangeIcons, cascadeWindows, deleteGroup, deleteItem, groups, hostState.bounds, launchItem, openDialog,
+  }, [arrangeIcons, cascadeWindows, deleteGroup, deleteItem, groups, hostState.bounds, launchBuckets, launchItem, openDialog,
     desktopBounds, minimizeProgramManager, persistDesktopBounds, restoreGroup, selected.group,
     selected.item, settings.autoArrange, settings.minimizeOnUse, settings.saveSettingsOnExit,
     settings.win31DesktopMode, tileWindows, toggleProgramManagerMaximize, updateSettings])

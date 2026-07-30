@@ -174,6 +174,13 @@ export const ItemPropertiesDialog: React.FC = () => {
                   <option value="maximized">Maximized</option>
                 </select>
               </div>
+              <div className="win31-form-row">
+                <label htmlFor="item-launch-group">Launch Group:</label>
+                <select id="item-launch-group" className="win31-input" value={launchGroup}
+                  onChange={(event) => setLaunchGroup(Number(event.target.value))}>
+                  {LAUNCH_GROUP_OPTIONS.map((value) => <option key={value} value={value}>{formatLaunchGroup(value)}</option>)}
+                </select>
+              </div>
             </>
           )}
           <div className="win31-form-row win31-icon-preview-row">

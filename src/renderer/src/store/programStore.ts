@@ -63,6 +63,7 @@ interface ProgramState {
   addItem: (groupId: string, item: Omit<ProgramItem, 'id'>) => void
   updateItem: (groupId: string, itemId: string, updates: Partial<ProgramItem>) => void
   updateItemPosition: (groupId: string, itemId: string, position: LogicalPosition) => void
+  updateWin95ItemPosition: (groupId: string, itemId: string, position: LogicalPosition) => void
   deleteItem: (groupId: string, itemId: string) => void
   moveItem: (fromGroupId: string, toGroupId: string, itemId: string) => void
   copyItem: (fromGroupId: string, toGroupId: string, itemId: string) => void
@@ -232,6 +233,10 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
     get().updateItem(groupId, itemId, { win31Position: position })
   },
 
+  updateWin95ItemPosition: (groupId, itemId, position) => {
+    get().updateItem(groupId, itemId, { win95Position: position })
+  },
+
   deleteItem: (groupId, itemId) => {
     const { groups, saveGroups } = get()
     set({ groups: groups.map((group) => group.id === groupId
@@ -247,7 +252,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
     if (!item) return
     set({ groups: groups.map((group) => {
       if (group.id === fromGroupId) return { ...group, items: group.items.filter((entry) => entry.id !== itemId) }
-      if (group.id === toGroupId) return { ...group, items: [...group.items, { ...item, win31Position: undefined }] }
+      if (group.id === toGroupId) return { ...group, items: [...group.items, { ...item, win31Position: undefined, win95Position: undefined }] }
       return group
     }) })
     debouncedSaveGroups(saveGroups)
@@ -257,7 +262,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
     const { groups, saveGroups } = get()
     const item = groups.find((group) => group.id === fromGroupId)?.items.find((entry) => entry.id === itemId)
     if (!item) return
-    const copy: ProgramItem = { ...item, id: uuidv4(), win31Position: undefined }
+    const copy: ProgramItem = { ...item, id: uuidv4(), win31Position: undefined, win95Position: undefined }
     set({ groups: groups.map((group) => group.id === toGroupId
       ? { ...group, items: [...group.items, copy] }
       : group) })

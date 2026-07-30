@@ -207,7 +207,7 @@ Launches multiple programs sequentially with a configurable delay between each.
 
 **Source**: `src/preload/index.ts:42-52`, handler in `src/main/ipc/storeHandlers.ts`
 
-The main process uses `electron-store` (file name: `program-manager-data`) for persistent JSON storage. The store schema has two top-level keys: `groups` and `settings`.
+The main process uses `electron-store` (file name: `program-manager-data`) for persistent JSON storage. The normalized schema contains `schemaVersion`, `groups`, `settings`, and `workspaceProfiles`.
 
 #### `store.get<T>(key)`
 
@@ -231,16 +231,16 @@ Sets a value in the persistent store with validation.
 
 **Validation** (from `src/main/ipc/storeHandlers.ts:16-65`):
 
-- `isValidItem(item)`: checks `id`, `name`, `path`, `icon` are all strings
-- `isValidGroup(group)`: checks `id`, `name`, `icon` are strings, `windowState` is a non-null object, `items` is an array where every element passes `isValidItem`
-- `isValidSettings(settings)`: checks all required boolean/number/string fields, validates `theme` is `'light'|'dark'`, `labelDisplay` is `'wrap'|'ellipsis'`, `shell` is optional and must be `'win31'|'win95'`, `soundEnabled` is optional boolean, `launchDelay >= 0`, `groupChromeScale > 0`
+- `isValidItem(item)`: checks launch metadata and optional finite Win31/Win95 logical positions.
+- `isValidGroup(group)`: checks identity, legacy or shell-specific window state, optional Win31 desktop position, and validated items.
+- `isValidSettings(settings)`: checks required settings, integer shell-scale preferences, finite Win31 host geometry, and the optional Win95 desktop-position map in addition to shell/theme/label/sound values.
 
 #### `store.getAll()`
 
 Retrieves all store data (groups + settings) in one call.
 
 - **Parameters**: None
-- **Returns**: `Promise<StoreData>`: `{ groups: ProgramGroup[], settings: AppSettings }`
+- **Returns**: `Promise<StoreData>` with schema version, groups, settings, and workspace profiles.
 - **Channel**: `store:get-all`
 
 #### `store.exportData()`
@@ -378,6 +378,8 @@ interface ProgramItem {
   icon: string         // Icon identifier or data URL
   workingDir: string   // Working directory for launch
   launchGroup?: number // Optional launch group number
+  win31Position?: LogicalPosition // Manual WfW item position
+  win95Position?: LogicalPosition // Manual Win95 Icon/Small Icon position
 }
 ```
 
@@ -388,7 +390,9 @@ interface ProgramGroup {
   id: string             // UUID v4
   name: string           // Display name
   icon: string           // Icon identifier (default: 'folder')
-  windowState: WindowState
+  windowState: WindowState // Legacy compatibility mirror
+  shellWindowState: { win31: WindowState; win95: WindowState }
+  win31IconPosition?: LogicalPosition
   items: ProgramItem[]
 }
 ```
@@ -415,8 +419,14 @@ interface AppSettings {
   saveSettingsOnExit: boolean // Persist window positions (default: true)
   launchDelay: number        // ms delay between batch launches (default: 500)
   trayOnClose: boolean       // Minimize to tray on close (default: true)
-  groupChromeScale: number   // MDI window chrome scale factor (default: 1)
-  theme: 'light' | 'dark'   // Color theme (default: 'light')
+  groupChromeScale: number   // Legacy fractional Win95 chrome option (unused by RTM shell)
+  win31Scale: 'auto' | 1 | 2 | 3 | 4 // WfW whole-shell scale
+  win95Scale: 'auto' | 1 | 2 | 3 | 4 // Windows 95 whole-shell scale
+  win95DesktopIconPositions: Record<string, LogicalPosition>
+  win31DesktopMode: boolean
+  win31ProgramManagerBounds: LogicalRect
+  win31ProgramManagerMinimized: boolean
+  theme: 'light' | 'dark'   // Shell-neutral tools theme preference
   labelDisplay: 'wrap' | 'ellipsis' // Item label overflow (default: 'wrap')
   shell: ShellType           // UI shell theme (default: 'win31')
   soundEnabled: boolean      // UI sound effects (default: true)
@@ -427,8 +437,10 @@ interface AppSettings {
 
 ```typescript
 interface StoreData {
+  schemaVersion: number
   groups: ProgramGroup[]
   settings: AppSettings
+  workspaceProfiles: WorkspaceProfile[]
 }
 ```
 

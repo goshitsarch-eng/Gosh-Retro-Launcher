@@ -167,8 +167,14 @@ describe('isValidSettings', () => {
     expect(isValidSettings(rest)).toBe(false)
   })
 
-  it('accepts win95 shell', () => {
-    expect(isValidSettings({ ...validSettings, shell: 'win95' })).toBe(true)
+  it('accepts win95 shell and its independent integer scale', () => {
+    expect(isValidSettings({ ...validSettings, shell: 'win95', win95Scale: 'auto' })).toBe(true)
+    expect(isValidSettings({ ...validSettings, shell: 'win95', win95Scale: 4 })).toBe(true)
+  })
+
+  it('rejects invalid Win95 scale preferences', () => {
+    expect(isValidSettings({ ...validSettings, win95Scale: 1.5 })).toBe(false)
+    expect(isValidSettings({ ...validSettings, win95Scale: 5 })).toBe(false)
   })
 
   it('rejects invalid shell', () => {
