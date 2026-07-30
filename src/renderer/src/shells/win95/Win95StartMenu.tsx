@@ -188,7 +188,7 @@ export function Win95StartMenu({ isOpen, onClose }: Win95StartMenuProps): JSX.El
 
   return (
     <div ref={menuRef} className="win95-start-menu" role="menu" aria-label="Start menu">
-      <div className="win95-start-strip"><Win95BitmapText text="Windows 95" bold color="#ffffff" fontPx={18} lineHeight={19} vertical /></div>
+      <div className="win95-start-strip"><Win95BitmapText text="Windows95" bold color="#ffffff" fontPx={18} lineHeight={19} vertical /></div>
       <div className="win95-start-commands">
         {TOP_ITEMS.map((item, index) => (
           <div key={item.id}>
