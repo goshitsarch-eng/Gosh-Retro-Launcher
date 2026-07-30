@@ -52,7 +52,7 @@ export function Win95StartMenu({ isOpen, onClose }: Win95StartMenuProps): JSX.El
   const [openTop, setOpenTop] = useState<TopId | null>(null)
   const [openGroup, setOpenGroup] = useState<string | null>(null)
   const [level, setLevel] = useState(0)
-  const [indices, setIndices] = useState([0, 0, 0])
+  const [indices, setIndices] = useState([-1, 0, 0])
 
   const clearDelay = (): void => { if (delayRef.current) { clearTimeout(delayRef.current); delayRef.current = null } }
   const delayedOpen = useCallback((top: TopId | null, groupId: string | null = null) => {
@@ -64,7 +64,7 @@ export function Win95StartMenu({ isOpen, onClose }: Win95StartMenuProps): JSX.El
 
   useEffect(() => () => clearDelay(), [])
   useEffect(() => {
-    if (isOpen) { setOpenTop(null); setOpenGroup(null); setLevel(0); setIndices([0, 0, 0]) }
+    if (isOpen) { setOpenTop(null); setOpenGroup(null); setLevel(0); setIndices([-1, 0, 0]) }
     else clearDelay()
   }, [isOpen])
 
@@ -193,12 +193,12 @@ export function Win95StartMenu({ isOpen, onClose }: Win95StartMenuProps): JSX.El
         {TOP_ITEMS.map((item, index) => (
           <div key={item.id}>
             {item.separatorBefore && <div className="win95-menu-separator" />}
-            <button type="button" className={`win95-start-command ${indices[0] === index ? 'selected' : ''}`}
+            <button type="button" className={`win95-start-command ${level === 0 && indices[0] === index ? 'selected' : ''}`}
               onPointerEnter={() => { setIndices((old) => [index, old[1], old[2]]); setLevel(0); delayedOpen(item.child ? item.id : null) }}
               onPointerUp={() => { if (document.documentElement.dataset.win95StartTracking) activateTop(item.id) }}
               onClick={() => activateTop(item.id)}>
               <img src={getWin95IconSrc(item.icon, 'large', scale)} alt="" />
-              <span><MenuLabel label={item.label} selected={indices[0] === index} /></span>{item.child && <i><Win95Glyph name="menu-right" color={indices[0] === index ? '#ffffff' : '#000000'} /></i>}
+              <span><MenuLabel label={item.label} selected={level === 0 && indices[0] === index} /></span>{item.child && <i><Win95Glyph name="menu-right" color={level === 0 && indices[0] === index ? '#ffffff' : '#000000'} /></i>}
             </button>
           </div>
         ))}

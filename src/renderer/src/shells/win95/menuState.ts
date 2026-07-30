@@ -29,11 +29,11 @@ export function reduceMenuNavigation(
   const selected = indices[level] ?? (count > 0 ? 0 : -1)
 
   if (key === 'ArrowDown') {
-    indices[level] = wrap(selected + 1, count)
+    indices[level] = selected < 0 ? (count ? 0 : -1) : wrap(selected + 1, count)
     return { level, indices, action: 'none' }
   }
   if (key === 'ArrowUp') {
-    indices[level] = wrap(selected - 1, count)
+    indices[level] = selected < 0 ? (count ? count - 1 : -1) : wrap(selected - 1, count)
     return { level, indices, action: 'none' }
   }
   if (key === 'Home') {

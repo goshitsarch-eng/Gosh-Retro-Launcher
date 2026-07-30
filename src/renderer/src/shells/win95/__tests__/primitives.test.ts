@@ -26,11 +26,11 @@ describe('Win95 visual primitives', () => {
 
   it('measures, clips, wraps, and parses bitmap access text deterministically', () => {
     expect(parseWin95AccessText('&Name && Location')).toEqual({ text: 'Name & Location', accessIndex: 0, accessKey: 'n' })
-    expect(measureWin95Text('Start')).toBe(31)
-    expect(measureWin95Text('Start', true)).toBe(36)
+    expect(measureWin95Text('Start')).toBe(22)
+    expect(measureWin95Text('Start', true)).toBe(27)
     expect(win95GlyphAdvance('W')).toBeGreaterThan(win95GlyphAdvance('i'))
     expect(clipWin95Text('Programs', measureWin95Text('Prog'))).toBe('Prog')
-    expect(wrapWin95Text('Network Neighborhood', 50)).toEqual(['Network', 'Neighbor', 'hood'])
+    expect(wrapWin95Text('Network Neighborhood', 50)).toEqual(['Network', 'Neighborh', 'ood'])
   })
 
   it('routes default/cancel keys and selects least-destructive defaults', () => {

@@ -25,6 +25,7 @@ import {
 import { useWin95WindowStore } from './windowStore'
 import { WIN95_METRICS } from './tokens'
 import { resolveWin95DialogKey } from './dialogState'
+import { applyShellSettingsTransaction } from '@/utils/shellSwitch'
 
 interface Win95DialogProps {
   title: string
@@ -349,15 +350,24 @@ function MessageDialog({ title, message, onClose, symbol = 'information' }: { ti
   return <Win95Dialog title={title} onClose={onClose} width={355} height={145}><div className="win95-message"><img src={getWin95IconSrc(symbol, 'large')} alt="" /><Win95BitmapText text={message} wrap maxWidth={275} /></div><div className="win95-dialog-buttons"><Win95Button label="OK" defaultButton onClick={onClose} /></div></Win95Dialog>
 }
 
-type ShutdownChoice = 'quit' | 'restart' | 'msdos' | 'logon'
+type ShutdownChoice = 'quit' | 'restart' | 'win31' | 'msdos'
 function ShutDownDialog({ onClose }: { onClose: () => void }): JSX.Element {
-  const shell = useProgramStore((state) => state.settings.shell)
+  const settings = useProgramStore((state) => state.settings)
+  const updateSettings = useProgramStore((state) => state.updateSettings)
   const [choice, setChoice] = useState<ShutdownChoice>('quit')
   const [helpOpen, setHelpOpen] = useState(false)
   const submit = (event: FormEvent): void => {
     event.preventDefault()
     if (choice === 'quit') void window.electronAPI.window.quit()
-    else if (choice === 'restart') void window.electronAPI.window.recreateForShell(shell)
+    else if (choice === 'restart') void window.electronAPI.window.recreateForShell(settings.shell)
+    else if (choice === 'win31') {
+      const next = { ...settings, shell: 'win31' as const }
+      void applyShellSettingsTransaction(settings, next, {
+        persist: (value) => window.electronAPI.store.set('settings', value),
+        updateRenderer: updateSettings,
+        recreate: (shell) => window.electronAPI.window.recreateForShell(shell)
+      })
+    }
   }
   return <>
     <Win95Dialog title="Shut Down Windows" onClose={onClose} width={WIN95_METRICS.shutdownDialogWidth} height={WIN95_METRICS.shutdownDialogHeight}>
@@ -365,12 +375,12 @@ function ShutDownDialog({ onClose }: { onClose: () => void }): JSX.Element {
         <div className="win95-shutdown"><img src={getWin95IconSrc('shutdown', 'large')} alt="" /><div><Win95BitmapText text="What do you want the computer to do?" />
           <Win95Radio label="&Shut down the launcher" name="shutdown" value="quit" checked={choice === 'quit'} onChange={() => setChoice('quit')} />
           <Win95Radio label="&Restart the launcher" name="shutdown" value="restart" checked={choice === 'restart'} onChange={() => setChoice('restart')} />
+          <Win95Radio label="Restart in Windows for &Workgroups 3.11" name="shutdown" value="win31" checked={choice === 'win31'} onChange={() => setChoice('win31')} />
           <Win95Radio label="Restart the computer in &MS-DOS mode" name="shutdown" value="msdos" checked={false} disabled />
-          <Win95Radio label="Close all programs and log on as a &different user" name="shutdown" value="logon" checked={false} disabled />
         </div></div>
         <div className="win95-dialog-buttons win95-shutdown-buttons"><Win95Button type="submit" label="&Yes" /><Win95Button type="button" label="&No" defaultButton data-initial-focus onClick={onClose} /><Win95Button type="button" label="&Help" onClick={() => setHelpOpen(true)} /></div>
       </form>
     </Win95Dialog>
-    {helpOpen && <MessageDialog title="Shut Down Help" message="Shut Down affects only Gosh Retro Launcher. Restart recreates this launcher in the same shell. Computer, MS-DOS, and logon operations are intentionally unavailable." onClose={() => setHelpOpen(false)} />}
+    {helpOpen && <MessageDialog title="Shut Down Help" message="Shut Down affects only Gosh Retro Launcher. Restart can recreate this launcher in Windows 95 or switch it to Windows for Workgroups 3.11. Computer and MS-DOS operations remain unavailable." onClose={() => setHelpOpen(false)} />}
   </>
 }

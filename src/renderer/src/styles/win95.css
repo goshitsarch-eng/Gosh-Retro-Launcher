@@ -91,6 +91,7 @@
   vertical-align: middle;
   line-height: 0;
 }
+.shell-win95 .win95-bitmap-text-canvas { display: block; }
 .shell-win95 .win95-bitmap-text-ink {
   display: block;
   overflow: hidden;
@@ -392,7 +393,15 @@
   gap: 2px;
   font-weight: 700;
 }
-.shell-win95 .win95-start-button.pressed { padding: 2px 2px 0 3px; }
+.shell-win95 .win95-start-button.pressed {
+  padding: 2px 2px 0 3px;
+  outline: 1px dotted var(--w95-text);
+  outline-offset: -5px;
+  background-color: var(--w95-face);
+  background-image: linear-gradient(45deg, var(--w95-highlight) 25%, transparent 25%, transparent 75%, var(--w95-highlight) 75%), linear-gradient(45deg, var(--w95-highlight) 25%, transparent 25%, transparent 75%, var(--w95-highlight) 75%);
+  background-position: 0 0, 1px 1px;
+  background-size: 2px 2px;
+}
 .shell-win95 .win95-start-button img { width: 16px; height: 16px; }
 .shell-win95 .win95-taskbar-divider {
   flex: 0 0 5px;
@@ -475,7 +484,7 @@
 .shell-win95 .win95-start-command {
   position: relative;
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) 8px;
+  grid-template-columns: 44px minmax(0, 1fr) 8px;
   align-items: center;
   width: 100%;
   height: 32px;

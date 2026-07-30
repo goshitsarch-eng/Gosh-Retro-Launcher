@@ -7,7 +7,7 @@ transforming...
 [32m✓[39m 15 modules transformed.
 rendering chunks...
 [2mout/main/[22m[36mindex.js  [39m[1m[2m63.21 kB[22m[1m[22m
-[32m✓ built in 148ms[39m
+[32m✓ built in 152ms[39m
 [32m
 electron main process built successfully[39m
 [90m
@@ -18,7 +18,7 @@ transforming...
 [32m✓[39m 2 modules transformed.
 rendering chunks...
 [2mout/preload/[22m[36mindex.js  [39m[1m[2m5.40 kB[22m[1m[22m
-[32m✓ built in 15ms[39m
+[32m✓ built in 13ms[39m
 [32m
 electron preload scripts built successfully[39m
 [90m

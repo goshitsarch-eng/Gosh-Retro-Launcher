@@ -7,6 +7,8 @@ describe('Windows 95 menu navigation reducer', () => {
     expect(reduceMenuNavigation({ level: 0, indices: [6] }, 'ArrowDown', [7]).indices[0]).toBe(0)
     expect(reduceMenuNavigation({ level: 0, indices: [3] }, 'Home', [7]).indices[0]).toBe(0)
     expect(reduceMenuNavigation({ level: 0, indices: [3] }, 'End', [7]).indices[0]).toBe(6)
+    expect(reduceMenuNavigation({ level: 0, indices: [-1] }, 'ArrowDown', [7]).indices[0]).toBe(0)
+    expect(reduceMenuNavigation({ level: 0, indices: [-1] }, 'ArrowUp', [7]).indices[0]).toBe(6)
   })
 
   it('opens and closes nested levels without losing the parent index', () => {
