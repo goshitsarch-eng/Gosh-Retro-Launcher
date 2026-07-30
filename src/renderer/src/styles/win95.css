@@ -522,7 +522,7 @@
 .shell-win95 .win95-popup-menu {
   position: absolute;
   z-index: 10020;
-  min-width: 172px;
+  min-width: 164px;
   max-height: calc(100% - 4px);
   padding: 2px;
   overflow-y: auto;
@@ -531,8 +531,8 @@
   border-color: var(--w95-light) var(--w95-dark) var(--w95-dark) var(--w95-light);
   box-shadow: 1px 1px var(--w95-dark);
 }
-.shell-win95 .win95-start-submenu.start-level-1 { left: calc(100% - 1px); top: -2px; }
-.shell-win95 .win95-start-submenu.start-level-2 { left: 334px; top: -2px; }
+.shell-win95 .win95-start-submenu.start-level-1 { left: calc(100% - 4px); top: -2px; }
+.shell-win95 .win95-start-submenu.start-level-2 { left: 324px; top: -2px; }
 .shell-win95 .win95-start-submenu.multi-column { max-height: none; overflow: visible; }
 .shell-win95 .win95-sub-command {
   position: relative;
@@ -540,8 +540,8 @@
   grid-template-columns: 18px minmax(120px, 1fr) 9px;
   align-items: center;
   width: 100%;
-  min-width: 166px;
-  height: 20px;
+  min-width: 156px;
+  height: 22px;
   padding: 1px 3px;
   border: 0;
   outline: 0;

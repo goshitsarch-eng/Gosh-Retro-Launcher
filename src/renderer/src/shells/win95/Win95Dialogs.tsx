@@ -378,7 +378,7 @@ function ShutDownDialog({ onClose }: { onClose: () => void }): JSX.Element {
           <Win95Radio label="Restart in Windows for &Workgroups 3.11" name="shutdown" value="win31" checked={choice === 'win31'} onChange={() => setChoice('win31')} />
           <Win95Radio label="Restart the computer in &MS-DOS mode" name="shutdown" value="msdos" checked={false} disabled />
         </div></div>
-        <div className="win95-dialog-buttons win95-shutdown-buttons"><Win95Button type="submit" label="&Yes" /><Win95Button type="button" label="&No" defaultButton data-initial-focus onClick={onClose} /><Win95Button type="button" label="&Help" onClick={() => setHelpOpen(true)} /></div>
+        <div className="win95-dialog-buttons win95-shutdown-buttons"><Win95Button type="submit" label="&Yes" defaultButton data-initial-focus /><Win95Button type="button" label="&No" onClick={onClose} /><Win95Button type="button" label="&Help" onClick={() => setHelpOpen(true)} /></div>
       </form>
     </Win95Dialog>
     {helpOpen && <MessageDialog title="Shut Down Help" message="Shut Down affects only Gosh Retro Launcher. Restart can recreate this launcher in Windows 95 or switch it to Windows for Workgroups 3.11. Computer and MS-DOS operations remain unavailable." onClose={() => setHelpOpen(false)} />}

@@ -31,7 +31,7 @@ export const WIN95_METRICS = {
   startTopIcon: 32,
   startTopItemHeight: 32,
   startSubIcon: 16,
-  startSubItemHeight: 20,
+  startSubItemHeight: 22,
   startStripWidth: 21,
   startMenuWidth: 164,
   startMenuHeight: 235,

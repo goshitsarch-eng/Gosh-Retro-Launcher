@@ -175,13 +175,18 @@ export function recreateWindowForShell(shellType: ShellType): BrowserWindow {
     ? maximized ? previousWindow.getNormalBounds() : previousWindow.getBounds()
     : undefined
 
+  // Create the replacement before destroying the sender. This prevents the
+  // transient zero-window state from firing window-all-closed/app.quit and
+  // gives an IPC caller time to receive its successful invoke response.
+  const replacement = createWindow({ shell: shellType, bounds, maximized })
   if (previousWindow && !previousWindow.isDestroyed()) {
-    // destroy() intentionally bypasses close-to-tray interception. The tray itself
-    // remains alive and is reused by the replacement BrowserWindow.
-    previousWindow.destroy()
+    setImmediate(() => {
+      // destroy() intentionally bypasses close-to-tray interception. The tray
+      // remains alive and is reused by the replacement BrowserWindow.
+      if (!previousWindow.isDestroyed()) previousWindow.destroy()
+    })
   }
-
-  return createWindow({ shell: shellType, bounds, maximized })
+  return replacement
 }
 
 export function createLauncherToolsWindow(): BrowserWindow {

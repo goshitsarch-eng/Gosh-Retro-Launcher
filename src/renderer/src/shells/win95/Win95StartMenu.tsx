@@ -173,10 +173,10 @@ export function Win95StartMenu({ isOpen, onClose }: Win95StartMenuProps): JSX.El
   const levelOneTop = openTop ? Math.max(-2, TOP_ITEMS.findIndex((item) => item.id === openTop) * WIN95_METRICS.startTopItemHeight - 2) : -2
   const openGroupIndex = Math.max(0, groups.findIndex((group) => group.id === openGroup))
   const openGroupRow = openGroupIndex % programRows
-  const levelOneWidth = Math.max(1, programColumns.length) * 172
+  const levelOneWidth = Math.max(1, programColumns.length) * 164
   const naturalThirdLeft = WIN95_METRICS.startMenuWidth - 1 + levelOneWidth - 1
-  const thirdLeft = naturalThirdLeft + 172 > logicalViewport.width
-    ? WIN95_METRICS.startMenuWidth - 1 - 172 + 1
+  const thirdLeft = naturalThirdLeft + 164 > logicalViewport.width
+    ? WIN95_METRICS.startMenuWidth - 1 - 164 + 1
     : naturalThirdLeft
   const thirdCount = groups.find((group) => group.id === openGroup)?.items.length ?? 0
   const thirdHeight = Math.max(1, thirdCount) * WIN95_METRICS.startSubItemHeight + 4
@@ -193,12 +193,12 @@ export function Win95StartMenu({ isOpen, onClose }: Win95StartMenuProps): JSX.El
         {TOP_ITEMS.map((item, index) => (
           <div key={item.id}>
             {item.separatorBefore && <div className="win95-menu-separator" />}
-            <button type="button" className={`win95-start-command ${level === 0 && indices[0] === index ? 'selected' : ''}`}
+            <button type="button" className={`win95-start-command ${indices[0] === index ? 'selected' : ''}`}
               onPointerEnter={() => { setIndices((old) => [index, old[1], old[2]]); setLevel(0); delayedOpen(item.child ? item.id : null) }}
               onPointerUp={() => { if (document.documentElement.dataset.win95StartTracking) activateTop(item.id) }}
               onClick={() => activateTop(item.id)}>
               <img src={getWin95IconSrc(item.icon, 'large', scale)} alt="" />
-              <span><MenuLabel label={item.label} selected={level === 0 && indices[0] === index} /></span>{item.child && <i><Win95Glyph name="menu-right" color={level === 0 && indices[0] === index ? '#ffffff' : '#000000'} /></i>}
+              <span><MenuLabel label={item.label} selected={indices[0] === index} /></span>{item.child && <i><Win95Glyph name="menu-right" color={indices[0] === index ? '#ffffff' : '#000000'} /></i>}
             </button>
           </div>
         ))}
@@ -208,7 +208,7 @@ export function Win95StartMenu({ isOpen, onClose }: Win95StartMenuProps): JSX.El
         <div className={`win95-start-submenu start-level-1 ${programColumns.length > 1 ? 'multi-column' : ''}`}
           style={programColumns.length > 1 ? {
             display: 'grid', gridAutoFlow: 'column', gridTemplateRows: `repeat(${programRows}, ${WIN95_METRICS.startSubItemHeight}px)`,
-            gridAutoColumns: '172px', width: programColumns.length * 172, top: levelOneTop
+            gridAutoColumns: '164px', width: programColumns.length * 164, top: levelOneTop
           } : { top: levelOneTop }}
           role="menu" aria-label="Programs">
           {groups.length === 0 && <button type="button" disabled className="win95-sub-command"><span>(Empty)</span></button>}
@@ -217,7 +217,7 @@ export function Win95StartMenu({ isOpen, onClose }: Win95StartMenuProps): JSX.El
               onPointerEnter={() => { setLevel(1); setIndices((old) => [old[0], index, old[2]]); delayedOpen('programs', group.id) }}
               onPointerUp={() => { if (document.documentElement.dataset.win95StartTracking) { setOpenGroup(group.id); setLevel(2) } }}
               onClick={() => { setOpenGroup(group.id); setLevel(2) }}>
-              <img src={getWin95IconSrc('folder', 'small', scale)} alt="" /><Win95BitmapText text={group.name} color={level === 1 && indices[1] === index ? '#ffffff' : '#000000'} /><i><Win95Glyph name="menu-right" color={level === 1 && indices[1] === index ? '#ffffff' : '#000000'} /></i>
+              <img src={getWin95IconSrc('programs', 'small', scale)} alt="" /><Win95BitmapText text={group.name} color={level === 1 && indices[1] === index ? '#ffffff' : '#000000'} /><i><Win95Glyph name="menu-right" color={level === 1 && indices[1] === index ? '#ffffff' : '#000000'} /></i>
             </button>
           ))}
         </div>

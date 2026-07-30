@@ -73,7 +73,10 @@ export function registerWindowHandlers(): void {
     if ((getSettings().shell ?? 'win31') !== shellType) {
       throw new Error('Shell setting must be saved before recreating the window')
     }
-    recreateWindowForShell(shellType)
+    // Reply to the invoking renderer before destroying its BrowserWindow.
+    // Destroying synchronously can reject the invoke promise and make the
+    // renderer's shell-switch transaction roll its saved setting back.
+    setImmediate(() => recreateWindowForShell(shellType))
     return true
   })
 

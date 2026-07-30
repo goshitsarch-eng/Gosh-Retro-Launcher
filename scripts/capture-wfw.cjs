@@ -100,7 +100,7 @@ async function capture() {
       await win.webContents.executeJavaScript(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))`)
       await new Promise((resolve) => setTimeout(resolve, 60))
     }
-    if (['win95-start', 'win95-programs', 'win95-program-items', 'win95-run', 'win95-find', 'win95-shutdown'].includes(view)) {
+    if (['win95-start', 'win95-programs', 'win95-program-items', 'win95-run', 'win95-find', 'win95-shutdown', 'win95-switch-win31'].includes(view)) {
       await win.webContents.executeJavaScript(`document.querySelector('.win95-start-button')?.click()`)
       await new Promise((resolve) => setTimeout(resolve, 60))
     }
@@ -126,11 +126,26 @@ async function capture() {
       await win.webContents.executeJavaScript(`document.querySelector('.start-level-1 .win95-sub-command')?.click()`)
       await new Promise((resolve) => setTimeout(resolve, 100))
     }
-    if (view === 'win95-shutdown') {
+    if (view === 'win95-shutdown' || view === 'win95-switch-win31') {
       await win.webContents.executeJavaScript(`
         [...document.querySelectorAll('.win95-start-command')].find((element) => element.textContent?.includes('Shut Down'))?.click()
       `)
       await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+    if (view === 'win95-switch-win31') {
+      const previousId = win.id
+      await win.webContents.executeJavaScript(`
+        document.querySelector('input[value="win31"]')?.click();
+        document.querySelector('button[aria-label="Yes"]')?.click();
+      `)
+      for (let index = 0; index < 100; index += 1) {
+        const replacement = BrowserWindow.getAllWindows().find((candidate) => candidate.id !== previousId)
+        if (replacement && !replacement.webContents.isLoading()) { win = replacement; break }
+        await new Promise((resolve) => setTimeout(resolve, 50))
+      }
+      const switched = await win.webContents.executeJavaScript(`document.querySelector('.app')?.classList.contains('shell-win31')`)
+      if (!switched) throw new Error('Shut Down did not recreate the launcher in the Win31 shell')
+      await new Promise((resolve) => setTimeout(resolve, 250))
     }
     if (view === 'win95-my-computer' || view === 'win95-group') {
       await win.webContents.executeJavaScript(`document.querySelector('[data-desktop-icon="my-computer"]')?.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))`)
