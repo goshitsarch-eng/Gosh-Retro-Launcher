@@ -675,7 +675,7 @@
   height: 20px;
   padding: 2px 0 0;
 }
-.shell-win95 .win95-statusbar span {
+.shell-win95 .win95-statusbar > span {
   flex: 1;
   padding: 1px 4px;
   border: 1px solid;
@@ -1090,7 +1090,7 @@
 .shell-win95 .win95-find-header,
 .shell-win95 .win95-find-results > button { display: grid; grid-template-columns: minmax(170px, 1fr) 120px; width: 100%; min-height: 19px; }
 .shell-win95 .win95-find-header { position: sticky; top: 0; z-index: 1; background: var(--w95-face); border-bottom: 1px solid var(--w95-shadow); }
-.shell-win95 .win95-find-header span { padding: 2px 4px; border-right: 1px solid var(--w95-shadow); }
+.shell-win95 .win95-find-header > span { padding: 2px 4px; border-right: 1px solid var(--w95-shadow); }
 .shell-win95 .win95-find-results > button { padding: 1px 4px; border: 0; box-shadow: none; background: #fff; text-align: left; }
 .shell-win95 .win95-find-results > button span:first-child { display: flex; align-items: center; gap: 3px; }
 .shell-win95 .win95-find-results > button img { width: 16px; height: 16px; }

@@ -12,11 +12,12 @@ const baseline = process.argv[4] ? path.resolve(process.argv[4]) : null
 const isWin95View = view === 'win95' || view.startsWith('win95-')
 const fixtureScale = view === 'scale2' ? 2
   : ['win95-scale2', 'win95-remainder', 'win95-dpi125'].includes(view) ? 2
-    : view === 'win95-scale3' ? 3 : view === 'win95-scale4' ? 4 : 1
+    : view === 'scale3' || view === 'win95-scale3' ? 3 : view === 'scale4' || view === 'win95-scale4' ? 4 : 1
 const fixtureIconY = view === 'reference' ? 219 : 367
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'gosh-wfw-capture-'))
 app.setPath('userData', profile)
 if (view === 'win95-dpi125') app.commandLine.appendSwitch('force-device-scale-factor', '1.25')
+else app.commandLine.appendSwitch('force-device-scale-factor', '1') // deterministic captures on any host display DPI
 
 const windowState = (x, y, width, height, minimized = false) => ({
   x, y, width, height, minimized, maximized: false
@@ -92,7 +93,8 @@ async function capture() {
     await win.webContents.executeJavaScript(`window.dispatchEvent(new CustomEvent('win95-capture-clock', { detail: '12:00 PM' }))`)
     await new Promise((resolve) => setTimeout(resolve, 40))
     if (view === 'win95-selected') {
-      await win.webContents.executeJavaScript(`document.querySelector('.win95-desktop-icon')?.click()`)
+      await win.webContents.executeJavaScript(`document.querySelector('.win95-desktop-icon')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }))`)
+      await new Promise((resolve) => setTimeout(resolve, 60))
     }
     if (view === 'win95-keyboard-start') {
       await win.webContents.executeJavaScript(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', ctrlKey: true, bubbles: true }))`)
@@ -219,13 +221,13 @@ async function capture() {
       if (view === 'win95-folder-list') await chooseView('List')
       if (view === 'win95-folder-details') await chooseView('Details')
       if (view === 'win95-folder-multiselect') {
-        await win.webContents.executeJavaScript(`
-          const items = document.querySelectorAll('.win95-window.active .win95-folder-item');
-          items[0]?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
-          items[2]?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, ctrlKey: true }));
-          items[4]?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, shiftKey: true }));
-        `)
-        await new Promise((resolve) => setTimeout(resolve, 80))
+        const click = async (index, modifiers) => {
+          await win.webContents.executeJavaScript(`document.querySelectorAll('.win95-window.active .win95-folder-item')[${index}]?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, ${modifiers} }))`)
+          await new Promise((resolve) => setTimeout(resolve, 80))
+        }
+        await click(0, '')
+        await click(2, 'ctrlKey: true')
+        await click(4, 'shiftKey: true')
       }
     }
     if (view === 'win95-window-inactive') {
@@ -306,7 +308,7 @@ async function capture() {
   }
   if (view === 'file' || view === 'about') {
     await win.webContents.executeJavaScript(`
-      document.querySelectorAll('.wfw-menu-button')[${view === 'about' ? 3 : 0}]
+      document.querySelectorAll('.wfw-menu-button')[${view === 'about' ? 4 : 0}]
         ?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
     `)
     await new Promise((resolve) => setTimeout(resolve, 80))
@@ -317,6 +319,77 @@ async function capture() {
         .find((element) => element.textContent?.includes('About Program Manager'))?.click();
     `)
     await new Promise((resolve) => setTimeout(resolve, 500))
+  }
+  // Extended WFW exploration views (menus, dialogs, MDI states, item selection)
+  const openWfwMenu = async (index) => {
+    await win.webContents.executeJavaScript(`
+      document.querySelectorAll('.wfw-menu-button')[${index}]
+        ?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    `)
+    await new Promise((resolve) => setTimeout(resolve, 120))
+  }
+  const clickWfwItem = async (text) => {
+    await win.webContents.executeJavaScript(`
+      [...document.querySelectorAll('.wfw-popup-item')]
+        .find((element) => element.textContent?.includes(${JSON.stringify(text)}))?.click();
+    `)
+    await new Promise((resolve) => setTimeout(resolve, 300))
+  }
+  if (view === 'options') await openWfwMenu(1)
+  if (view === 'window') await openWfwMenu(2)
+  if (view === 'help') await openWfwMenu(4)
+  if (view === 'new-dialog') { await openWfwMenu(0); await clickWfwItem('New...') }
+  if (view === 'run-dialog') { await openWfwMenu(0); await clickWfwItem('Run...') }
+  if (view === 'exit-confirm') { await openWfwMenu(0); await clickWfwItem('Exit Windows...') }
+  if (view === 'item-selected' || view === 'item-properties') {
+    await win.webContents.executeJavaScript(`
+      document.querySelector('.wfw-program-item')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
+      document.querySelector('.wfw-program-item')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    `)
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    if (view === 'item-properties') { await openWfwMenu(0); await clickWfwItem('Properties...') }
+  }
+  if (view === 'group-maximized') {
+    await win.webContents.executeJavaScript(`
+      document.querySelector('.wfw-child-window [aria-label="Maximize"]')?.click();
+    `)
+    await new Promise((resolve) => setTimeout(resolve, 200))
+  }
+  if (view === 'wfw-move-dialog' || view === 'wfw-copy-dialog') {
+    await win.webContents.executeJavaScript(`
+      document.querySelector('.wfw-program-item')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
+      document.querySelector('.wfw-program-item')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    `)
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    await openWfwMenu(0)
+    await clickWfwItem(view === 'wfw-move-dialog' ? 'Move...' : 'Copy...')
+  }
+  if (view === 'win95-icon-context') {
+    await win.webContents.executeJavaScript(`
+      document.querySelector('[data-desktop-icon="my-computer"]')?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 40, clientY: 40 }));
+    `)
+    await new Promise((resolve) => setTimeout(resolve, 120))
+  }
+  if (view === 'wfw-group-properties') {
+    await win.webContents.executeJavaScript(`
+      document.querySelector('.wfw-minimized-group')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
+      document.querySelector('.wfw-minimized-group')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    `)
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    await openWfwMenu(0)
+    await clickWfwItem('Properties...')
+  }
+  if (view === 'wfw-new-group') {
+    await openWfwMenu(0)
+    await clickWfwItem('New...')
+    await win.webContents.executeJavaScript(`
+      [...document.querySelectorAll('input[type="radio"]')].find((el) => el.closest('label')?.textContent?.includes('Program Group'))?.click();
+    `)
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    await win.webContents.executeJavaScript(`
+      [...document.querySelectorAll('button')].find((el) => el.textContent === 'OK')?.click();
+    `)
+    await new Promise((resolve) => setTimeout(resolve, 300))
   }
   const image = await win.capturePage()
   fs.mkdirSync(path.dirname(output), { recursive: true })
