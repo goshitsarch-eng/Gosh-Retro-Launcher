@@ -1,0 +1,47 @@
+; Engine configuration file.
+config_version=5
+
+[application]
+
+config/name="Program Manager"
+config/description="Retro Windows for Workgroups 3.11 / Windows 95 launcher"
+config/version="2.0.0"
+run/main_scene="res://src/app/main.tscn"
+config/use_custom_user_dir=true
+config/custom_user_dir_name="program-manager"
+config/features=PackedStringArray("4.6", "GL Compatibility")
+run/low_processor_mode=true
+config/icon="res://resources/icon.png"
+
+Types="*res://src/core/types.gd"
+
+[autoload]
+
+ProgramStore="*res://src/core/program_store.gd"
+UIState="*res://src/core/ui_state.gd"
+MdiState="*res://src/core/mdi_state.gd"
+
+[display]
+
+window/size/viewport_width=640
+window/size/viewport_height=480
+window/size/resizable=true
+window/size/window_width_override=0
+window/dpi/allow_hidpi=false
+window/stretch/mode="disabled"
+window/subwindows/embed_subwindows=false
+window/energy_saving/keep_screen_on=false
+
+[gui]
+
+theme/default_font_antialiasing=0
+common/drop_mouse_on_gui_input_disabled=true
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0
+2d/snap/snap_2d_transforms_to_pixel=true
+2d/snap/snap_2d_vertices_to_pixel=true
+environment/defaults/default_clear_color=Color(0.75, 0.75, 0.75, 1)

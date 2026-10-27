@@ -80,3 +80,8 @@ target/
 builder-debug.yml
 builder-effective-config.yaml
 resources/*.iconset/
+
+# Godot
+.godot/
+*.translation
+export/
