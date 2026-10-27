@@ -104,6 +104,20 @@ func is_window_maximized() -> bool:
 	return DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_MAXIMIZED
 
 
+## Frameless (Win31) windows: hand the drag/resize gesture to the window manager.
+func start_window_drag() -> void:
+	DisplayServer.window_start_drag()
+
+
+## edge: DisplayServer.WindowResizeEdge value (RESIZE_TOP_LEFT ... RESIZE_BOTTOM_RIGHT).
+func start_window_resize(edge: int) -> void:
+	DisplayServer.window_start_resize(edge)
+
+
+func set_window_title(title: String) -> void:
+	DisplayServer.window_set_title(title)
+
+
 ## Honors "Minimize to Tray on Close" (hide) vs quit.
 func close_window() -> void:
 	if ProgramStore.settings.get("trayOnClose", true):

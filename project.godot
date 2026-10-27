@@ -21,6 +21,7 @@ ProgramStore="*res://src/core/program_store.gd"
 UIState="*res://src/core/ui_state.gd"
 MdiState="*res://src/core/mdi_state.gd"
 Platform="*res://src/app/platform.gd"
+Sounds="*res://src/app/sounds.gd"
 
 [display]
 
