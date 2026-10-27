@@ -85,3 +85,4 @@ resources/*.iconset/
 .godot/
 *.translation
 export/
+artifacts/

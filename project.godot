@@ -20,6 +20,7 @@ Types="*res://src/core/types.gd"
 ProgramStore="*res://src/core/program_store.gd"
 UIState="*res://src/core/ui_state.gd"
 MdiState="*res://src/core/mdi_state.gd"
+Platform="*res://src/app/platform.gd"
 
 [display]
 
@@ -27,7 +28,7 @@ window/size/viewport_width=640
 window/size/viewport_height=480
 window/size/resizable=true
 window/size/window_width_override=0
-window/dpi/allow_hidpi=false
+window/dpi/allow_hidpi=true
 window/stretch/mode="disabled"
 window/subwindows/embed_subwindows=false
 window/energy_saving/keep_screen_on=false
