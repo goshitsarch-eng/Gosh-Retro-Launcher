@@ -20,11 +20,12 @@ const GRP_UNSAFE := "[<>:\"/\\\\|?*]+"
 ## request = {title, mode: "open"|"save", filters: Array, default_name: String, start_dir: String}.
 var dialog_provider: Callable = Callable()
 
-## Set by the app host once the tray exists. Without a tray "hide" degrades to "minimize" so the
-## window can never be stranded invisible.
+## Set by the app host once the tray icon exists (informational: Godot cannot hide its main window,
+## so "hide to tray" always minimizes and the window can never be stranded invisible).
 var tray_present := false
 
 var _quitting := false
+var _hidden := false  ## minimized by "close to tray" and not restored yet
 var _state_pending := false
 var _last_state: Dictionary = {}
 var _last_screen := -1
@@ -57,7 +58,7 @@ func _ready() -> void:
 	win.close_requested.connect(close_window)
 	win.files_dropped.connect(_on_files_dropped)
 	win.window_input.connect(_on_window_input)
-	win.focus_entered.connect(_queue_state)
+	win.focus_entered.connect(_on_focus_entered)
 	win.focus_exited.connect(_queue_state)
 	win.size_changed.connect(_queue_state)
 	win.visibility_changed.connect(_queue_state)
@@ -279,9 +280,9 @@ func is_window_minimized() -> bool:
 	return DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_MINIMIZED
 
 
-## True while the window is hidden to the tray (not merely minimized).
+## True after "close to tray" until the window is shown again (the window itself is minimized).
 func is_window_hidden() -> bool:
-	return not get_window().visible
+	return _hidden
 
 
 ## Frameless (Win31) windows: hand the drag/resize gesture to the window manager.
@@ -308,20 +309,18 @@ func close_window() -> void:
 		hide_window()
 
 
-## Hides to the tray; degrades to minimize when no tray icon exists.
+## "Hide to tray". Godot refuses to hide the main window ("Can't change visibility of main
+## window"), so this minimizes it; the tray icon (or the taskbar/Dock) restores it.
 func hide_window() -> void:
-	if tray_present:
-		get_window().visible = false
-	else:
-		minimize_window()
+	_hidden = true
+	minimize_window()
 	_queue_state()
 
 
 ## Restores, un-hides and focuses the window (tray click, second instance, quick search...).
 func show_window() -> void:
 	var win := get_window()
-	if not win.visible:
-		win.visible = true
+	_hidden = false
 	if win.mode == Window.MODE_MINIMIZED:
 		win.mode = Window.MODE_MAXIMIZED if _was_maximized else Window.MODE_WINDOWED
 	win.grab_focus()
@@ -465,6 +464,11 @@ func current_drop_position() -> Vector2:
 
 func _on_files_dropped(files: PackedStringArray) -> void:
 	files_dropped.emit(files, current_drop_position())
+
+
+func _on_focus_entered() -> void:
+	_hidden = false  # restored through the taskbar / Dock / alt-tab instead of the tray
+	_queue_state()
 
 
 func _on_dpi_changed() -> void:
