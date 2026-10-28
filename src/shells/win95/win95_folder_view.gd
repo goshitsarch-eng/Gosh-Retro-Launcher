@@ -339,8 +339,8 @@ func _draw_report_row(e: Dictionary, lay: Dictionary, p: Vector2, selected: bool
 	var col2 := p.x + float(report_widths.name)
 	var type_text := "File Folder" if e.is_group else "Application"
 	var loc_text := "My Computer" if e.is_group else String(group().get("name", ""))
-	Win95Draw.text(self, Vector2(col2 + 4, p.y + 3), Win95Draw.font().clip(type_text, int(report_widths.type) - 8), fg)
-	Win95Draw.text(self, Vector2(col2 + float(report_widths.type) + 4, p.y + 3), Win95Draw.font().clip(loc_text, int(report_widths.location) - 8), fg)
+	Win95Draw.text(self, Vector2(col2 + 4, p.y + 4), Win95Draw.font().clip(type_text, int(report_widths.type) - 8), fg)
+	Win95Draw.text(self, Vector2(col2 + float(report_widths.type) + 4, p.y + 4), Win95Draw.font().clip(loc_text, int(report_widths.location) - 8), fg)
 
 
 func _draw_header(vp: Dictionary) -> void:
