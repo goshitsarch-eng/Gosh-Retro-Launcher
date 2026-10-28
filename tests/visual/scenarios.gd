@@ -98,7 +98,7 @@ static func _win95(view: String, a: Automation) -> void:
 		await a.wait_ms(100)
 	if view == "win95-task-context":
 		await _open_my_computer(a)
-		await a.rclick_id("w95.task-window:first")
+		await a.rclick(Vector2(100, 470))  # the original harness dispatched contextmenu at clientX 100, clientY 470
 		await a.wait_ms(100)
 	if ["win95-folder-small", "win95-folder-list", "win95-folder-details", "win95-folder-multiselect"].has(view):
 		await _open_main_group(a)

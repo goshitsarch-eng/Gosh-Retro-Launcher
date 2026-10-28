@@ -138,7 +138,7 @@ func _draw() -> void:
 				Win95Draw.dither_checker(self, r.grow(-2), r.position + Vector2(2, 2), Win95Draw.HIGHLIGHT)
 		else:
 			Win95Draw.raised(self, r)
-		var o := Vector2(1, 1) if (active or _pressed_task == e.id) else Vector2.ZERO
+		var o := Vector2.ZERO  # .pressed/:active only change the border and shadow, not the content position
 		Win95Draw.icon(self, Win95IconCatalog.texture(_task_icon(e), "small"), r.position + Vector2(6, 3) + o)
 		if r.size.x > 40:
 			Win95Draw.text(self, r.position + Vector2(25, 4) + o, _task_title(e), Win95Draw.TEXT, {"bold": active, "max_width": mini(126, int(r.size.x) - 33)})

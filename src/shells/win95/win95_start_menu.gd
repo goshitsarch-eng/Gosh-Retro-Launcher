@@ -272,8 +272,8 @@ func _draw() -> void:
 
 func _draw_strip_text(strip: Rect2) -> void:
 	var f := Win95Draw.font().bold_font
-	draw_set_transform(Vector2(strip.position.x + 3 + 15, strip.end.y - 3), -PI / 2.0, Vector2.ONE)
-	draw_string(f, Vector2.ZERO, "Windows95", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
+	draw_set_transform(Vector2(strip.position.x + 20, strip.end.y - 5), -PI / 2.0, Vector2.ONE)
+	draw_string(f, Vector2.ZERO, "Windows95", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
