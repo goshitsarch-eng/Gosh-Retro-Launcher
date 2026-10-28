@@ -31,7 +31,7 @@ func _cb(x: int, y: int, text: String, key: String, inverted: bool = false) -> W
 
 func _scale_combo(key: String) -> W31Combo:
 	var c := W31Combo.new()
-	c.set_items(["Auto", "1×", "2×", "3×", "4×"])
+	c.set_items(["Auto", "1x", "2x", "3x", "4x"])
 	c.selected = W31DialogLogic.scale_to_index(form[key])
 	c.selection_changed.connect(func(i: int): form[key] = W31DialogLogic.scale_from_index(i))
 	return c

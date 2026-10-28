@@ -339,7 +339,7 @@ static func help_topics(query: String) -> Array:
 	var q := query.to_lower()
 	var out := []
 	for t in HELP_TOPICS:
-		if String(t).to_lower().contains(q):
+		if q.is_empty() or String(t).to_lower().contains(q):
 			out.append(t)
 	return out
 
