@@ -51,6 +51,7 @@ func _init(p_multiline: bool = false) -> void:
 		le.context_menu_enabled = false
 		le.caret_blink = not Engine.has_meta("pm_capture")
 		le.select_all_on_focus = false
+		le.keep_editing_on_text_submit = true
 		le.text_changed.connect(func(t: String): text_changed.emit(t))
 		le.text_submitted.connect(func(t: String): text_submitted.emit(t))
 		le.add_theme_color_override("font_uneditable_color", W31.BLACK)
@@ -105,6 +106,7 @@ func activate_access_key() -> void:
 func focus_select_all() -> void:
 	edit.grab_focus()
 	if edit is LineEdit:
+		edit.edit()
 		edit.select_all()
 	elif edit is TextEdit:
 		edit.select_all()
@@ -113,6 +115,7 @@ func focus_select_all() -> void:
 func focus_at_end() -> void:
 	edit.grab_focus()
 	if edit is LineEdit:
+		edit.edit()
 		edit.caret_column = edit.text.length()
 	elif edit is TextEdit:
 		edit.set_caret_line(edit.get_line_count() - 1)

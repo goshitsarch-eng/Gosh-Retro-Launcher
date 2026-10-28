@@ -333,6 +333,15 @@ func _widget_for_focus(owner: Control) -> W31Widget:
 	return null
 
 
+func _all_widgets(n: Node) -> Array:
+	var out := []
+	for c in n.get_children():
+		if c is W31Widget:
+			out.append(c)
+		out.append_array(_all_widgets(c))
+	return out
+
+
 func focus_next(reverse: bool = false) -> void:
 	var stops := tab_stops()
 	if stops.is_empty():
@@ -405,7 +414,7 @@ func _input(event: InputEvent) -> void:
 			default_button.click()
 	elif event.alt_pressed and not event.ctrl_pressed and event.keycode != KEY_ALT:
 		var key := OS.get_keycode_string(event.keycode).to_lower()
-		for w in tab_stops():
+		for w in _all_widgets(self):
 			if (w as W31Widget).access_key != "" and (w as W31Widget).access_key == key:
 				(w as W31Widget).activate_access_key()
 				get_viewport().set_input_as_handled()

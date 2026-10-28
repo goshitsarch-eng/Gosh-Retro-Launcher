@@ -117,7 +117,8 @@ class _SearchDialog extends W31Dialog:
 				UIState.close_quick_search()
 			_:
 				return
-		get_viewport().set_input_as_handled()
+		if is_inside_tree():
+			get_viewport().set_input_as_handled()
 
 	func tab_stops() -> Array:
 		return []
