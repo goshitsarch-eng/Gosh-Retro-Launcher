@@ -48,7 +48,7 @@ func _draw() -> void:
 	var r := Rect2(Vector2.ZERO, size)
 	var down := _down or set_state
 	if default_button:
-		Win95Draw.outline_rect(self, r.grow(1), Win95Draw.DARK)
+		Win95Draw.outline_rect(self, r.grow(2), Win95Draw.DARK)  # outline: 1px solid; outline-offset: 1px
 	if down:
 		Win95Draw.pressed(self, r)
 		if set_state and not _down:
@@ -58,7 +58,7 @@ func _draw() -> void:
 	var tw := Win95Draw.measure(label)
 	var off := Vector2(1, 1) if down else Vector2.ZERO
 	Win95Draw.text(self, Vector2(int((size.x - tw) / 2.0) + off.x, int((size.y - 13) / 2.0) + off.y), label, Win95Draw.TEXT, {"disabled": disabled})
-	if has_focus():
+	if has_focus() and not default_button:
 		Win95Draw.dotted_rect(self, r.grow(-5), Win95Draw.TEXT)
 
 

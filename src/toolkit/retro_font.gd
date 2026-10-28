@@ -181,11 +181,12 @@ func draw(ci: CanvasItem, pos: Vector2, source: String, color: Color = Color.BLA
 	var do_wrap: bool = opts.get("wrap", false)
 	var line_height: int = opts.get("line_height", LABEL_LINE_HEIGHT)
 	var parsed := parse_access(source)
+	var esc: String = String(parsed.text).replace("&", "&&")  # already-parsed text must not be re-parsed for access keys
 	var lines: PackedStringArray
 	if do_wrap and max_width > 0:
-		lines = self.wrap(parsed.text, max_width, bold)  # explicit self: bare wrap() is the global utility
+		lines = self.wrap(esc, max_width, bold)  # explicit self: bare wrap() is the global utility
 	elif max_width > 0:
-		lines = PackedStringArray([clip(parsed.text, max_width, bold)])
+		lines = PackedStringArray([clip(esc, max_width, bold)])
 	else:
 		lines = PackedStringArray([parsed.text])
 	var base := baseline_offset(line_height, bold)
@@ -194,7 +195,7 @@ func draw(ci: CanvasItem, pos: Vector2, source: String, color: Color = Color.BLA
 	for li in lines.size():
 		var x := floorf(pos.x)
 		var y := floorf(pos.y) + li * line_height
-		var width := measure(lines[li], bold)
+		var width := measure(String(lines[li]).replace("&", "&&"), bold)
 		natural = maxi(natural, width)
 		if disabled:
 			_run(ci, Vector2(x + 1, y + 1), lines[li], Color.WHITE, bold, base)
@@ -204,7 +205,7 @@ func draw(ci: CanvasItem, pos: Vector2, source: String, color: Color = Color.BLA
 				_run(ci, Vector2(x + 1, y + 1), lines[li], Color.BLACK, bold, base)
 			_run(ci, Vector2(x, y), lines[li], color, bold, base)
 		if show_access and parsed.accessIndex >= 0 and lines.size() == 1:
-			var ax: int = measure(parsed.text.substr(0, parsed.accessIndex), bold)
+			var ax: int = measure(String(parsed.text.substr(0, parsed.accessIndex)).replace("&", "&&"), bold)
 			if ax < width:
 				var uw := maxi(1, advance(parsed.text[parsed.accessIndex], bold) - 1)
 				uw = mini(uw, width - ax)
@@ -219,8 +220,57 @@ func _run(ci: CanvasItem, pos: Vector2, text: String, color: Color, bold: bool, 
 	var gx := x_adjust
 	for ch in text:
 		if ch != " " and ch != "\t":
-			ci.draw_char(f, Vector2(x + gx, y), ch, font_px, color)
+			if family == WIN95 and _lacks_glyph(f, ch, bold):
+				_synth(ci, Vector2(x + gx, y), ch, color, bold)
+			else:
+				ci.draw_char(f, Vector2(x + gx, y), ch, font_px, color)
 		x += advance(ch, bold)
+
+
+# The bundled Win95Sans faces lack a few ASCII glyphs (normal: < > | `; bold: " ' * + , . / < = > ? \ _ |).
+# The original fell back to a system font; these 1-bit shapes stand in. Rows are strings ('#' = ink),
+# `y` is the first row's offset below the cap-height line (cap top = baseline - 9).
+const _SYNTH_NORMAL := {
+	"<": {"y": 1, "rows": ["...#", "..#.", ".#..", "#...", ".#..", "..#.", "...#"]},
+	">": {"y": 1, "rows": ["#...", ".#..", "..#.", "...#", "..#.", ".#..", "#..."]},
+	"|": {"y": 0, "rows": ["#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"]},
+	"`": {"y": 0, "rows": ["#.", ".#"]},
+}
+const _SYNTH_BOLD := {
+	"\"": {"y": 0, "rows": ["##.##", "##.##", "#..#."]},
+	"'": {"y": 0, "rows": ["##", "##", "#."]},
+	"*": {"y": 1, "rows": [".#.#.", "..#..", "#####", "..#..", ".#.#."]},
+	"+": {"y": 3, "rows": ["..#..", "..#..", "#####", "..#..", "..#.."]},
+	",": {"y": 7, "rows": ["##", "##", ".#", "#."]},
+	".": {"y": 7, "rows": ["##", "##"]},
+	"/": {"y": 0, "rows": ["....#", "....#", "...#.", "...#.", "..#..", "..#..", ".#...", ".#...", "#...."]},
+	"<": {"y": 1, "rows": ["...##", "..##.", ".##..", "##...", ".##..", "..##.", "...##"]},
+	"=": {"y": 3, "rows": ["#####", ".....", "#####"]},
+	">": {"y": 1, "rows": ["##...", ".##..", "..##.", "...##", "..##.", ".##..", "##..."]},
+	"?": {"y": 0, "rows": [".####.", "##..##", "....##", "...##.", "..##..", "..##..", "......", "..##..", "..##.."]},
+	"\\": {"y": 0, "rows": ["#....", "#....", ".#...", ".#...", "..#..", "..#..", "...#.", "...#.", "....#"]},
+	"_": {"y": 10, "rows": ["######"]},
+	"|": {"y": 0, "rows": ["##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##"]},
+}
+static var _lack_cache := {}
+
+
+func _lacks_glyph(f: FontFile, ch: String, bold: bool) -> bool:
+	var key := ("b" if bold else "n") + ch
+	if not _lack_cache.has(key):
+		_lack_cache[key] = (_SYNTH_BOLD if bold else _SYNTH_NORMAL).has(ch) and not f.has_char(ch.unicode_at(0))
+	return _lack_cache[key]
+
+
+func _synth(ci: CanvasItem, pos: Vector2, ch: String, color: Color, bold: bool) -> void:
+	var g: Dictionary = (_SYNTH_BOLD if bold else _SYNTH_NORMAL)[ch]
+	var rows: Array = g.rows
+	var top := pos.y - 9 + int(g.y)
+	for r in rows.size():
+		var row: String = rows[r]
+		for c in row.length():
+			if row[c] == "#":
+				ci.draw_rect(Rect2(pos.x + 1 + c, top + r, 1, 1), color)
 
 
 ## Natural (unclipped) text size for layout.

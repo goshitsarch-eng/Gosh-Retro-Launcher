@@ -47,8 +47,8 @@ func _init() -> void:
 	add_child(start_menu)
 	popup_layer = _make_layer()
 	dialog_layer = _make_layer()
+	add_child(dialog_layer)  # popups (combo lists, menus opened from dialogs) draw above dialogs
 	add_child(popup_layer)
-	add_child(dialog_layer)
 	resized.connect(_layout)
 
 
