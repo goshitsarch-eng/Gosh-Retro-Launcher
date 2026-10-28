@@ -691,7 +691,7 @@ func _on_key(event: Dictionary) -> bool:
 	if alt and key.length() == 1 and key.to_lower() in ["f", "e", "v", "h"]:
 		open_menu({"f": "file", "e": "edit", "v": "view", "h": "help"}[key.to_lower()])
 		return true
-	if menu_bar_index < 0 and folder_view != null and folder_view.handle_key(event):
+	if menu_bar_index < 0 and client != null and client.has_method("handle_key") and client.handle_key(event):
 		return true
 	return false
 

@@ -54,7 +54,8 @@ func _init() -> void:
 
 func _build() -> void:
 	var vp: Vector2 = shell.logical_size
-	_frame_pos = Vector2(Win95ShellInput.js_round((vp.x - frame_size.x) / 2.0), Win95ShellInput.js_round((vp.y - frame_size.y - 28) / 2.0))
+	# the overlay covers the whole shell (taskbar included), so dialogs centre in the full viewport
+	_frame_pos = Vector2(Win95ShellInput.js_round((vp.x - frame_size.x) / 2.0), Win95ShellInput.js_round((vp.y - frame_size.y) / 2.0))
 	_frame_pos = Vector2(maxf(0, _frame_pos.x), maxf(0, _frame_pos.y))
 	body = Control.new()
 	body.mouse_filter = Control.MOUSE_FILTER_IGNORE

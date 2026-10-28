@@ -154,6 +154,10 @@ func find_row(id_or_label: String) -> Rect2:
 		var label := String(item.get("label", "")).replace("&", "")
 		if String(item.id) == id_or_label or label == id_or_label:
 			return row_rect(i)
+	for i in _rows.size():  # the original harness matched by substring
+		var item2: Dictionary = _rows[i].item
+		if not item2.get("separator", false) and String(item2.get("label", "")).replace("&", "").contains(id_or_label):
+			return row_rect(i)
 	return Rect2()
 
 
