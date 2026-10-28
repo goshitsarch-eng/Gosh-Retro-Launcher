@@ -64,6 +64,7 @@ const ALIASES := {
 }
 
 const ROOT := "res://assets/win95"
+const LOCAL_ROOT := "res://assets/win95-rtm-local"
 
 
 static func is_external(icon: String) -> bool:
@@ -112,6 +113,11 @@ static func texture(icon: String, size: String = "large") -> Texture2D:
 			return ext
 		return Assets.tex(path_for("application", size))
 	var id := get_icon_id(icon)
+	# Optional gitignored pack extracted from the user's own licensed RTM media; the
+	# distributable build falls back to the clean-room set.
+	var local := Assets.tex(LOCAL_ROOT + "/%s/%s-%d.png" % [size, id, 32 if size == "large" else 16])
+	if local != null:
+		return local
 	var t := Assets.tex(path_for(id, size))
 	return t if t != null else Assets.tex(path_for("application", size))
 

@@ -23,6 +23,9 @@ var family: String
 var font: FontFile
 var bold_font: FontFile
 var font_px := SYSTEM_FONT_PX
+## Optional user-supplied RTM bitmap-font atlas (gitignored `assets/win95-rtm-local/font/`), keyed by bold.
+## {tex: Texture2D, height: int, glyphs: {code: {x, width, advance}}}. Absent -> bundled Win95Sans.
+var _atlas := {}
 
 
 static func instance(which: String = WIN95) -> RetroFont:
@@ -50,6 +53,47 @@ func _init(which: String = WIN95) -> void:
 	else:
 		font = _load("res://assets/fonts/win95/Win95Sans.woff2")
 		bold_font = _load("res://assets/fonts/win95/Win95Sans-Bold.woff2")
+		_try_load_local_atlas(false, "res://assets/win95-rtm-local/font/ms-sans-serif-8")
+		_try_load_local_atlas(true, "res://assets/win95-rtm-local/font/ms-sans-serif-8-bold")
+
+
+func _try_load_local_atlas(bold: bool, base_path: String) -> void:
+	if not FileAccess.file_exists(base_path + ".json"):
+		return
+	var parsed := Jsonx.parse_checked(FileAccess.get_file_as_string(base_path + ".json"))
+	var img := Image.load_from_file(base_path + ".png")
+	if parsed[0] and Jsonx.is_obj(parsed[1]) and img != null and not img.is_empty():
+		load_atlas(bold, img, parsed[1])
+
+
+## Installs an RTM glyph atlas: `data` = {height, glyphs: {"<codepoint>": {x, width, advance}}}.
+## Only the image's alpha is used (ink = any alpha), recoloured at draw time.
+func load_atlas(bold: bool, image: Image, data: Dictionary) -> void:
+	var img := image.duplicate() as Image
+	img.convert(Image.FORMAT_RGBA8)
+	for y in img.get_height():
+		for x in img.get_width():
+			var a := img.get_pixel(x, y).a
+			img.set_pixel(x, y, Color(1, 1, 1, 1.0 if a > 0.0 else 0.0))
+	var glyphs := {}
+	var raw: Dictionary = data.get("glyphs", {})
+	for k in raw:
+		glyphs[int(str(k))] = raw[k]
+	if glyphs.is_empty():
+		return
+	_atlas[bold] = {"tex": ImageTexture.create_from_image(img), "height": int(data.get("height", img.get_height())), "glyphs": glyphs}
+
+
+func _atlas_glyph(ch: String, bold: bool) -> Variant:
+	if not _atlas.has(bold):
+		return null
+	var glyphs: Dictionary = _atlas[bold].glyphs
+	var code := ch.unicode_at(0) if ch.length() > 0 else 63
+	return glyphs.get(code, glyphs.get(63))
+
+
+func has_atlas(bold: bool = false) -> bool:
+	return _atlas.has(bold)
 
 
 func _f(bold: bool) -> FontFile:
@@ -62,6 +106,9 @@ func advance(ch: String, bold: bool = false) -> int:
 		return 12
 	var code := ch.unicode_at(0) if ch.length() > 0 else 63
 	if family == WIN95:
+		var ag: Variant = _atlas_glyph(ch, bold)
+		if ag != null and int(ag.get("advance", 0)) > 0:
+			return int(ag.advance)
 		if code >= 32 and code <= 126:
 			return RTM_ASCII_WIDTHS[code - 32] + (1 if (bold and code != 32) else 0)
 		return 7 if bold else 6
@@ -214,6 +261,17 @@ func draw(ci: CanvasItem, pos: Vector2, source: String, color: Color = Color.BLA
 
 
 func _run(ci: CanvasItem, pos: Vector2, text: String, color: Color, bold: bool, baseline: int) -> void:
+	if family == WIN95 and _atlas.has(bold):
+		var atlas: Dictionary = _atlas[bold]
+		var ax := pos.x
+		for ach in text:
+			var g: Variant = _atlas_glyph(ach, bold)
+			if g == null:
+				continue
+			if ach != " " and ach != "\t" and int(g.width) > 0:
+				ci.draw_texture_rect_region(atlas.tex, Rect2(ax, pos.y, g.width, atlas.height), Rect2(g.x, 0, g.width, atlas.height), color)
+			ax += int(g.advance)
+		return
 	var f := _f(bold)
 	var x := pos.x
 	var y := pos.y + baseline
