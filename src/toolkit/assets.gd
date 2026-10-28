@@ -22,6 +22,8 @@ static func tex(path: String) -> Texture2D:
 
 
 static func _from_image_file(path: String) -> Texture2D:
+	if not FileAccess.file_exists(path):
+		return null  # optional files (local icon packs, stale user paths) are expected to be absent
 	var img := Image.load_from_file(path)
 	if img == null or img.is_empty():
 		return null

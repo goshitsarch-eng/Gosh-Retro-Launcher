@@ -35,8 +35,14 @@ static func instance(which: String = WIN95) -> RetroFont:
 
 
 static func _load(path: String) -> FontFile:
-	var f := FontFile.new()
-	f.load_dynamic_font(path)
+	# Exports replace raw font files with imported resources, so prefer load(); the raw-file path
+	# is only a fallback (e.g. a font dropped in without an import).
+	var f: FontFile = null
+	if ResourceLoader.exists(path):
+		f = load(path) as FontFile
+	if f == null:
+		f = FontFile.new()
+		f.load_dynamic_font(path)
 	f.antialiasing = TextServer.FONT_ANTIALIASING_NONE
 	f.hinting = TextServer.HINTING_NONE
 	f.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED

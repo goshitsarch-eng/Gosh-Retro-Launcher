@@ -1,9 +1,9 @@
 # Godot port: working contract
 
-This repo is being rewritten from Electron/React to **Godot 4.6 (GDScript)**. The old sources under
-`src/main`, `src/preload`, `src/renderer`, `src/shared` stay in place **read-only** until the port
-reaches parity; they are the specification. The Godot project lives at the repo root
-(`project.godot`).
+This repo was rewritten from Electron/React to **Godot 4.6 (GDScript)**. The original TypeScript sources
+(`src/main`, `src/preload`, `src/renderer`, `src/shared`) were deleted once the port reached parity; they remain in git
+history at commit `3b861ff` (`git show 3b861ff:src/renderer/src/...`) and are the specification that code comments
+such as "Port of shells/win95/menuState.ts" refer to. The Godot project lives at the repo root (`project.godot`).
 
 ## Layout
 
