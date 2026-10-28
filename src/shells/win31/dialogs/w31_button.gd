@@ -51,6 +51,16 @@ func fit(width: int = 0) -> Vector2:
 	return Vector2(w, MIN_HEIGHT)
 
 
+## Chromium snaps text of boxes on a half pixel (odd shell/dialog height difference) one row up.
+func _text_dy() -> bool:
+	var n: Node = get_parent()
+	while n:
+		if n.get("half_pixel") != null:  # duck-typed W31Dialog (keeps this file autoload-free)
+			return not n.half_pixel
+		n = n.get_parent()
+	return true
+
+
 func _label_lines(label: String) -> PackedStringArray:
 	if wrap_text:
 		return W31.font().wrap(label, int(size.x) - 2 - 2 * PAD_X)
@@ -71,9 +81,10 @@ func _draw() -> void:
 	var label: String = RetroFont.parse_access(text).text
 	var f := W31.font()
 	var lines := _label_lines(label)
+	var dy := 1.0 if _text_dy() else 0.0
 	var off := Vector2(1, 1) if down else Vector2.ZERO
 	var total_h := lines.size() * LINE
-	var top := floorf((size.y - total_h) / 2.0) + off.y
+	var top := floorf((size.y - total_h) / 2.0) + off.y + dy
 	for i in lines.size():
 		var w := f.measure(lines[i])
 		var x := floorf((size.x - w) / 2.0) + off.x

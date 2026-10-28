@@ -60,8 +60,17 @@ func _draw() -> void:
 	Px.fill_rect(self, icon_rect, W31.MAROON if l.status == "error" else W31.NAVY)
 	Px.outline(self, icon_rect, W31.BLACK)
 	var icon_text: String = l.icon
-	var iw := W31.text_w(icon_text, 12, true)
-	W31.text(self, x + floorf((ICON - iw) / 2.0), y + 7, icon_text, W31.WHITE, 12, {"bold": true, "line_height": 13})
+	if icon_text == ">>":
+		# the WfW strike has no '>' glyph: two 4x7 chevrons
+		var cx := x + floorf((ICON - 11) / 2.0)
+		var cy := y + floorf((ICON - 7) / 2.0)
+		for k in 2:
+			for row in 7:
+				var dx := row if row < 4 else 6 - row
+				Px.fill(self, cx + k * 6 + dx, cy + row, 2, 1, W31.WHITE)
+	else:
+		var iw := W31.text_w(icon_text, 11, true)
+		W31.text(self, x + floorf((ICON - iw) / 2.0), y + 7, icon_text, W31.WHITE, 11, {"bold": true, "line_height": 13})
 	var bx := x + ICON + 8
 	var bw := r.end.x - 1 - PAD - bx
 	var f := W31.font()
@@ -75,7 +84,7 @@ func _draw() -> void:
 	if fill_w > 0:
 		Px.fill(self, inner.position.x, inner.position.y, fill_w, inner.size.y, W31.NAVY)
 		var stripe := W31.NAVY.lerp(Color.WHITE, 0.35)
-		var sx := 4.0
+		var sx := 0.0
 		while sx < fill_w:
 			Px.fill(self, inner.position.x + sx, inner.position.y, minf(4.0, fill_w - sx), inner.size.y, stripe)
 			sx += 8.0

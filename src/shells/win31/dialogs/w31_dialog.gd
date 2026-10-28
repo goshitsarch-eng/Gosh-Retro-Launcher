@@ -30,6 +30,7 @@ var viewport: Control
 var scroll: W31ScrollBar
 var max_height := 432  ## 90% of the shell height
 
+var half_pixel := false  ## centred on a .5 position (see W31Button._text_dy)
 var _inner_h := 0
 var _content_w := 0
 var _built := false
@@ -232,7 +233,9 @@ func make_button(text: String, is_default: bool = false, on_press: Callable = Ca
 func place(shell_size: Vector2) -> void:
 	var cx := floorf((shell_size.x - size.x) / 2.0 + 0.5)
 	var cy := floorf((shell_size.y - size.y) / 2.0 + 0.5)
+	half_pixel = int(shell_size.y - size.y) % 2 != 0
 	position = Vector2(cx, cy) + drag_offset
+	queue_redraw()
 
 
 func _title_rect() -> Rect2:
@@ -258,7 +261,7 @@ func _draw() -> void:
 	var f := W31.font()
 	var clipped := f.clip(title, avail, true)
 	var tw := f.measure(clipped, true)
-	f.draw(self, Vector2(tr.position.x + 22 + floorf((avail - tw) / 2.0), tr.position.y + 1), clipped, W31.WHITE, {"bold": true, "line_height": TITLE_H, "show_access": false})
+	f.draw(self, Vector2(tr.position.x + 22 + floorf((avail - tw) / 2.0), tr.position.y + (0 if half_pixel else 1)), clipped, W31.WHITE, {"bold": true, "line_height": TITLE_H, "show_access": false})
 
 
 # ---------------------------------------------------------------- input
