@@ -47,6 +47,8 @@ func _ready() -> void:
 	for i in 6:
 		await get_tree().process_frame
 	await get_tree().create_timer(0.2).timeout
+	if args.has("dump"):
+		_dump(layer, 0)
 	var img := get_viewport().get_texture().get_image()
 	DirAccess.make_dir_recursive_absolute(out.get_base_dir())
 	img.save_png(out)
@@ -88,3 +90,10 @@ func _open(view: String) -> void:
 			qs.dialog().field.text = "zzz"
 			qs.dialog().results.set_query("zzz")
 		"launch-feedback": UIState.begin_launch_feedback(3, 5); UIState.update_launch_feedback(2, 1)
+
+
+func _dump(n: Node, depth: int) -> void:
+	if n is W31TextField:
+		print("TF ", n.position, n.size, " edit ", n.edit.position, n.edit.size, " min ", n.edit.get_combined_minimum_size(), n.edit.get_minimum_size(), " fh ", n.edit.get_theme_font("font").get_height(11), n.edit.get_theme_font_size("font_size"), n.edit.get_theme_stylebox("normal").get_minimum_size(), n.edit.get_theme_font_size("font_size"))
+	for c in n.get_children():
+		_dump(c, depth + 1)

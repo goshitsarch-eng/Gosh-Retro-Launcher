@@ -67,18 +67,26 @@ func _init(p_multiline: bool = false) -> void:
 	edit.add_theme_color_override("font_placeholder_color", W31.SHADOW)
 	edit.add_theme_constant_override("caret_width", 1)
 	edit.focus_mode = Control.FOCUS_ALL
+	edit.custom_minimum_size = Vector2(1, 1)
 	add_child(edit)
+	edit.reset_size()
 
 
 func set_field_size(w: int, h: int) -> void:
 	size = Vector2(w, h)
 	custom_minimum_size = size
-	if multiline:
-		edit.position = Vector2(4, 2)
-		edit.size = Vector2(w - 8, h - 4)
-	else:
-		edit.position = Vector2(4, 2)
-		edit.size = Vector2(w - 8, h - 4)
+	_fit_edit()
+	_fit_edit.call_deferred()  # the LineEdit's first layout pass can inflate its height
+
+
+func _fit_edit() -> void:
+	edit.position = Vector2(4, 2)
+	edit.size = Vector2(maxf(size.x - 8, 1), maxf(size.y - 4, 1))
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED or what == NOTIFICATION_ENTER_TREE:
+		_fit_edit()
 
 
 func focus_target() -> Control:
