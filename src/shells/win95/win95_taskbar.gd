@@ -123,7 +123,7 @@ func _draw() -> void:
 	else:
 		Win95Draw.raised(self, sr)
 	Win95Draw.icon(self, Win95IconCatalog.texture("windows-logo", "small"), sr.position + Vector2(4, 3) + off)
-	Win95Draw.text(self, sr.position + Vector2(22, 5) + off, "Start", Win95Draw.TEXT, {"bold": true})
+	Win95Draw.text(self, sr.position + Vector2(22, 4) + off, "Start", Win95Draw.TEXT, {"bold": true})
 	# tasks
 	var active_id: String = shell.windows.active_window_id
 	for t in task_buttons():
@@ -141,12 +141,12 @@ func _draw() -> void:
 		var o := Vector2(1, 1) if (active or _pressed_task == e.id) else Vector2.ZERO
 		Win95Draw.icon(self, Win95IconCatalog.texture(_task_icon(e), "small"), r.position + Vector2(6, 3) + o)
 		if r.size.x > 40:
-			Win95Draw.text(self, r.position + Vector2(25, 5) + o, _task_title(e), Win95Draw.TEXT, {"bold": active, "max_width": mini(126, int(r.size.x) - 33)})
+			Win95Draw.text(self, r.position + Vector2(25, 4) + o, _task_title(e), Win95Draw.TEXT, {"bold": active, "max_width": mini(126, int(r.size.x) - 33)})
 	# tray
 	var tr := tray_rect()
 	Win95Draw.status(self, tr)
 	var cw := Win95Draw.measure(_clock)
-	Win95Draw.text(self, Vector2(tr.position.x + 4 + int((55 - cw + 1) / 2), tr.position.y + 5), _clock, Win95Draw.TEXT)
+	Win95Draw.text(self, Vector2(tr.position.x + 4 + int((55 - cw + 1) / 2), tr.position.y + 4), _clock, Win95Draw.TEXT)
 
 
 # -------------------------------------------------------------------- input

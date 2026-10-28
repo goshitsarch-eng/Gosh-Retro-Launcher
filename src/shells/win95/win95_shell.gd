@@ -32,7 +32,9 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	focus_mode = Control.FOCUS_NONE
 	clip_contents = true
-	RetroFont.instance(RetroFont.WIN95).baseline_adjust = 1  # calibrated against the RTM reference renders
+	var rf := RetroFont.instance(RetroFont.WIN95)
+	rf.baseline_adjust = 1  # calibrated against the RTM reference renders
+	rf.x_adjust = 1
 	windows = Win95WindowStore.new(null)
 	input = Win95InputController.new()
 	input.shell = self

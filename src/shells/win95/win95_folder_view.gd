@@ -299,7 +299,7 @@ func _draw_entry(e: Dictionary, lay: Dictionary, p: Vector2, selected: bool) -> 
 			var box := Rect2(box_x, p.y + 38, box_w, box_h)
 			if selected:
 				Win95Draw.fill(self, box, sel_bg)
-			Win95Draw.text(self, Vector2(box.position.x + 3, box.position.y + 1), name, fg, {"max_width": _label_max_width(lay), "wrap": true})
+			Win95Draw.text(self, Vector2(box.position.x + 2, box.position.y + 1), name, fg, {"max_width": _label_max_width(lay), "wrap": true})
 			if focused:
 				Win95Draw.dotted_rect(self, box, fg)
 		"small", "list":
@@ -312,7 +312,7 @@ func _draw_entry(e: Dictionary, lay: Dictionary, p: Vector2, selected: bool) -> 
 			var box := Rect2(p.x + 21, p.y + 3, Win95Draw.measure(clipped) + 4, 15)
 			if selected:
 				Win95Draw.fill(self, box, sel_bg)
-			Win95Draw.text(self, Vector2(box.position.x + 3, box.position.y + 1), clipped, fg)
+			Win95Draw.text(self, Vector2(box.position.x + 2, box.position.y + 1), clipped, fg)
 			if focused:
 				Win95Draw.dotted_rect(self, box, fg)
 		_:
@@ -333,7 +333,7 @@ func _draw_report_row(e: Dictionary, lay: Dictionary, p: Vector2, selected: bool
 	var box := Rect2(p.x + 18, p.y + 2, Win95Draw.measure(clipped) + 4, 15)
 	if selected:
 		Win95Draw.fill(self, box, sel_bg)
-	Win95Draw.text(self, Vector2(box.position.x + 3, box.position.y + 1), clipped, fg)
+	Win95Draw.text(self, Vector2(box.position.x + 2, box.position.y + 1), clipped, fg)
 	if focused:
 		Win95Draw.dotted_rect(self, box, fg)
 	var col2 := p.x + float(report_widths.name)

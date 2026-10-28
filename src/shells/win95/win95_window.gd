@@ -229,7 +229,7 @@ func _draw() -> void:
 	var icon_r := _icon_rect()
 	Win95Draw.icon(self, Win95IconCatalog.texture(icon_id(), "small"), icon_r.position)
 	var title_color := Color.WHITE if active else Win95Draw.FACE
-	Win95Draw.text(self, Vector2(25, 7), title_text(), title_color, {"bold": true, "max_width": maxi(1, int(size.x) - 94)})
+	Win95Draw.text(self, Vector2(24, 7), title_text(), title_color, {"bold": true, "max_width": maxi(1, int(size.x) - 94)})
 	for name in ["min", "max", "close"]:
 		var br := _button_rect(name)
 		var down: bool = _pressed == name
@@ -256,7 +256,7 @@ func _draw() -> void:
 	var sr := _status_rect()
 	Win95Draw.status(self, sr)
 	var n := object_count()
-	Win95Draw.text(self, Vector2(sr.position.x + 6, sr.position.y + 3), "%d object%s" % [n, "" if n == 1 else "s"], Win95Draw.TEXT)
+	Win95Draw.text(self, Vector2(sr.position.x + 5, sr.position.y + 3), "%d object%s" % [n, "" if n == 1 else "s"], Win95Draw.TEXT)
 	if not is_maximized():
 		Win95Draw.glyph(self, "size-grip", Vector2(size.x - 4 - 13, size.y - 17))
 

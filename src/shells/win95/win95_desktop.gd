@@ -162,7 +162,7 @@ func _draw_icon(icon: Dictionary, p: Vector2, selected: bool, focused: bool, act
 	if selected:
 		Win95Draw.fill(self, box, blend)
 	var col := Color(1, 1, 1, alpha)
-	Win95Draw.text(self, Vector2(box.position.x + 3, box.position.y + 1), icon.label, col,
+	Win95Draw.text(self, Vector2(box.position.x + 2, box.position.y + 1), icon.label, col,
 		{"max_width": 71, "wrap": true, "desktop_shadow": not selected})
 	if focused:
 		Win95Draw.dotted_rect(self, box, Color.WHITE)
