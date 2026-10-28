@@ -12,6 +12,7 @@ const FIXTURES := preload("res://tests/visual/fixtures.gd")
 var layer: Win31DialogLayer
 var qs: Win31QuickSearch
 var feedback: Win31LaunchFeedback
+var shot_override: Image
 
 
 func _ready() -> void:
@@ -43,13 +44,13 @@ func _ready() -> void:
 	add_child(layer)
 	await get_tree().process_frame
 	await get_tree().process_frame
-	_open(view)
+	await _open(view)
 	for i in 6:
 		await get_tree().process_frame
 	await get_tree().create_timer(0.2).timeout
 	if args.has("dump"):
 		_dump(layer, 0)
-	var img := get_viewport().get_texture().get_image()
+	var img := shot_override if shot_override else get_viewport().get_texture().get_image()
 	DirAccess.make_dir_recursive_absolute(out.get_base_dir())
 	img.save_png(out)
 	print(out)
@@ -89,6 +90,11 @@ func _open(view: String) -> void:
 			await get_tree().process_frame
 			qs.dialog().field.text = "zzz"
 			qs.dialog().results.set_query("zzz")
+		"tools":
+			var w := LauncherToolsWindow.show_singleton(self)
+			w.position = Vector2i(0, 0)
+			await get_tree().create_timer(0.6).timeout
+			shot_override = w.get_texture().get_image()
 		"launch-feedback": UIState.begin_launch_feedback(3, 5); UIState.update_launch_feedback(2, 1)
 
 

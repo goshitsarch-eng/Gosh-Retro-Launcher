@@ -152,6 +152,8 @@ static func _make_theme() -> Theme:
 		t.set_stylebox("pressed", type_name, _box(Color("#c4c0b8"), Color("#444444")))
 		t.set_stylebox("disabled", type_name, _box(Color("#d4d0c8"), Color("#999999")))
 		t.set_stylebox("focus", type_name, _box(Color(0, 0, 0, 0), Color("#000080")))
+	for state in ["normal", "hover", "pressed", "hover_pressed", "focus", "disabled"]:
+		t.set_stylebox(state, "CheckBox", StyleBoxEmpty.new())
 	t.set_stylebox("normal", "LineEdit", _box(Color.WHITE, Color("#666666")))
 	t.set_stylebox("focus", "LineEdit", _box(Color.WHITE, Color("#000080")))
 	t.set_stylebox("read_only", "LineEdit", _box(Color("#eeeeee"), Color("#666666")))
