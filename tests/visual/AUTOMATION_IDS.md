@@ -38,3 +38,16 @@ Ids correspond to the DOM selectors the original Electron capture script used.
 | `wfw.minimized-group:first` | first minimized group icon |
 | `wfw.child-window:button:<Label>` | child caption button (`Maximize`, `Minimize`, `Restore`) |
 | `wfw.dialog.radio:<Label>` / `wfw.dialog.button:<Label>` | controls in the open dialog |
+
+### Windows 3.1 / WfW (additional ids published by the Win31 shell)
+
+| id | element |
+|----|---------|
+| `wfw.menu-bar` / `wfw.outer-caption` / `wfw.program-manager` | menu bar, outer caption, outer frame |
+| `wfw.system-button` | outer control-menu box (popup rows via `wfw.popup-item:<Label>`) |
+| `wfw.caption-button:Minimize` / `:Maximize` / `:Restore` | outer caption buttons |
+| `wfw.child-window:button:<Label>` | `Minimize`, `Maximize`/`Restore`, `System` of the active (else first visible) group window |
+| `wfw.child-window:caption` / `wfw.window:<groupId>` | caption bar / frame of that window |
+| `wfw.program-item:<itemId>` | a specific program item cell |
+| `wfw.minimized-group:<groupId>` | a specific minimized group icon |
+| `wfw.desktop-icon:program-manager` | minimized Program Manager icon (desktop mode) |
