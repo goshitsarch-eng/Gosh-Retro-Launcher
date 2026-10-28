@@ -166,6 +166,8 @@ func baseline_offset(line_height: int = LABEL_LINE_HEIGHT, bold: bool = false) -
 
 ## Calibration knob (px) applied to every baseline; set per family after comparing to references.
 var baseline_adjust := 0
+## Calibration knob (px): horizontal glyph offset (advances/underlines are unaffected).
+var x_adjust := 0
 
 
 ## Draw one run of text with its line box top-left at `pos`. Returns the drawn size.
@@ -181,7 +183,7 @@ func draw(ci: CanvasItem, pos: Vector2, source: String, color: Color = Color.BLA
 	var parsed := parse_access(source)
 	var lines: PackedStringArray
 	if do_wrap and max_width > 0:
-		lines = wrap(parsed.text, max_width, bold)
+		lines = self.wrap(parsed.text, max_width, bold)  # explicit self: bare wrap() is the global utility
 	elif max_width > 0:
 		lines = PackedStringArray([clip(parsed.text, max_width, bold)])
 	else:
@@ -214,9 +216,10 @@ func _run(ci: CanvasItem, pos: Vector2, text: String, color: Color, bold: bool, 
 	var f := _f(bold)
 	var x := pos.x
 	var y := pos.y + baseline
+	var gx := x_adjust
 	for ch in text:
 		if ch != " " and ch != "\t":
-			ci.draw_char(f, Vector2(x, y), ch, font_px, color)
+			ci.draw_char(f, Vector2(x + gx, y), ch, font_px, color)
 		x += advance(ch, bold)
 
 

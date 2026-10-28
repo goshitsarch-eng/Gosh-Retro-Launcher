@@ -37,6 +37,9 @@ static func raster_variant(scale: float, dpr: float, maximum: int = 4) -> int:
 
 ## Physical device-pixels-per-DIP of the screen the window is on (1.0 when unknown).
 static func display_ratio(window: Window = null) -> float:
+	var forced := OS.get_environment("PM_FORCE_DPR")
+	if forced != "" and forced.is_valid_float() and forced.to_float() > 0.0:
+		return forced.to_float()
 	var screen := DisplayServer.window_get_current_screen(window.get_window_id()) if window else DisplayServer.get_primary_screen()
 	var s := DisplayServer.screen_get_scale(screen)
 	return s if s > 0.0 else 1.0

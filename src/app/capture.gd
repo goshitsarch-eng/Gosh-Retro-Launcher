@@ -31,6 +31,8 @@ func prepare() -> void:
 	f.close()
 	ProgramStore.persistence = Persistence.new(profile)
 	ProgramStore.persistence.init_store()
+	if view == "win95-dpi125" and OS.get_environment("PM_FORCE_DPR") == "":
+		OS.set_environment("PM_FORCE_DPR", "1.25")  # the original harness forced a 125% device scale
 	Engine.set_meta("pm_capture", true)
 	Engine.set_meta("pm_capture_clock", "12:00 PM")
 	_owns_size = true
