@@ -108,7 +108,8 @@ func sync_windows() -> void:
 	var ordered := store.by_z()
 	for e in ordered:
 		var w: Win95Window = _windows[e.id]
-		move_child(w, get_child_count() - 2)  # keep outline layer on top
+		move_child(w, get_child_count() - 1)
+	move_child(_outline_layer, get_child_count() - 1)  # outline stays above every window
 	for e in store.windows:
 		(_windows[e.id] as Win95Window).refresh()
 	queue_redraw()
@@ -161,7 +162,7 @@ func _draw_icon(icon: Dictionary, p: Vector2, selected: bool, focused: bool, act
 	if selected:
 		Win95Draw.fill(self, box, blend)
 	var col := Color(1, 1, 1, alpha)
-	Win95Draw.text(self, Vector2(box.position.x + 2, box.position.y + 1), icon.label, col,
+	Win95Draw.text(self, Vector2(box.position.x + 3, box.position.y + 1), icon.label, col,
 		{"max_width": 71, "wrap": true, "desktop_shadow": not selected})
 	if focused:
 		Win95Draw.dotted_rect(self, box, Color.WHITE)

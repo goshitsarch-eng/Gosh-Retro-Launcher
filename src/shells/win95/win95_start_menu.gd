@@ -233,8 +233,8 @@ func _draw() -> void:
 		var item: Dictionary = r.item
 		var rect: Rect2 = r.rect
 		if item.get("separatorBefore", false):
-			Win95Draw.fill(self, Rect2(rect.position.x + 2, rect.position.y - 7 + 2, rect.size.x - 4, 2), Win95Draw.SHADOW)
-			Win95Draw.fill(self, Rect2(rect.position.x + 2, rect.position.y - 7 + 4, rect.size.x - 4, 1), Win95Draw.LIGHT)
+			Win95Draw.fill(self, Rect2(rect.position.x + 2, rect.position.y - 7 + 1, rect.size.x - 4, 2), Win95Draw.SHADOW)
+			Win95Draw.fill(self, Rect2(rect.position.x + 2, rect.position.y - 7 + 3, rect.size.x - 4, 1), Win95Draw.LIGHT)
 		var sel: bool = indices[0] == r.index
 		if sel:
 			Win95Draw.fill(self, rect, Win95Draw.SELECTED)

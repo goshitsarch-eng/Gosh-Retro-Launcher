@@ -52,6 +52,7 @@ static func open(p_shell: Control, p_items: Array, at: Vector2, opts: Dictionary
 	Win95Menu._counter += 1
 	menu._levels = [menu]
 	p_shell.popup_layer.add_child(menu)
+	menu.add_to_group("pm_auto")
 	menu._place(at)
 	menu._register()
 	return menu
@@ -154,6 +155,16 @@ func find_row(id_or_label: String) -> Rect2:
 		if String(item.id) == id_or_label or label == id_or_label:
 			return row_rect(i)
 	return Rect2()
+
+
+# ------------------------------------------------------------------ automation
+
+func auto_lookup(id: String) -> Variant:
+	if id.begins_with("w95.popup-item:") and not _closed:
+		var r := find_row(id.substr("w95.popup-item:".length()))
+		if r.size != Vector2.ZERO:
+			return r
+	return null
 
 
 # ------------------------------------------------------------------ drawing
@@ -299,6 +310,7 @@ func _open_child(parent: Win95Menu, item: Dictionary) -> void:
 	else:
 		child_x = right - 1
 	shell.popup_layer.add_child(child)
+	child.add_to_group("pm_auto")
 	_levels.append(child)
 	child._place(Vector2(child_x, row.position.y))
 
