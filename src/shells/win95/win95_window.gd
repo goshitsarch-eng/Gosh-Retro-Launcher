@@ -232,7 +232,7 @@ func _draw() -> void:
 	Win95Draw.text(self, Vector2(24, 7), title_text(), title_color, {"bold": true, "max_width": maxi(1, int(size.x) - 94)})
 	for name in ["min", "max", "close"]:
 		var br := _button_rect(name)
-		var down := _pressed == name
+		var down: bool = _pressed == name
 		if down:
 			Win95Draw.pressed(self, br)
 		else:
@@ -244,7 +244,7 @@ func _draw() -> void:
 	var rects := _menubar_rects()
 	for i in rects.size():
 		var r: Rect2 = rects[i]
-		var open := menu_id == MENU_IDS[i]
+		var open: bool = menu_id == MENU_IDS[i]
 		if open:
 			Win95Draw.border(self, r, 1, Win95Draw.SHADOW, Win95Draw.LIGHT, Win95Draw.LIGHT, Win95Draw.SHADOW)
 		Win95Draw.text(self, Vector2(r.position.x + 7, r.position.y + 3), MENU_LABELS[i], Win95Draw.TEXT)

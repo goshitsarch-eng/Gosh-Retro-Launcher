@@ -181,7 +181,7 @@ func draw(ci: CanvasItem, pos: Vector2, source: String, color: Color = Color.BLA
 	var parsed := parse_access(source)
 	var lines: PackedStringArray
 	if do_wrap and max_width > 0:
-		lines = wrap(parsed.text, max_width, bold)
+		lines = self.wrap(parsed.text, max_width, bold)  # explicit self: bare wrap() is the global utility
 	elif max_width > 0:
 		lines = PackedStringArray([clip(parsed.text, max_width, bold)])
 	else:

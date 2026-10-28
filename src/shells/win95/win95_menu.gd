@@ -172,7 +172,7 @@ func _draw() -> void:
 			Win95Draw.fill(self, Rect2(x0 + 2, y0 + 1, w - 4, 2), Win95Draw.SHADOW)
 			Win95Draw.fill(self, Rect2(x0 + 2, y0 + 3, w - 4, 1), Win95Draw.LIGHT)
 			continue
-		var sel := String(item.id) == selected_id and not item.get("disabled", false)
+		var sel: bool = String(item.id) == selected_id and not item.get("disabled", false)
 		var row_w := size.x - 8
 		if sel:
 			Win95Draw.fill(self, Rect2(x0, y0, row_w, r.h), Win95Draw.SELECTED)

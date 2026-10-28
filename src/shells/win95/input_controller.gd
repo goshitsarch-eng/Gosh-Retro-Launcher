@@ -18,6 +18,8 @@ const LAYERS := ["modal", "menu", "window", "desktop"]
 
 var shell: Control
 var start_menu_open := false
+## True while the Start button that opened the menu is still held (release over a row activates it).
+var start_tracking := false
 
 var _key_handlers := {"modal": {}, "menu": {}, "window": {}, "desktop": {}}
 var _pointer_handlers := {"down": {}, "move": {}, "up": {}}
@@ -35,6 +37,7 @@ func open_start_menu() -> void:
 
 
 func close_start_menu() -> void:
+	start_tracking = false
 	if start_menu_open:
 		start_menu_open = false
 		start_menu_changed.emit(false)

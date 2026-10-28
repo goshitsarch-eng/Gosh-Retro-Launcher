@@ -2,4 +2,4 @@ WARNING: Couldn't get executable path from /proc/self/exe, using argv[0]
      at: get_executable_path (drivers/unix/os_unix.cpp:1155)
 Godot Engine v4.6.3.stable.debian4.6.3+ds-2 - https://godotengine.org
 
-81 tests, 0 failed
+82 tests, 0 failed

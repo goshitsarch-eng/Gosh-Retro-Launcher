@@ -173,6 +173,11 @@ static func sunken(ci: CanvasItem, r: Rect2, face: Color = WINDOW, cover_inset: 
 
 
 ## 1px sunken (status bar fields, tray).
+## 1px solid outline rectangle.
+static func outline_rect(ci: CanvasItem, r: Rect2, color: Color) -> void:
+	border(ci, r, 1, color, color, color, color)
+
+
 static func status(ci: CanvasItem, r: Rect2) -> void:
 	border(ci, r, 1, SHADOW, LIGHT, LIGHT, SHADOW)
 
