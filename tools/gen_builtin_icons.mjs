@@ -11,6 +11,8 @@
 // The generated files are checked in; after the Electron sources are removed this script is
 // kept only for provenance (the catalog + assets are the source of truth).
 //
+// NOTE: the four PNG data URLs in icons.ts are corrupt; run tools/make_builtin_pngs.py after this script.
+//
 // Godot's SVG rasterizer (ThorVG, no font backend) ignores <text>, so the three icons that used
 // text (terminal, calendar, money) are redrawn with stroked glyph paths that match the original
 // font-size/position closely.

@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dthrve3t3vhcf"
-valid=false
+uid="uid://djmy22xyaav6r"
+path="res://.godot/imported/program-manager.png-8d91112d13234dc4387248bd9413ba79.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/builtin_icons/program-manager.png"
+dest_files=["res://.godot/imported/program-manager.png-8d91112d13234dc4387248bd9413ba79.ctex"]
 
 [params]
 

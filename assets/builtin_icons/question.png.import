@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://spihmeim1eut"
-valid=false
+uid="uid://ddmd5bakvrf1x"
+path="res://.godot/imported/question.png-86e59746952672b3fb8057f5ea86f871.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/builtin_icons/question.png"
+dest_files=["res://.godot/imported/question.png-86e59746952672b3fb8057f5ea86f871.ctex"]
 
 [params]
 

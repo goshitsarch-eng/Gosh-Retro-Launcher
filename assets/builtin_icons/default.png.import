@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bge3660be6h6y"
-valid=false
+uid="uid://bjcuwqqx2nuwt"
+path="res://.godot/imported/default.png-8c9b420fd4496b40494e309a95b93bc5.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/builtin_icons/default.png"
+dest_files=["res://.godot/imported/default.png-8c9b420fd4496b40494e309a95b93bc5.ctex"]
 
 [params]
 
