@@ -110,6 +110,7 @@ func _input(event: InputEvent) -> void:
 		if not get_global_rect().has_point(event.position):
 			_pressed = -1
 			return
+		var vp := get_viewport()
 		var local: Vector2 = event.position - get_global_rect().position
 		var i := item_at(local)
 		if event.pressed:
@@ -121,7 +122,7 @@ func _input(event: InputEvent) -> void:
 				var cmd: Variant = items[i].get("command")
 				if cmd != null:
 					command_chosen.emit(String(cmd))
-		get_viewport().set_input_as_handled()
+		vp.set_input_as_handled()
 	elif event is InputEventKey and event.pressed and key_handling:
 		if Engine.get_process_frames() == _born_frame:
 			return
