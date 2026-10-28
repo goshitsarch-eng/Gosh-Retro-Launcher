@@ -28,9 +28,9 @@ var shell := "win31":
 	set(v):
 		shell = v
 		queue_redraw()
-var theme := "light":
+var theme_name := "light":
 	set(v):
-		theme = v
+		theme_name = v
 		queue_redraw()
 var group_chrome_scale := 1.0:
 	set(v):
@@ -55,7 +55,7 @@ func _t(x: float, y: float, s: String, px: int, color: Color, bold: bool = false
 
 
 func _draw() -> void:
-	var c := colors_for(shell, theme)
+	var c := colors_for(shell, theme_name)
 	var r := Rect2(Vector2.ZERO, size)
 	Px.fill_rect(self, r, c.desktop)
 	if shell == "win95":

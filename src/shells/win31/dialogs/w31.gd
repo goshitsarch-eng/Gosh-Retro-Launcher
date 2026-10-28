@@ -8,6 +8,7 @@ const SHADOW := Color("#808080")
 const WHITE := Color("#ffffff")
 const BLACK := Color("#000000")
 const NAVY := Color("#000080")
+const MAROON := Color("#800000")
 const CORNER := Color("#bfbfbf")  ## blended diagonal corner pixel of 1px two-colour borders
 
 static var _fonts := {}

@@ -76,10 +76,10 @@ func _gui_input(event: InputEvent) -> void:
 			var p: Vector2 = event.position
 			if p.y < BUTTON:
 				_hold = "up"
-				_set(value - step)
+				_set_value(value - step)
 			elif p.y >= size.y - BUTTON:
 				_hold = "down"
-				_set(value + step)
+				_set_value(value + step)
 			else:
 				var th := _thumb()
 				if th.size.y > 0 and th.has_point(p):
@@ -87,9 +87,9 @@ func _gui_input(event: InputEvent) -> void:
 					_drag_origin = p.y
 					_drag_value = value
 				elif p.y < th.position.y:
-					_set(value - page)
+					_set_value(value - page)
 				else:
-					_set(value + page)
+					_set_value(value + page)
 			queue_redraw()
 		else:
 			_drag = false
@@ -101,11 +101,11 @@ func _gui_input(event: InputEvent) -> void:
 		var th := _thumb()
 		var travel := t.size.y - th.size.y
 		if travel > 0.0:
-			_set(_drag_value + (event.position.y - _drag_origin) * max_value() / travel)
+			_set_value(_drag_value + (event.position.y - _drag_origin) * max_value() / travel)
 		accept_event()
 
 
-func _set(v: float) -> void:
+func _set_value(v: float) -> void:
 	var old := value
 	value = v
 	if value != old:

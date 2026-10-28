@@ -20,7 +20,7 @@ func _cb(x: int, y: int, text: String, key: String, inverted: bool = false) -> W
 		if key == "theme":
 			form.theme = "dark" if on else "light"
 			if preview:
-				preview.theme = form.theme
+				preview.theme_name = form.theme
 		elif key == "labelDisplay":
 			form.labelDisplay = "wrap" if on else "ellipsis"
 		else:
@@ -66,7 +66,7 @@ func _build(cw: int) -> void:
 	add_form_row(228, "Desktop Shell:", shell_combo, inner_w - 111, 19, 8)
 	preview = W31ThemePreview.new()
 	preview.shell = form.shell
-	preview.theme = form.theme
+	preview.theme_name = form.theme
 	preview.group_chrome_scale = float(form.groupChromeScale)
 	add_widget(preview, 8, 255, Vector2(inner_w, 88))
 	var scale_label := "Program Manager Scale:" if form.shell == "win31" else "Windows 95 Scale:"

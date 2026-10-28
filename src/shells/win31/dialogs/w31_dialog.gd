@@ -50,6 +50,12 @@ func _init(p_title: String = "", p_width: int = 400) -> void:
 	set_auto_id("wfw.dialog")
 
 
+func set_auto_id(id: String) -> void:
+	set_meta("auto_id", id)
+	if not is_in_group("pm_auto"):
+		add_to_group("pm_auto")
+
+
 ## Height available to the whole dialog (set by the layer before building).
 func build(shell_height: int) -> void:
 	max_height = int(shell_height * 0.9)
@@ -252,7 +258,7 @@ func _draw() -> void:
 	var f := W31.font()
 	var clipped := f.clip(title, avail, true)
 	var tw := f.measure(clipped, true)
-	f.draw(self, Vector2(tr.position.x + 22 + floorf((avail - tw) / 2.0), tr.position.y), clipped, W31.WHITE, {"bold": true, "line_height": TITLE_H, "show_access": false})
+	f.draw(self, Vector2(tr.position.x + 22 + floorf((avail - tw) / 2.0), tr.position.y + 1), clipped, W31.WHITE, {"bold": true, "line_height": TITLE_H, "show_access": false})
 
 
 # ---------------------------------------------------------------- input
@@ -454,7 +460,7 @@ class _SysMenu extends Control:
 		Px.vline(self, size.x - 2, 1, size.y - 2, W31.SHADOW)
 		for i in [0, 2]:
 			var ir := _item_rect(0 if i == 0 else 1)
-			var sel := hover == i
+			var sel: bool = hover == i
 			if sel:
 				Px.fill_rect(self, ir, W31.NAVY)
 			W31.font().draw(self, Vector2(ir.position.x + 16, ir.position.y + 2), "Move" if i == 0 else "Close", W31.WHITE if sel else W31.BLACK)

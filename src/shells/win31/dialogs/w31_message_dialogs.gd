@@ -11,7 +11,7 @@ class About extends W31Dialog:
 		add_image(W31Icons.catalog_texture("program-manager"), 20, 17, Vector2(48, 48))
 		add_text(86, 13, "Program Manager", 14, {"bold": true, "line_height": 13})
 		add_text(86, 29, "Version %s" % Platform.version(), 12, {"line_height": 14})
-		add_text(86, 46, "Copyright © 2025", 12, {"line_height": 14})
+		add_text(86, 46, "Copyright (c) 2025", 12, {"line_height": 14})
 		add_op(func(ci: CanvasItem):
 			Px.hline(ci, 86, 68, 240, W31.SHADOW)
 			Px.hline(ci, 86, 69, 240, W31.WHITE))
