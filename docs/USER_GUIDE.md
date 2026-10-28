@@ -23,28 +23,24 @@ For a visual walkthrough of common workflows, see the [User Flows Diagram](diagr
 
 ## Getting Started
 
-### Installing from Source
+### Running from Source
 
-1. Install [Node.js](https://nodejs.org/) version 22 or later.
-2. Clone the repository and install dependencies:
+1. Install [Godot](https://godotengine.org/download) **4.6** (standard build, no .NET needed).
+2. Clone the repository and open it:
    ```bash
    git clone https://github.com/goshitsarch-eng/Gosh-Retro-Launcher.git
    cd Gosh-Retro-Launcher
-   npm install
+   godot --path .
    ```
-3. Start the application in development mode:
-   ```bash
-   npm run dev
-   ```
+   (The first launch imports the assets; or open `project.godot` in the Godot editor and press F5.)
 
 ### Installing from a Release
 
-Release packages are available from GitHub Releases:
+Release packages are attached to GitHub Releases:
 
-- **Windows**: `.exe` installer (NSIS, x64 and arm64)
-- **Linux**: `.deb`, `.rpm`, and `.tar.gz` packages (x64 and arm64)
-
-> **Note**: macOS builds can be created locally with `npm run build:mac` but are not currently available as release packages.
+- **Windows**: NSIS installer and a portable `.zip` (x64 and arm64)
+- **Linux**: `.tar.gz` and `.deb` (x64 and arm64)
+- **macOS**: `.dmg` and `.zip` (universal, ad-hoc signed)
 
 ### First Launch
 
@@ -84,7 +80,7 @@ Network Neighborhood, Recycle Bin storage, Control Panel, Printers, file dates, 
 3. Choose the selected shell's Auto/1×/2×/3×/4× scale.
 4. Click **Apply**.
 
-The complete settings payload is saved before the main Electron window is recreated. Its normal bounds/maximized state is retained, program data stays shared, and each shell keeps independent group-window geometry.
+The complete settings payload is saved before the window frame is switched (WfW draws its own frame; Windows 95 uses the operating system frame). The window's bounds are retained, program data stays shared, and each shell keeps independent group-window geometry.
 
 ## Managing Groups
 
@@ -208,7 +204,7 @@ Quick Search lets you find and launch any program item across all groups without
 
 ### Opening Quick Search
 
-- Press **Ctrl+Shift+Space** (Windows/Linux) or **Cmd+Shift+Space** (macOS) from anywhere, even when the app is in the background
+- Press **Ctrl+Shift+Space** (Windows/Linux) or **Cmd+Shift+Space** (macOS) while Program Manager is focused, or choose **Quick Search** from the tray menu when it is in the background (operating-system-wide hotkeys are not available in this version)
 - In Windows 95, choose **Start → Find → Files or Folders...**
 
 Windows 95 opens or reactivates a modeless **Find: All Files** primary window and task button. WfW retains `QuickSearchOverlay` unchanged.
@@ -303,14 +299,15 @@ The imported data replaces your current groups and settings. The application rel
 
 ## System Tray
 
-When the **Minimize to Tray on Close** setting is enabled (default), closing the main window hides the application to the system tray instead of quitting.
+When the **Minimize to Tray on Close** setting is enabled (default), closing the main window minimizes Program Manager and keeps it running; the tray icon restores it. (The taskbar or Dock entry stays visible, because Godot cannot hide a window from the taskbar.)
 
 ### Tray Menu
 
-Right-click the tray icon to see:
+Open the tray icon's menu to see:
 - **Show Program Manager** restores the main window
 - **Launcher Tools...** opens shell switching and launcher configuration
-- A list of all your groups, each with a submenu of their items for quick launch
+- **Quick Search** opens Quick Search / Windows 95 Find (use this when the app is in the background)
+- A list of all your groups, each with a submenu of their items for quick launch (empty groups are disabled)
 - **Exit** quits the application
 
 ### Platform Differences
@@ -318,17 +315,10 @@ Right-click the tray icon to see:
 | Platform | Tray Behavior |
 |----------|--------------|
 | **Windows** | Double-click the tray icon to restore the window |
-| **Linux** | Double-click the tray icon to restore the window |
-| **macOS** | Click the menu bar icon to open the tray menu. The icon automatically adapts to light/dark mode. |
+| **Linux** | Click the tray icon to restore the window (requires a desktop with status-notifier tray support) |
+| **macOS** | Click the menu bar icon to open the tray menu. The icon is coloured and does not adapt to light/dark menu bars. |
 
-### Tray Icons
-
-The application uses platform-specific tray icons from `assets/icons/`:
-- `tray-macTemplate.png` for macOS
-- `tray-win.ico` for Windows
-- `tray-linux.png` for Linux
-
-If no icon file is found, a small fallback icon is used automatically.
+The tray icons are `assets/icons/tray-win.png`, `tray-linux.png` and `tray-mac.png`.
 
 ## Keyboard Shortcuts
 
@@ -336,7 +326,7 @@ If no icon file is found, a small fallback icon is used automatically.
 
 | Shortcut | Action |
 |----------|--------|
-| Ctrl+Shift+Space (Cmd+Shift+Space on macOS) | Toggle Quick Search/Win95 Find (works even when app is in background) |
+| Ctrl+Shift+Space (Cmd+Shift+Space on macOS) | Toggle Quick Search/Win95 Find (while the app is focused; use the tray's Quick Search when it is in the background) |
 | Ctrl+Alt+T | Open Launcher Tools from either shell |
 | Enter | Launch the selected program item |
 | Delete | Delete the selected program item (with confirmation) |
@@ -390,17 +380,15 @@ If no icon file is found, a small fallback icon is used automatically.
 
 ## Accessibility
 
-Program Manager includes several accessibility features:
-
-- **Keyboard navigation**: All interactive elements are reachable via keyboard. Items in the grid can be navigated with arrow keys.
-- **ARIA roles**: Proper roles and labels are applied to interactive elements for screen reader compatibility.
-- **Focus indicators**: Visible focus rings on all interactive elements.
-- **Reduced motion**: All CSS animations (window open/close, dialog transitions, menu fade-in, Start menu slide) are automatically disabled when the operating system's `prefers-reduced-motion` setting is active.
-- **Sound toggle**: Sound effects can be disabled in Settings for users who prefer a silent experience.
+- **Keyboard navigation**: every command is reachable from the keyboard (menus with Alt access keys, arrow-key navigation in item grids, folder views and menus, Tab order in dialogs).
+- **Focus indicators**: classic dotted focus rectangles and default-button rings, as in the original systems.
+- **No motion**: neither shell animates; window and menu changes are instant.
+- **Sound toggle**: sound effects can be disabled in Settings.
+- **Screen readers**: the interface is drawn pixel by pixel to match the original systems, so it does not expose widgets to screen readers.
 
 ## Data Storage
 
-Program Manager stores its data using `electron-store`, which saves a JSON file in the standard application data directory for your operating system.
+Program Manager stores its data in a JSON file in the standard application data directory for your operating system. The file format and location are unchanged from the 1.x (Electron) releases, so existing data and backups are picked up automatically.
 
 ### File Location
 
@@ -428,9 +416,9 @@ To reset the application to its default state, delete the `program-manager-data.
 
 ### The application does not start
 
-- Ensure you have Node.js 22+ installed: `node --version`
-- Try deleting `node_modules` and reinstalling: `rm -rf node_modules && npm install`
-- Check for error output in the terminal where you ran `npm run dev`
+- When running from source, make sure you use Godot **4.6** (`godot --version`). Newer or older minor versions may import assets differently.
+- Run `godot --path . --verbose` in a terminal to see engine and script errors.
+- The renderer is OpenGL (GL Compatibility); update your graphics driver if the window stays blank.
 
 ### A program item does not launch
 
@@ -439,13 +427,13 @@ To reset the application to its default state, delete the `program-manager-data.
 - On Windows, `.lnk` shortcuts must point to a valid target
 - On macOS, `.app` bundles must be in a location accessible to the current user
 - URLs must start with `http://` or `https://`
-- Check the DevTools console for error messages (run with `ELECTRON_OPEN_DEVTOOLS=1 npm run dev`)
+- Run from a terminal (`godot --path . --verbose`) to see launch errors
 
 ### Sound effects are not playing
 
 - Check that **Sound Effects** is enabled in Settings (Appearance section)
-- Your browser/system audio must not be muted
-- Sound effects use the Web Audio API and require user interaction (a click or keypress) before they can play. The startup chime plays after the initial data load.
+- Your system audio must not be muted
+- Sound effects are synthesized by the app. The startup chime plays shortly after the Windows for Workgroups shell loads.
 
 ### The tray icon is missing or blank
 
