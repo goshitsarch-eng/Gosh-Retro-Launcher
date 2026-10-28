@@ -9,6 +9,7 @@ const DEFAULT_ID := "default"
 
 static var _files := {}      ## id -> file name (built lazily from the catalog)
 static var _scaled := {}     ## "id@scale" -> Texture2D
+static var _svg_cache := {}  ## res:// svg path -> Texture2D
 
 
 static func _index() -> void:
@@ -42,7 +43,22 @@ static func builtin_path(id: String) -> String:
 
 static func builtin_texture(id: String) -> Texture2D:
 	var p := builtin_path(id)
-	return Assets.tex(p) if p != "" else null
+	return _load_res(p) if p != "" else null
+
+
+## res:// loader: PNGs are imported textures; SVGs use the "keep" importer (raw file exported) and
+## are rasterized at their natural 32x32 size once.
+static func _load_res(path: String) -> Texture2D:
+	if not path.ends_with(".svg"):
+		return Assets.tex(path)
+	if _svg_cache.has(path):
+		return _svg_cache[path]
+	var tex: Texture2D = null
+	var img := Image.load_from_file(path)
+	if img != null and not img.is_empty():
+		tex = ImageTexture.create_from_image(img)
+	_svg_cache[path] = tex
+	return tex
 
 
 static func default_item_texture() -> Texture2D:
@@ -96,7 +112,7 @@ static func resolve(icon: String) -> Texture2D:
 	var src := get_icon_src(icon)
 	var tex: Texture2D = null
 	if src.begins_with("res://"):
-		tex = Assets.tex(src)
+		tex = _load_res(src)
 	elif src.begins_with("data:"):
 		tex = Assets.from_data_url(src)
 	elif src.begins_with("http"):

@@ -5,6 +5,7 @@
 //
 // Outputs:
 //   assets/builtin_icons/<id>.svg     vector icons (the TS `createSvgIcon` data URLs, decoded)
+//   assets/builtin_icons/<id>.svg.import   importer="keep" so the raw SVG is exported as-is
 //   assets/builtin_icons/<id>.png     the four embedded PNG icons (default, folder, question, program-manager)
 //   src/platform/builtin_icon_catalog.gd   picker order + display names + legacy aliases
 //
@@ -85,6 +86,8 @@ for (const entry of icons.BUILTIN_ICONS) {
   }
   if (svg.includes('<text')) throw new Error(`${entry.id} still has <text>`)
   writeFileSync(join(outDir, `${entry.id}.svg`), svg + '\n')
+  // `keep` importer: the raw SVG ships in exports (IconRegistry rasterizes it at runtime, also at 2x-4x).
+  writeFileSync(join(outDir, `${entry.id}.svg.import`), '[remap]\n\nimporter="keep"\n')
   catalog.push({ id: entry.id, name: entry.name, file: `${entry.id}.svg` })
 }
 
