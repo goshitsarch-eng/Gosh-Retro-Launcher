@@ -103,6 +103,8 @@ func _mount_shell() -> void:
 	shell.request_show_launcher_tools.connect(show_launcher_tools)
 	if not Platform.quick_search_requested.is_connected(_on_quick_search):
 		Platform.quick_search_requested.connect(_on_quick_search)
+	if not Platform.launcher_tools_requested.is_connected(_open_launcher_tools_window):
+		Platform.launcher_tools_requested.connect(_open_launcher_tools_window)
 	add_child(shell)
 	_applied_shell = id
 	shell.on_activate()
@@ -217,6 +219,10 @@ func _notification(what: int) -> void:
 	# macOS: clicking the Dock icon / Cmd-Tab re-activates the app; bring a tray-hidden window back.
 	if what == NOTIFICATION_APPLICATION_FOCUS_IN and Platform.is_window_hidden():
 		Platform.show_window()
+
+
+func _open_launcher_tools_window() -> void:
+	LauncherToolsWindow.show_singleton(self)
 
 
 func show_launcher_tools() -> void:
