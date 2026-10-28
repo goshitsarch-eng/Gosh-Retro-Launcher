@@ -26,6 +26,8 @@ static func icon_path(app_dir: String) -> String:
 				return p
 	# Fall back to the first .icns in Resources (stable alphabetical order).
 	var found := []
+	if not DirAccess.dir_exists_absolute(resources):
+		return ""
 	for f in DirAccess.get_files_at(resources):
 		if f.to_lower().ends_with(".icns"):
 			found.append(f)

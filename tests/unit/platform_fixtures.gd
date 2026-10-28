@@ -101,7 +101,7 @@ static func build_ico(entries: Array) -> PackedByteArray:
 ## Builds a minimal but structurally valid PE32(+) image whose .rsrc holds the given icon groups.
 ## groups: Array of Array[{image: Image, png: bool, bpp: int}] (one icon group each).
 static func build_pe(groups: Array, pe32_plus: bool = false) -> PackedByteArray:
-	# Collect RT_ICON blobs and group directories.
+	# Collect PeIcon.RT_ICON blobs and group directories.
 	var icon_blobs := []
 	var group_blobs := []
 	var next_id := 1
@@ -152,9 +152,9 @@ static func build_pe(groups: Array, pe32_plus: bool = false) -> PackedByteArray:
 	tree.resize(data_base)
 	# root: type entries sorted by id (3 then 14)
 	tree.encode_u16(14, 2)
-	tree.encode_u32(16, RT_ICON)
+	tree.encode_u32(16, PeIcon.RT_ICON)
 	tree.encode_u32(20, 0x80000000 | icon_type_off)
-	tree.encode_u32(24, RT_GROUP_ICON)
+	tree.encode_u32(24, PeIcon.RT_GROUP_ICON)
 	tree.encode_u32(28, 0x80000000 | group_type_off)
 	tree.encode_u16(icon_type_off + 14, n_icons)
 	tree.encode_u16(group_type_off + 14, n_groups)
