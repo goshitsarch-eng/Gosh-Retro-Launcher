@@ -91,6 +91,7 @@ static func open_group(shell: Control, group: Dictionary) -> void:
 		Win95DialogLogic.apply_group_properties(ProgramStore, gid, edit.text)
 		m.close())
 	edit.focus_edit()
+	edit.edit.select_all()
 
 
 static func open_item(shell: Control, group_id: String, item: Dictionary) -> void:
@@ -184,3 +185,4 @@ static func open_item(shell: Control, group_id: String, item: Dictionary) -> voi
 		do_apply.call()
 		m.close())
 	name_edit.focus_edit()
+	name_edit.edit.select_all()

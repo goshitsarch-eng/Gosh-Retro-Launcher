@@ -101,7 +101,7 @@ static func open_run(shell: Control) -> void:
 static func open_shutdown(shell: Control) -> void:
 	var m := Win95Modal.open(shell, "Shut Down Windows", Vector2(347, 222))
 	m.add(Win95IconBox.make("shutdown", Vector2.ZERO), Vector2(CX, CY + 25))
-	m.add(Win95Label.make("What do you want the computer to do?", Vector2.ZERO), Vector2(CX + 42, CY))
+	m.add(Win95Label.make("What do you want the computer to do?", Vector2.ZERO), Vector2(CX + 42, CY + 1))
 	var choices := [
 		["quit", "&Shut down the launcher", false], ["restart", "&Restart the launcher", false],
 		["win31", "Restart in Windows for &Workgroups 3.11", false], ["msdos", "Restart the computer in &MS-DOS mode", true]]
@@ -112,7 +112,7 @@ static func open_shutdown(shell: Control) -> void:
 		r.group = "shutdown"
 		r.disabled = choices[i][2]
 		r.checked = i == 0
-		m.add(r, Vector2(CX + 42, CY + 18 + i * 18))
+		m.add(r, Vector2(CX + 42, CY + 19 + i * 18))
 		radios[choices[i][0]] = r
 	var yes := _button("&Yes")
 	var no := _button("&No")
@@ -183,8 +183,8 @@ static func open_wizard(shell: Control, ctx: Dictionary) -> void:
 		var col_w := cw - 10 - 46
 		if state.step == 0:
 			page.add_child(Win95Label.make("What item would you like to create a shortcut for?", Vector2(col_x, CY + 5), {"bold": true, "wrap": 315}))
-			page.add_child(Win95Label.make("Type the location of the item, or click Browse.", Vector2(col_x, CY + 5 + 29 + 8), {"wrap": 315}))
-			var y := CY + 5 + 29 + 8 + 13 + 14
+			page.add_child(Win95Label.make("Type the location of the item, or click Browse.", Vector2(col_x, CY + 5 + 29 + 9), {"wrap": 315}))
+			var y := CY + 5 + 29 + 9 + 13 + 14
 			command.position = Vector2(col_x, y)
 			command.size = Vector2(col_w - 81, 21)
 			page.add_child(command)
