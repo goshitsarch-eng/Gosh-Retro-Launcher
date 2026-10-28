@@ -1,0 +1,95 @@
+name: Build macOS
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  # Pinned Godot release. Editor + export templates come from
+  #   https://github.com/godotengine/godot-builds/releases/download/4.6.3-stable/
+  #     Godot_v4.6.3-stable_macos.universal.zip
+  #     Godot_v4.6.3-stable_export_templates.tpz
+  GODOT_VERSION: "4.6.3"
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check version
+        run: |
+          set -euo pipefail
+          v=$(sed -n 's/^config\/version="\(.*\)"/\1/p' project.godot)
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+          if [[ "${GITHUB_REF}" == refs/tags/v* && "${GITHUB_REF_NAME#v}" != "$v" ]]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match application/config/version $v" >&2
+            exit 1
+          fi
+
+      - name: Install Godot and export templates
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable"
+          curl -fsSL -o godot.zip "$base/Godot_v${GODOT_VERSION}-stable_macos.universal.zip"
+          unzip -q godot.zip
+          echo "GODOT=$PWD/Godot.app/Contents/MacOS/Godot" >> "$GITHUB_ENV"
+          curl -fsSL -o templates.tpz "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          dest="$HOME/Library/Application Support/Godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$dest"
+          unzip -q -j templates.tpz 'templates/macos.zip' 'templates/version.txt' -d "$dest"
+          ls -l "$dest"
+
+      - name: Import project
+        run: |
+          "$GODOT" --headless --path . --import || true
+
+      - name: Unit tests
+        run: |
+          "$GODOT" --headless --path . --script tests/run_tests.gd 2>&1 | tee test.log
+          if grep -E "SCRIPT ERROR|Parse Error|FAILED TO LOAD" test.log; then exit 2; fi
+          grep -E "^[0-9]+ tests, 0 failed" test.log
+
+      # Signing: the preset uses Godot's built-in codesign (ad-hoc without an identity) with the
+      # entitlements of entitlements.plist (JIT, unsigned executable memory, library validation off).
+      # For a notarized release set codesign/identity + notarization/* in export_presets.cfg (or
+      # export them through the Godot editor) and provide the Apple credentials as secrets.
+      - name: Export (universal)
+        run: |
+          set -euo pipefail
+          mkdir -p build/macos dist
+          "$GODOT" --headless --path . --export-release "macOS" "build/macos/Program Manager.zip"
+          test -f "build/macos/Program Manager.zip"
+          cp "build/macos/Program Manager.zip" "dist/Program-Manager-${VERSION}-mac-universal.zip"
+
+      - name: Build dmg
+        run: |
+          set -euo pipefail
+          rm -rf dmg-src && mkdir dmg-src
+          unzip -q "build/macos/Program Manager.zip" -d dmg-src
+          ln -s /Applications dmg-src/Applications
+          hdiutil create -volname "Program Manager" -srcfolder dmg-src -ov -format UDZO "dist/Program-Manager-${VERSION}-mac-universal.dmg"
+
+      - name: Upload macOS packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-universal
+          path: |
+            dist/*.dmg
+            dist/*.zip
+
+      - name: Upload to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.dmg
+            dist/*.zip
+          fail_on_unmatched_files: true
