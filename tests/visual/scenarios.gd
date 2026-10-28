@@ -165,6 +165,12 @@ static func _win95(view: String, a: Automation) -> void:
 	if view == "win95-message":
 		await a.dblclick_id("w95.desktop-icon:network-neighborhood")
 		await a.wait_ms(120)
+	if view == "win95-launch":
+		ProgramStore.update_item("main", "main-0", {"path": "/usr/bin/touch", "arguments": _marker(view)})
+		await _open_main_group(a)
+		await a.dblclick_id("w95.folder-item:0")
+		await a.wait_ms(800)
+		_report_marker(view)
 	if view == "win95-icon-context":
 		await a.rclick(Vector2(40, 40))
 		await a.wait_ms(120)
@@ -190,6 +196,13 @@ static func _select_first_item(a: Automation) -> void:
 
 
 static func _wfw(view: String, a: Automation) -> void:
+	if view == "launch-win31":
+		ProgramStore.update_item("main", "main-0", {"path": "/usr/bin/touch", "arguments": _marker(view)})
+		await a.wait_ms(200)
+		await a.dblclick_id("wfw.program-item:first")
+		await a.wait_ms(800)
+		_report_marker(view)
+		return
 	# Runtime shell switching (settings change -> host flips frame/scale and remounts the shell).
 	if view == "switch-to-win95" or view == "switch-roundtrip":
 		ProgramStore.update_settings({"shell": "win95"})
@@ -249,3 +262,17 @@ static func _wfw(view: String, a: Automation) -> void:
 		await a.click_id("wfw.dialog.button:OK")
 		await a.wait_ms(300)
 	await a.wait_ms(100)
+
+
+# ---------------------------------------------------------- launch checks
+
+static func _marker(view: String) -> String:
+	var path := "%s/launched-%s.marker" % [OS.get_environment("PM_MARKER_DIR") if OS.get_environment("PM_MARKER_DIR") != "" else "/tmp", view]
+	DirAccess.remove_absolute(path)
+	return path
+
+
+static func _report_marker(view: String) -> void:
+	var dir := OS.get_environment("PM_MARKER_DIR") if OS.get_environment("PM_MARKER_DIR") != "" else "/tmp"
+	var path := "%s/launched-%s.marker" % [dir, view]
+	print("LAUNCH_RESULT %s %s" % [view, "OK" if FileAccess.file_exists(path) else "MISSING"])
