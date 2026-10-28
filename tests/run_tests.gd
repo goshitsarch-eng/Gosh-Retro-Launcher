@@ -9,6 +9,7 @@ func _init() -> void:
 
 
 func _run() -> void:
+	await process_frame  # autoloads (ProgramStore, Platform, Sounds...) join the tree after _init
 	var filter := ""
 	var args := OS.get_cmdline_user_args()
 	if args.size() > 0:

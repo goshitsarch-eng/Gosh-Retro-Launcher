@@ -131,6 +131,18 @@ static func _ok() -> Dictionary:
 	return {"success": true}
 
 
+## POSIX: absolute/relative path with a slash must exist; bare names are looked up on $PATH.
+## fork() succeeds even when exec() later fails, so this is the only way to report a missing program.
+static func resolve_executable(command: String) -> String:
+	if command.contains("/"):
+		return command if FileAccess.file_exists(command) else ""
+	for dir in OS.get_environment("PATH").split(":", false):
+		var candidate := String(dir).path_join(command)
+		if FileAccess.file_exists(candidate):
+			return candidate
+	return ""
+
+
 ## Detached spawn honouring cwd/env/hidden window. create_process has no cwd/env
 ## parameters, so a tiny wrapper (sh / PowerShell) applies them.
 static func spawn_detached(command: String, args: PackedStringArray, cwd: String, env_additions: Dictionary) -> Dictionary:
@@ -138,20 +150,14 @@ static func spawn_detached(command: String, args: PackedStringArray, cwd: String
 		if cwd.is_empty() and env_additions.is_empty():
 			var pid := OS.create_process(command, args)
 			return _ok() if pid > 0 else _fail("Failed to spawn %s" % command)
-		var script := "$e=$env:GOSH_LAUNCH_ENV|ConvertFrom-Json;if($e){foreach($p in $e.PSObject.Properties){Set-Item -Path ('env:'+$p.Name) -Value $p.Value}};" \
-			+ "$launch=@{FilePath=$args[0]};if($args.Count -gt 1){$launch.ArgumentList=$args[1..($args.Count-1)]};" \
-			+ "if($env:GOSH_LAUNCH_CWD){$launch.WorkingDirectory=$env:GOSH_LAUNCH_CWD};Start-Process @launch"
-		OS.set_environment("GOSH_LAUNCH_CWD", cwd)
-		OS.set_environment("GOSH_LAUNCH_ENV", JSON.stringify(env_additions))
-		var full := PackedStringArray(["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", script, command])
-		full.append_array(args)
-		var wpid := OS.create_process("powershell.exe", full, false)
-		OS.unset_environment("GOSH_LAUNCH_CWD")
-		OS.unset_environment("GOSH_LAUNCH_ENV")
-		return _ok() if wpid > 0 else _fail("Failed to spawn %s" % command)
+		return _spawn_powershell(command, args, "", cwd, env_additions)
+	if resolve_executable(command).is_empty():
+		return _fail("Program not found: %s" % command)
 	if cwd.is_empty() and env_additions.is_empty():
 		var pid2 := OS.create_process(command, args)
 		return _ok() if pid2 > 0 else _fail("Failed to spawn %s" % command)
+	if not cwd.is_empty() and not DirAccess.dir_exists_absolute(cwd):
+		return _fail("Working directory not found: %s" % cwd)
 	# POSIX: cd then exec through env(1) so KEY=VALUE additions apply to the child only.
 	var sh_args := PackedStringArray(["-c", 'cd "$1" || exit 1; shift; exec env "$@"', "sh", cwd if not cwd.is_empty() else "."])
 	for k in env_additions:
@@ -160,6 +166,36 @@ static func spawn_detached(command: String, args: PackedStringArray, cwd: String
 	sh_args.append_array(args)
 	var spid := OS.create_process("/bin/sh", sh_args)
 	return _ok() if spid > 0 else _fail("Failed to spawn %s" % command)
+
+
+## Start-Process wrapper. Everything (file, args, window style, cwd, env) travels as JSON in the
+## GOSH_LAUNCH environment variable and the script is passed with -EncodedCommand: `-Command
+## <script> <args...>` does NOT populate $args (PowerShell pastes the arguments into the command
+## text), and Start-Process joins ArgumentList without quoting, so both are handled explicitly.
+const PS_SCRIPT := "$ErrorActionPreference='Stop';$j=$env:GOSH_LAUNCH|ConvertFrom-Json;Remove-Item Env:GOSH_LAUNCH;" \
+	+ "if($j.env){foreach($e in $j.env.PSObject.Properties){Set-Item -Path ('env:'+$e.Name) -Value ([string]$e.Value)}};" \
+	+ "$l=@{FilePath=$j.file};if($j.style){$l.WindowStyle=$j.style};if($j.cwd){$l.WorkingDirectory=$j.cwd};" \
+	+ "$a=@($j.args|ForEach-Object{if($_ -match '[\\s\"]'){'\"'+($_ -replace '\"','\\\"')+'\"'}else{$_}});" \
+	+ "if($a.Count -gt 0){$l.ArgumentList=$a};Start-Process @l"
+
+
+## {"args": PackedStringArray for powershell.exe, "env": {"GOSH_LAUNCH": json}} (pure; unit-tested).
+static func build_powershell_launch(file: String, args: PackedStringArray, window_style: String, cwd: String, env_additions: Dictionary) -> Dictionary:
+	var payload := {"file": file, "args": Array(args), "style": window_style, "cwd": cwd, "env": env_additions}
+	return {
+		"args": PackedStringArray(["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Marshalls.raw_to_base64(PS_SCRIPT.to_utf16_buffer())]),
+		"env": {"GOSH_LAUNCH": JSON.stringify(payload)},
+	}
+
+
+static func _spawn_powershell(file: String, args: PackedStringArray, window_style: String, cwd: String, env_additions: Dictionary) -> Dictionary:
+	var launch := build_powershell_launch(file, args, window_style, cwd, env_additions)
+	for k in launch.env:
+		OS.set_environment(k, launch.env[k])
+	var pid := OS.create_process("powershell.exe", launch.args, false)
+	for k in launch.env:
+		OS.unset_environment(k)
+	return _ok() if pid > 0 else _fail("Failed to spawn %s" % file)
 
 
 static func launch_program(item: Dictionary) -> Dictionary:
@@ -188,19 +224,7 @@ static func launch_program(item: Dictionary) -> Dictionary:
 				return spawn_detached(details.target, args, cwd if cwd != "" else working_dir, env)
 			elif ["exe", "com"].has(ext) and run_mode != "normal":
 				var style := "Maximized" if run_mode == "maximized" else "Minimized"
-				var script := "$launch=@{FilePath=$args[0];WindowStyle='%s'}; " % style \
-					+ "if($args.Count -gt 1){$launch.ArgumentList=$args[1..($args.Count-1)]}; " \
-					+ "if($env:GOSH_LAUNCH_CWD){$launch.WorkingDirectory=$env:GOSH_LAUNCH_CWD}; Start-Process @launch"
-				var pargs := PackedStringArray(["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", script, program_path])
-				pargs.append_array(item_args)
-				OS.set_environment("GOSH_LAUNCH_CWD", working_dir)
-				for k in env:
-					OS.set_environment(k, env[k])
-				var pid := OS.create_process("powershell.exe", pargs, false)
-				OS.unset_environment("GOSH_LAUNCH_CWD")
-				for k in env:
-					OS.unset_environment(k)
-				return _ok() if pid > 0 else _fail("Failed to spawn powershell.exe")
+				return _spawn_powershell(program_path, item_args, style, working_dir, env)
 			elif ["exe", "com"].has(ext) and (item_args.size() > 0 or item.get("environment", "") != ""):
 				return spawn_detached(program_path, item_args, working_dir, env)
 			elif ["bat", "cmd"].has(ext):
