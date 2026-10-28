@@ -190,6 +190,19 @@ static func _select_first_item(a: Automation) -> void:
 
 
 static func _wfw(view: String, a: Automation) -> void:
+	# Runtime shell switching (settings change -> host flips frame/scale and remounts the shell).
+	if view == "switch-to-win95" or view == "switch-roundtrip":
+		ProgramStore.update_settings({"shell": "win95"})
+		await a.wait_ms(600)
+		if view == "switch-roundtrip":
+			ProgramStore.update_settings({"shell": "win31"})
+			await a.wait_ms(600)
+			ProgramStore.update_settings({"shell": "win95"})
+			await a.wait_ms(600)
+			ProgramStore.update_settings({"shell": "win31"})
+			await a.wait_ms(600)
+		await a.wait_ms(100)
+		return
 	if view == "file" or view == "about":
 		await _menu(a, 4 if view == "about" else 0)
 	if view == "about":
