@@ -128,3 +128,13 @@ func test_group_property_apply_rules() -> void:
 	expect_eq(Win95DialogLogic.plural_objects(1), "1 object")
 	expect_eq(Win95DialogLogic.plural_objects(8), "8 objects")
 	s.free()
+
+
+func test_every_ascii_glyph_missing_from_the_win95_fonts_has_a_synthetic_shape() -> void:
+	var f := RetroFont.instance(RetroFont.WIN95)
+	for c in range(33, 127):
+		var ch := String.chr(c)
+		if not f.font.has_char(c):
+			expect(RetroFont._SYNTH_NORMAL.has(ch) or ch == "`", "normal font lacks '%s' without a fallback" % ch)
+		if not f.bold_font.has_char(c):
+			expect(RetroFont._SYNTH_BOLD.has(ch), "bold font lacks '%s' without a fallback" % ch)

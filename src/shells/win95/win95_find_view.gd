@@ -409,7 +409,7 @@ func _gui_input(event: InputEvent) -> void:
 
 func _text_focus() -> bool:
 	var owner := get_viewport().gui_get_focus_owner()
-	return owner != null and is_ancestor_of(owner)
+	return owner is LineEdit and is_ancestor_of(owner)
 
 
 ## Window-layer key hook. With a field focused the keys belong to the field (Enter in "Named" is
