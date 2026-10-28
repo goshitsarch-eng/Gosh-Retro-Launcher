@@ -63,7 +63,7 @@ func _ready() -> void:
 	win.size_changed.connect(_queue_state)
 	win.visibility_changed.connect(_queue_state)
 	win.dpi_changed.connect(_on_dpi_changed)
-	DisplayServer.window_set_window_event_callback(_on_window_event, win.get_window_id())
+	win.mouse_entered.connect(_queue_state)  # first event after a window-manager move/resize
 
 
 # ------------------------------------------------------------------ system
@@ -474,12 +474,6 @@ func _on_focus_entered() -> void:
 func _on_dpi_changed() -> void:
 	display_changed.emit()
 	_queue_state()
-
-
-func _on_window_event(event: int) -> void:
-	# The cursor re-entering the window is the first event after a window-manager move/resize.
-	if event == DisplayServer.WINDOW_EVENT_MOUSE_ENTER:
-		_queue_state()
 
 
 func _queue_state() -> void:
