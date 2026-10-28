@@ -12,7 +12,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const zlib = require('node:zlib')
 
-const OUT = path.join(__dirname, '../src/renderer/src/assets/win95')
+const OUT = path.join(__dirname, '../assets/win95')
 const P = {
   k: '#000000', w: '#ffffff', f: '#c0c0c0', s: '#808080',
   n: '#000080', b: '#0000ff', t: '#008080', a: '#00ffff',

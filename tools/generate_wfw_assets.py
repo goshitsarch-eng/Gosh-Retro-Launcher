@@ -8,7 +8,7 @@ nearest-neighbour outputs so each logical pixel remains stable.
 from pathlib import Path
 from PIL import Image, ImageDraw
 
-OUT = Path(__file__).parents[1] / "src/renderer/src/assets/wfw"
+OUT = Path(__file__).parents[1] / "assets/wfw"
 PAL = {
     "k": "#000000", "g": "#808080", "f": "#c0c0c0", "w": "#ffffff",
     "n": "#000080", "b": "#0000ff", "t": "#008080", "a": "#00ffff",
