@@ -70,7 +70,7 @@ func _build(cw: int) -> void:
 	preview.group_chrome_scale = float(form.groupChromeScale)
 	add_widget(preview, 8, 255, Vector2(inner_w, 88))
 	var scale_label := "Program Manager Scale:" if form.shell == "win31" else "Windows 95 Scale:"
-	var lw := maxi(106, W31.text_w(scale_label, 12))
+	var lw := maxi(106, W31.text_w(scale_label, 11))
 	var scale_key := "win31Scale" if form.shell == "win31" else "win95Scale"
 	var scale_combo := _scale_combo(scale_key)
 	add_label(8, 351 + 3, scale_label, lw)
@@ -79,8 +79,8 @@ func _build(cw: int) -> void:
 	var g3 := W31GroupBox.new("Batch Launch")
 	add_widget(g3, 0, 393, Vector2(cw, 38))
 	var dl := "Delay between launches:"
-	var dlw := W31.text_w(dl, 12)
-	add_text(8, 393 + 12 + 1, dl, 12)
+	var dlw := W31.text_w(dl, 11)
+	add_text(8, 393 + 12 + 1, dl, 11)
 	var value_w := 60
 	var slider_w := inner_w - dlw - 7 - 7 - value_w
 	var slider := W31Slider.new(100, 5000, 100)
@@ -117,5 +117,5 @@ class W31ValueLabel extends Control:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	func _draw() -> void:
-		var tw := W31.text_w(text, 12)
-		W31.text(self, size.x - tw, 0, text, W31.BLACK, 12)
+		var tw := W31.text_w(text, 11)
+		W31.text(self, size.x - tw, 0, text, W31.BLACK, 11)

@@ -37,7 +37,7 @@ func _init(p_text: String = "", p_checked: bool = false) -> void:
 
 
 func natural_size() -> Vector2:
-	return Vector2(BOX + GAP + W31.text_w(text, 12), 13)
+	return Vector2(BOX + GAP + W31.text_w(text, 11), 13)
 
 
 func _draw() -> void:
@@ -52,9 +52,9 @@ func _draw() -> void:
 				if CHECK[y][x] == "#":
 					Px.fill(self, 3 + x, 4 + y, 1, 1, col)
 	var tx := BOX + GAP
-	W31.text(self, tx, 0, text, W31.BLACK, 12, {"disabled": disabled})
+	W31.text(self, tx, 0, text, W31.BLACK, 11, {"disabled": disabled})
 	if has_focus():
-		var w := W31.text_w(text, 12)
+		var w := W31.text_w(text, 11)
 		Px.focus_rect(self, Rect2(tx - 2, -1, w + 4, 15))
 
 

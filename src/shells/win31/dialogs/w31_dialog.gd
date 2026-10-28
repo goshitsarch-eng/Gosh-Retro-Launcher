@@ -170,8 +170,8 @@ func add_op(op: Callable, first: bool = false) -> void:
 
 ## Right-aligned 12px field label: `.win31-form-row label` (106px wide column, text right aligned).
 func add_label(x: int, y: int, s: String, width: int = 106) -> void:
-	var w := W31.text_w(s, 12)
-	add_text(x + width - w, y, s, 12)
+	var w := W31.text_w(s, 11)
+	add_text(x + width - w, y, s, 11)
 
 
 ## One `.win31-form-row`: label + control, returns the row height (19 + 5 margin = 24 flow).

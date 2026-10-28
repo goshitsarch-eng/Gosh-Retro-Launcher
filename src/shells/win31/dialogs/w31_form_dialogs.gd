@@ -266,10 +266,10 @@ class NewGroup extends W31Dialog:
 	func _build(cw: int) -> void:
 		var y := 0
 		if data.get("openItemAfterCreate", false):
-			add_text(0, y, "Create a group to add your new program item.", 12)
+			add_text(0, y, "Create a group to add your new program item.", 11)
 			y += 21
 		elif data.get("openUrlAfterCreate", false):
-			add_text(0, y, "Create a group to add your URL.", 12)
+			add_text(0, y, "Create a group to add your URL.", 11)
 			y += 21
 		var prev := field.text if field else ""
 		field = W31TextField.new()

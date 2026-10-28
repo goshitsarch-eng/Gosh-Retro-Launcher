@@ -10,18 +10,18 @@ class About extends W31Dialog:
 	func _build(_cw: int) -> void:
 		add_image(W31Icons.catalog_texture("program-manager"), 20, 17, Vector2(48, 48))
 		add_text(86, 13, "Program Manager", 14, {"bold": true, "line_height": 13})
-		add_text(86, 29, "Version %s" % Platform.version(), 12, {"line_height": 14})
-		add_text(86, 46, "Copyright (c) 2025", 12, {"line_height": 14})
+		add_text(86, 29, "Version %s" % Platform.version(), 11, {"line_height": 14})
+		add_text(86, 46, "Copyright (c) 2025", 11, {"line_height": 14})
 		add_op(func(ci: CanvasItem):
 			Px.hline(ci, 86, 68, 240, W31.SHADOW)
 			Px.hline(ci, 86, 69, 240, W31.WHITE))
-		var h := add_paragraph(86, 78, "Windows 3.11 Program Manager-compatible launcher", 240, 14, 12)
+		var h := add_paragraph(86, 78, "Windows 3.11 Program Manager-compatible launcher", 240, 14, 11)
 		var y := 78 + h + 3 + 5
 		add_op(func(ci: CanvasItem):
 			Px.hline(ci, 86, y, 240, W31.SHADOW)
 			Px.hline(ci, 86, y + 1, 240, W31.WHITE))
 		y += 2 + 5 + 3
-		add_text(86, y, "Running on %s" % W31DialogLogic.platform_display_name(Platform.os_name()), 12, {"line_height": 14})
+		add_text(86, y, "Running on %s" % W31DialogLogic.platform_display_name(Platform.os_name()), 11, {"line_height": 14})
 		var grid_bottom := y + 14
 		var ok := make_button("OK", true, UIState.close_dialog)
 		initial_focus = ok
@@ -40,7 +40,7 @@ class Confirm extends W31Dialog:
 
 	func _build(cw: int) -> void:
 		add_image(W31Icons.catalog_texture("question"), 10, 12)
-		var msg_h := add_paragraph(52, 12, String(options.get("message", "")), cw - 20 - 32 - 10, 15, 12)
+		var msg_h := add_paragraph(52, 12, String(options.get("message", "")), cw - 20 - 32 - 10, 15, 11)
 		var block := maxi(32, msg_h) + 20
 		var yes := make_button("Yes", true, _on_yes)
 		var no := make_button("No", false, _on_no)
@@ -71,7 +71,7 @@ class Unavailable extends W31Dialog:
 
 	func _build(cw: int) -> void:
 		add_image(W31Icons.catalog_texture("warning"), 10, 12)
-		var msg_h := add_paragraph(52, 12, String(data.get("message", "This feature is not available.")), cw - 20 - 32 - 10, 15, 12)
+		var msg_h := add_paragraph(52, 12, String(data.get("message", "This feature is not available.")), cw - 20 - 32 - 10, 15, 11)
 		var block := maxi(32, msg_h) + 20
 		var ok := make_button("OK", true, UIState.close_dialog)
 		initial_focus = ok
@@ -108,18 +108,18 @@ class Welcome extends W31Dialog:
 			Px.hline(ci, 4, ry + 8, int((cw - 8) * 0.8), W31.SHADOW)
 			Px.hline(ci, 4, ry + 9, int((cw - 8) * 0.8), W31.WHITE))
 		var ty := ry + 8 + 2 + 8
-		add_text(4, ty, "Getting started:", 12, {"bold": true, "line_height": 18})
+		add_text(4, ty, "Getting started:", 11, {"bold": true, "line_height": 18})
 		ty += 18 + 4
 		for line in ["Drag files into a group window to add programs", "Use File -> New to create items or groups",
 				"Double-click an item to launch it", "Right-click items for properties"]:
 			_bullet(4 + 16, ty, line)
 			ty += 18
 		ty += 8
-		add_text(4, ty, "Quick Search:", 12, {"bold": true, "line_height": 18})
+		add_text(4, ty, "Quick Search:", 11, {"bold": true, "line_height": 18})
 		ty += 18 + 4
-		add_text(4 + 4, ty, "Press %s+Shift+Space anywhere to quickly find and launch programs." % mod, 12, {"line_height": 18})
+		add_text(4 + 4, ty, "Press %s+Shift+Space anywhere to quickly find and launch programs." % mod, 11, {"line_height": 18})
 		ty += 18 + 8
-		add_text(4, ty, "Keyboard shortcuts:", 12, {"bold": true, "line_height": 18})
+		add_text(4, ty, "Keyboard shortcuts:", 11, {"bold": true, "line_height": 18})
 		ty += 18 + 4
 		for line in ["Alt+F/O/W/H - Open menus", "Enter - Launch selected item", "Delete - Remove selected item", "Shift+F4/F5 - Tile / Cascade windows"]:
 			_bullet(4 + 16, ty, line)
@@ -135,4 +135,4 @@ class Welcome extends W31Dialog:
 			Px.fill(ci, x - 11, y + 7, 4, 4, W31.BLACK)
 			Px.fill(ci, x - 12, y + 8, 6, 2, W31.BLACK)
 			Px.fill(ci, x - 10, y + 6, 2, 6, W31.BLACK))
-		add_text(x, y, text, 12, {"line_height": 18})
+		add_text(x, y, text, 11, {"line_height": 18})

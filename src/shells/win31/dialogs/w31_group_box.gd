@@ -19,7 +19,7 @@ func _init(p_title: String = "") -> void:
 
 func _draw() -> void:
 	W31.group_frame(self, Rect2(Vector2.ZERO, size))
-	var w := W31.text_w(title, 12)
+	var w := W31.text_w(title, 11)
 	# label box: left 7, padding 0 3px, 13px tall centred on the top border (top -7)
 	Px.fill(self, 7, -7, w + 6, 13, W31.FACE)
-	W31.text(self, 10, -7, title, W31.BLACK, 12)
+	W31.text(self, 10, -7, title, W31.BLACK, 11)
