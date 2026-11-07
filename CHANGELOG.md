@@ -5,6 +5,31 @@ All notable changes to Gosh Retro Launcher are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - Godot rewrite
+
+### Changed
+
+- **Rewrote the entire application in Godot 4.6 (GDScript).** Electron, React, Node.js and the npm toolchain are gone; the app is a single Godot project (`project.godot`) with unit tests run headless by Godot itself.
+- The data file (`program-manager-data.json`), its location on each OS, the schema (v5), automatic backups, and `.GRP` import/export are unchanged, so 1.x data and backups load as-is.
+- Both shells are redrawn with a pixel-exact toolkit (1-bit bitmap text with the RTM advance table, bevel/dither primitives, integer 1x-4x whole-shell scaling) instead of DOM/CSS.
+- Packaging moved to Godot exports (Windows NSIS + zip, macOS dmg + zip, Linux tar.gz + deb) with new GitHub Actions workflows.
+
+### Added
+
+- Visual regression harness that drives the real app with injected input and diffs against the Electron-era baselines; ports of the vitest suites plus tests for every new module.
+- Runtime shell switching without recreating the process; in-app Ctrl/Cmd+Shift+Space Quick Search and a Quick Search item in the tray menu.
+- Dropping files onto a WfW group window adds items; dragging an item between WfW group windows moves it (Ctrl copies).
+- Optional local RTM icon/font packs are honored for both shells (`assets/win95-rtm-local`, `assets/wfw-rtm-local`).
+
+### Known differences from 1.x
+
+- The Ctrl/Cmd+Shift+Space shortcut no longer works while the app is in the background (Godot has no OS-wide hotkey API); use the tray's Quick Search item.
+- "Minimize to tray on close" minimizes (the taskbar/Dock entry stays) because Godot cannot hide its main window.
+- macOS tray icon is coloured instead of a template image; AppImage and RPM packages are no longer produced.
+- File icons are extracted for exe/dll, ico, icns, .app, .desktop and common image formats; other file types get the default icon.
+- The interface does not expose widgets to screen readers (the old build had ARIA labels).
+- See [docs/PLATFORM.md](docs/PLATFORM.md) for the full list.
+
 ## [Unreleased]
 
 ### Added

@@ -1,45 +1,33 @@
 # Visual regression baselines
 
-`wfw-reference.png` is the measured 511×335 Windows for Workgroups Program
-Manager fixture. The `wfw-desktop*` captures protect windowed/minimized desktop
-states and are intentionally isolated from Win95 work.
+`baselines/*.png` are renders produced by the **Electron/React build (1.0.6)** and are the pixel reference the
+Godot build is measured against:
 
-The `win95-*` set contains 39 deterministic Windows 95 RTM launcher scenarios:
+* `wfw-reference.png` (511x335), `wfw-desktop.png`, `wfw-desktop-minimized.png` - Windows for Workgroups 3.11.
+* `win95-*.png` - 39 deterministic Windows 95 RTM scenarios: desktop states, Start menu cascades, taskbar contexts,
+  folder views, window states, menus, Move/Size outlines, Find, Run, Shut Down, wizard, property sheet, message box,
+  and 2x/3x/4x, non-divisible 1281x961, and 125% DPI captures.
 
-- desktop normal, selected/focused, inactive, and marquee states;
-- Start keyboard state, the main menu, Programs/group tiers, and Settings;
-- taskbar background/task contexts and populated task buttons;
-- My Computer/group windows, all four folder views, extended selection, and
-  folder context menus;
-- active/inactive/restored/maximized/minimized windows, menu bar, system menu,
-  and Move/Size outlines;
-- modeless Find criteria pages/results, exact Run and Shut Down frames, Shortcut
-  wizard, property sheet, and message box;
-- 2×, 3×, and 4× shell output, a non-divisible 1281×961 viewport, and a forced
-  Windows 125% device-scale capture.
-
-The harness sends the clock component a deterministic `12:00 PM` value; it does
-not replace bitmap output with browser text.
-
-Run all suites:
+## Running
 
 ```bash
-npm run test:visual
+# one scenario: renders the real app with a deterministic fixture profile and drives it with injected input
+godot --path . -- --capture=win95-start --out=artifacts/win95-start.png
+python3 tests/visual/compare.py artifacts/win95-start.png tests/visual/baselines/win95-start.png --diff artifacts/diff.png
 ```
 
-Run only Win95:
+`compare.py` applies the original rule: identical dimensions and at most 0.5% of pixels differing by more than 20 per
+channel. The diff image shows actual | baseline | difference (magenta).
 
-```bash
-npm run test:visual:win95
-```
+Scenarios live in `scenarios.gd`, fixtures in `fixtures.gd`, and the element ids they click are listed in
+`AUTOMATION_IDS.md`. Extra views without baselines: `switch-to-win95`, `switch-roundtrip` (runtime shell switching),
+`file`, `options`, `window`, `help`, `item-selected`, `group-maximized`, and the WfW dialog views.
 
-After reviewing every changed capture against the source-cited
-`src/renderer/src/shells/win95/RTM_AUDIT.md`, update only Win95 baselines with:
+## Known, expected differences
 
-```bash
-npm run update:visual:win95
-```
-
-The harness fails when dimensions change or more than 0.5% of pixels differ by
-more than 20 RGB levels. Never use the Win95 update command to replace
-`wfw-*` baselines.
+The committed baselines were rendered on a machine with a user-supplied, gitignored pack of licensed Windows icons and
+fonts (`assets/win95-rtm-local`, `assets/wfw-rtm-local`) and with Chromium text rasterization. The distributable build
+ships clean-room icons and fonts instead, so icon pixels and glyph shapes differ by design: layout, colours, bevels,
+and positions match, and most views land at 0.7-3% differing pixels rather than under 0.5%. If you have the local packs,
+drop them in those folders and the Godot build uses them (icons and, for Windows 95, the MS Sans Serif atlas), which
+is the configuration the baselines were captured with.

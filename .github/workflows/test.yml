@@ -1,0 +1,41 @@
+name: Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  # Pinned Godot release (https://github.com/godotengine/godot-builds/releases/tag/4.6.3-stable).
+  GODOT_VERSION: "4.6.3"
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfontconfig1 libx11-6 libxcursor1 libxi6 libxinerama1 libxrandr2 libgl1 libasound2t64
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable"
+          curl -fsSL -o godot.zip "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo install -m 0755 "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          godot --version
+
+      - name: Import project
+        run: godot --headless --path . --import || true
+
+      - name: Unit tests
+        run: |
+          godot --headless --path . --script tests/run_tests.gd 2>&1 | tee test.log
+          if grep -E "SCRIPT ERROR|Parse Error|FAILED TO LOAD" test.log; then exit 2; fi
+          grep -E "^[0-9]+ tests, 0 failed" test.log

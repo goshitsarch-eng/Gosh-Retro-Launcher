@@ -9,43 +9,120 @@ on:
 permissions:
   contents: write
 
+env:
+  # Pinned Godot release. Editor + export templates come from
+  #   https://github.com/godotengine/godot-builds/releases/download/4.6.3-stable/
+  #     Godot_v4.6.3-stable_win64.exe.zip
+  #     Godot_v4.6.3-stable_export_templates.tpz
+  # rcedit (sets the .exe icon / version resources): https://github.com/electron/rcedit/releases/tag/v2.0.0
+  GODOT_VERSION: "4.6.3"
+  RCEDIT_VERSION: "2.0.0"
+
 jobs:
   build:
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            preset: Windows x86_64
+            out: build/windows-x86_64
+            experimental: false
+          - arch: arm64
+            preset: Windows arm64
+            out: build/windows-arm64
+            experimental: true  # arm64 template availability varies between Godot releases
+
+    continue-on-error: ${{ matrix.experimental }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Test
-        run: npm test
-
-      - name: Build and package
+      - name: Check version
         run: |
-          npm run build
-          npm run build:win -- --x64 --arm64 --publish never
+          $v = (Select-String -Path project.godot -Pattern '^config/version="(.*)"').Matches[0].Groups[1].Value
+          "VERSION=$v" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          if ($env:GITHUB_REF -like 'refs/tags/v*' -and $env:GITHUB_REF_NAME.TrimStart('v') -ne $v) {
+            Write-Error "Tag $env:GITHUB_REF_NAME does not match application/config/version $v"
+            exit 1
+          }
 
-      - name: Upload Windows installer
+      - name: Install Godot, templates and rcedit
+        run: |
+          $base = "https://github.com/godotengine/godot-builds/releases/download/$env:GODOT_VERSION-stable"
+          Invoke-WebRequest "$base/Godot_v$env:GODOT_VERSION-stable_win64.exe.zip" -OutFile godot.zip
+          Expand-Archive godot.zip -DestinationPath godot
+          $godot = (Resolve-Path "godot/Godot_v$env:GODOT_VERSION-stable_win64_console.exe").Path
+          "GODOT=$godot" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+          Invoke-WebRequest "$base/Godot_v$env:GODOT_VERSION-stable_export_templates.tpz" -OutFile templates.zip
+          $dest = Join-Path $env:APPDATA "Godot/export_templates/$env:GODOT_VERSION.stable"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          7z e templates.zip "templates/windows_release_x86_64.exe" "templates/windows_release_arm64.exe" "templates/version.txt" "-o$dest" -y | Out-Null
+          Get-ChildItem $dest
+
+          Invoke-WebRequest "https://github.com/electron/rcedit/releases/download/v$env:RCEDIT_VERSION/rcedit-x64.exe" -OutFile rcedit-x64.exe
+          $rcedit = (Resolve-Path rcedit-x64.exe).Path -replace '\\', '/'
+          $settings = Join-Path $env:APPDATA "Godot"
+          New-Item -ItemType Directory -Force -Path $settings | Out-Null
+          @"
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/windows/rcedit = "$rcedit"
+          "@ | Set-Content -Path (Join-Path $settings "editor_settings-4.6.tres") -Encoding utf8
+
+      - name: Import project
+        run: |
+          & $env:GODOT --headless --path . --import
+          exit 0
+
+      - name: Unit tests
+        if: matrix.arch == 'x64'
+        run: |
+          & $env:GODOT --headless --path . --script tests/run_tests.gd 2>&1 | Tee-Object -FilePath test.log
+          if (Select-String -Path test.log -Pattern 'SCRIPT ERROR|Parse Error|FAILED TO LOAD') { exit 2 }
+          if (-not (Select-String -Path test.log -Pattern '^\d+ tests, 0 failed')) { exit 3 }
+
+      - name: Export
+        run: |
+          New-Item -ItemType Directory -Force -Path "${{ matrix.out }}" | Out-Null
+          & $env:GODOT --headless --path . --export-release "${{ matrix.preset }}" "${{ matrix.out }}/program-manager.exe"
+          if (-not (Test-Path "${{ matrix.out }}/program-manager.exe")) { Write-Error "export failed"; exit 1 }
+
+      - name: Package (zip)
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Compress-Archive -Path "${{ matrix.out }}/program-manager.exe" -DestinationPath "dist/Program-Manager-$env:VERSION-win-${{ matrix.arch }}.zip" -Force
+
+      - name: Build NSIS installer
+        continue-on-error: true
+        run: |
+          choco install nsis -y --no-progress
+          $nsis = "${env:ProgramFiles(x86)}\NSIS\makensis.exe"
+          $src = (Resolve-Path "${{ matrix.out }}/program-manager.exe").Path
+          $out = Join-Path (Resolve-Path dist).Path "Program-Manager-$env:VERSION-win-${{ matrix.arch }}.exe"
+          & $nsis "/DVERSION=$env:VERSION" "/DARCH=${{ matrix.arch }}" "/DSOURCE=$src" "/DOUTFILE=$out" packaging/windows/program-manager.nsi
+
+      - name: Upload Windows packages
         uses: actions/upload-artifact@v4
         with:
-          name: windows-nsis-installer
-          path: dist/*.exe
+          name: windows-${{ matrix.arch }}
+          path: |
+            dist/*.exe
+            dist/*.zip
 
       - name: Upload to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.exe
+          files: |
+            dist/*.exe
+            dist/*.zip
           fail_on_unmatched_files: true

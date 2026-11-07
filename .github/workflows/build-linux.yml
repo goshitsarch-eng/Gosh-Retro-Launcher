@@ -1,4 +1,4 @@
-name: Build Linux (deb, RPM, AppImage, tar.gz)
+name: Build Linux (deb, tar.gz)
 
 on:
   workflow_dispatch:
@@ -9,6 +9,13 @@ on:
 permissions:
   contents: write
 
+env:
+  # Pinned Godot release. Editor + export templates come from
+  #   https://github.com/godotengine/godot-builds/releases/download/4.6.3-stable/
+  #     Godot_v4.6.3-stable_linux.x86_64.zip | Godot_v4.6.3-stable_linux.arm64.zip
+  #     Godot_v4.6.3-stable_export_templates.tpz
+  GODOT_VERSION: "4.6.3"
+
 jobs:
   build:
     runs-on: ${{ matrix.runner }}
@@ -17,103 +24,84 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - arch: x64
+          - arch: x86_64
             runner: ubuntu-24.04
-            targets: deb AppImage tar.gz
-            rpm_arch: x86_64
-            unpack_dir: linux-unpacked
+            preset: Linux x86_64
           - arch: arm64
             runner: ubuntu-24.04-arm
-            targets: deb AppImage tar.gz
-            rpm_arch: aarch64
-            unpack_dir: linux-arm64-unpacked
+            preset: Linux arm64
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install system dependencies
+      - name: Check version
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libappindicator3-dev \
-            rpm
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Test
-        run: npm test
-
-      - name: Build and package (deb, AppImage, tar.gz)
-        run: |
-          npm run build
-          npx electron-builder --linux ${{ matrix.targets }} --${{ matrix.arch }} --publish never
-
-      - name: Build RPM package
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          DESCRIPTION=$(node -p "require('./package.json').description")
-
-          # Use electron-builder's bundled fpm with properly quoted arguments
-          # electron-builder 26.7.0 has a bug where it doesn't quote multi-word
-          # strings passed to fpm, causing rpmbuild to fail
-          FPM=$(find ~/.cache/electron-builder/fpm* -name fpm -type f 2>/dev/null | head -1)
-          if [ -z "$FPM" ]; then
-            echo "fpm not found in electron-builder cache, downloading..."
-            npx electron-builder --linux rpm --${{ matrix.arch }} --publish never || true
-            FPM=$(find ~/.cache/electron-builder/fpm* -name fpm -type f 2>/dev/null | head -1)
+          set -euo pipefail
+          v=$(sed -n 's/^config\/version="\(.*\)"/\1/p' project.godot)
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+          if [[ "${GITHUB_REF}" == refs/tags/v* && "${GITHUB_REF_NAME#v}" != "$v" ]]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match application/config/version $v" >&2
+            exit 1
           fi
 
-          "$FPM" \
-            -s dir \
-            --force \
-            -t rpm \
-            --name "program-manager" \
-            --version "$VERSION" \
-            --architecture "${{ matrix.rpm_arch }}" \
-            --description "$DESCRIPTION" \
-            --url "https://github.com/goshitsarch-eng/Gosh-Retro-Launcher" \
-            --license "AGPL-3.0-only" \
-            --rpm-summary "Windows 3.1 Program Manager clone" \
-            --rpm-os linux \
-            -d gtk3 \
-            -d libnotify \
-            -d nss \
-            -d libXScrnSaver \
-            -d xdg-utils \
-            -d at-spi2-core \
-            -p "dist/program-manager-${VERSION}.${{ matrix.rpm_arch }}.rpm" \
-            "dist/${{ matrix.unpack_dir }}/=/opt/program-manager"
+      - name: Install runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfontconfig1 libx11-6 libxcursor1 libxi6 libxinerama1 libxrandr2 libgl1 libasound2t64
+
+      - name: Install Godot
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable"
+          curl -fsSL -o godot.zip "$base/Godot_v${GODOT_VERSION}-stable_linux.${{ matrix.arch }}.zip"
+          unzip -q godot.zip
+          sudo install -m 0755 "Godot_v${GODOT_VERSION}-stable_linux.${{ matrix.arch }}" /usr/local/bin/godot
+          godot --version
+
+      - name: Cache export templates
+        id: templates
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable
+          key: godot-templates-linux-${{ env.GODOT_VERSION }}
+
+      - name: Install export templates
+        if: steps.templates.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable"
+          curl -fsSL -o templates.tpz "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          dest="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$dest"
+          unzip -q -j templates.tpz 'templates/linux_release.*' 'templates/version.txt' -d "$dest"
+          ls -l "$dest"
+
+      - name: Import project
+        run: godot --headless --path . --import || true
+
+      - name: Unit tests
+        if: matrix.arch == 'x86_64'
+        run: |
+          godot --headless --path . --script tests/run_tests.gd 2>&1 | tee test.log
+          if grep -E "SCRIPT ERROR|Parse Error|FAILED TO LOAD" test.log; then exit 2; fi
+          grep -E "^[0-9]+ tests, 0 failed" test.log
+
+      - name: Export
+        run: |
+          set -euo pipefail
+          mkdir -p "build/linux-${{ matrix.arch }}"
+          godot --headless --path . --export-release "${{ matrix.preset }}" "build/linux-${{ matrix.arch }}/program-manager"
+          test -x "build/linux-${{ matrix.arch }}/program-manager"
+
+      - name: Package (tar.gz, deb)
+        run: tools/package_linux.sh "${{ matrix.arch }}" "$VERSION" "build/linux-${{ matrix.arch }}/program-manager" dist
 
       - name: Upload Debian package
         uses: actions/upload-artifact@v4
         with:
           name: linux-deb-${{ matrix.arch }}
           path: dist/*.deb
-          retention-days: 30
-
-      - name: Upload RPM package
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-rpm-${{ matrix.arch }}
-          path: dist/*.rpm
-          retention-days: 30
-
-      - name: Upload AppImage package
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-appimage-${{ matrix.arch }}
-          path: dist/*.AppImage
           retention-days: 30
 
       - name: Upload tar.gz package
@@ -129,7 +117,5 @@ jobs:
         with:
           files: |
             dist/*.deb
-            dist/*.rpm
-            dist/*.AppImage
             dist/*.tar.gz
           fail_on_unmatched_files: true
