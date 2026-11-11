@@ -58,6 +58,10 @@ func init_store() -> void:
 			raw = parsed[1]
 	data = Migration.migrate_store_data(raw)
 	_write_store()
+	# Backups written by older builds inherited the umask; tighten them too.
+	if DirAccess.dir_exists_absolute(backup_dir()):
+		for f in DirAccess.get_files_at(backup_dir()):
+			_restrict_to_owner(backup_dir().path_join(f))
 
 
 func _write_store() -> bool:
@@ -67,6 +71,7 @@ func _write_store() -> bool:
 	if f == null:
 		push_error("Cannot write %s: %s" % [tmp, error_string(FileAccess.get_open_error())])
 		return false
+	_restrict_to_owner(tmp)
 	f.store_string(Jsonx.stringify(data, "\t"))
 	f.close()
 	var err := DirAccess.rename_absolute(tmp, store_path())
@@ -77,12 +82,20 @@ func _write_store() -> bool:
 	return err == OK
 
 
+## Items may carry environment variables (tokens, keys), so the store and its backups are made
+## owner-only on POSIX instead of inheriting the umask (typically world-readable 0644).
+static func _restrict_to_owner(path: String) -> void:
+	if OS.get_name() == "Windows":
+		return
+	FileAccess.set_unix_permissions(path, FileAccess.UNIX_READ_OWNER | FileAccess.UNIX_WRITE_OWNER)
+
+
 func get_groups() -> Array:
 	return data.get("groups", []).duplicate(true)
 
 
 func set_groups(groups: Array) -> void:
-	create_backup(get_all_data(), "groups-changed")
+	_auto_backup("groups-changed")
 	data["groups"] = Jsonx.clone(groups)
 	_write_store()
 
@@ -96,7 +109,7 @@ func get_settings() -> Dictionary:
 
 
 func set_settings(settings: Dictionary) -> void:
-	create_backup(get_all_data(), "settings-changed")
+	_auto_backup("settings-changed")
 	var merged := Types.default_settings()
 	for k in settings:
 		merged[k] = Jsonx.clone(settings[k])
@@ -109,7 +122,7 @@ func get_workspace_profiles() -> Array:
 
 
 func set_workspace_profiles(profiles: Array) -> void:
-	create_backup(get_all_data(), "profiles-changed")
+	_auto_backup("profiles-changed")
 	data["workspaceProfiles"] = Jsonx.clone(profiles)
 	_write_store()
 
@@ -191,10 +204,22 @@ func _prune_backups() -> void:
 		DirAccess.remove_absolute(backup_dir().path_join(all[i].id))
 
 
+func _auto_backup_throttled(now: int) -> bool:
+	return _last_auto_backup_ms != 0 and now - _last_auto_backup_ms < AUTO_BACKUP_INTERVAL_MS
+
+
+## Throttled backup before an edit. The throttle is checked before snapshotting so the common
+## (throttled) save does not deep-copy and re-migrate the whole store for nothing.
+func _auto_backup(reason: String) -> void:
+	if _auto_backup_throttled(int(Time.get_unix_time_from_system() * 1000.0)):
+		return
+	create_backup(get_all_data(), reason)
+
+
 ## Returns the BackupInfo dictionary, or {} when throttled/unwritable.
 func create_backup(payload: Dictionary, reason: String, force: bool = false) -> Dictionary:
 	var now := int(Time.get_unix_time_from_system() * 1000.0)
-	if not force and now - _last_auto_backup_ms < AUTO_BACKUP_INTERVAL_MS and _last_auto_backup_ms != 0:
+	if not force and _auto_backup_throttled(now):
 		return {}
 	if not force:
 		_last_auto_backup_ms = now
@@ -205,6 +230,7 @@ func create_backup(payload: Dictionary, reason: String, force: bool = false) -> 
 	var f := FileAccess.open(backup_dir().path_join(id), FileAccess.WRITE)
 	if f == null:
 		return {}
+	_restrict_to_owner(backup_dir().path_join(id))
 	f.store_string(text)
 	f.close()
 	_prune_backups()

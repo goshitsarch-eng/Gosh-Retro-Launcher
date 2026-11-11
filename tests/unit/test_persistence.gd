@@ -210,3 +210,36 @@ func test_workspace_profiles() -> void:
 	expect_eq(s.workspace_profiles.size(), 0)
 	s.free()
 	_rm(dir)
+
+
+func test_store_and_backups_are_owner_only_on_posix() -> void:
+	if OS.get_name() == "Windows":
+		return
+	var dir := _tmp()
+	var p := Persistence.new(dir)
+	# A backup left behind by an older build with world-readable permissions.
+	DirAccess.make_dir_recursive_absolute(p.backup_dir())
+	var old_backup := p.backup_dir().path_join("2024-01-01T00-00-00-000Z--old.json")
+	var f := FileAccess.open(old_backup, FileAccess.WRITE)
+	f.store_string("{}")
+	f.close()
+	FileAccess.set_unix_permissions(old_backup, FileAccess.UNIX_READ_OWNER | FileAccess.UNIX_WRITE_OWNER | FileAccess.UNIX_READ_GROUP | FileAccess.UNIX_READ_OTHER)
+	p.init_store()
+	var owner_rw := FileAccess.UNIX_READ_OWNER | FileAccess.UNIX_WRITE_OWNER
+	expect_eq(FileAccess.get_unix_permissions(p.store_path()), owner_rw, "store file")
+	expect_eq(FileAccess.get_unix_permissions(old_backup), owner_rw, "pre-existing backup tightened")
+	var info := p.create_backup(p.get_all_data(), "manual", true)
+	expect_eq(FileAccess.get_unix_permissions(p.backup_dir().path_join(info.id)), owner_rw, "backup file")
+	_rm(dir)
+
+
+func test_throttled_auto_backup_skips_snapshot_but_still_saves() -> void:
+	var dir := _tmp()
+	var p := Persistence.new(dir)
+	p.init_store()
+	p.set_groups([])
+	var first := p.list_backups().size()
+	p.set_settings(p.get_settings())  # inside the 30 s window: no second auto backup
+	expect_eq(p.list_backups().size(), first)
+	expect_eq(p.get_settings().shell, "win31")
+	_rm(dir)

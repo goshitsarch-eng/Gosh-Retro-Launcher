@@ -23,7 +23,8 @@ func prepare() -> void:
 	view = args.get("capture", "workspace")
 	var profile := OS.get_environment("PM_USER_DATA")
 	if profile == "":
-		profile = "%s/pm-capture-%d" % [OS.get_environment("TMPDIR") if OS.get_environment("TMPDIR") != "" else "/tmp", OS.get_process_id()]
+		# Per-user cache dir, not a predictable name in the world-writable /tmp (symlink planting).
+		profile = OS.get_cache_dir().path_join("program-manager-capture-%d" % OS.get_process_id())
 		OS.set_environment("PM_USER_DATA", profile)
 	DirAccess.make_dir_recursive_absolute(profile)
 	var f := FileAccess.open(profile.path_join("program-manager-data.json"), FileAccess.WRITE)

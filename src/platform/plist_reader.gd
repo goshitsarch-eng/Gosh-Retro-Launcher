@@ -4,6 +4,11 @@ extends RefCounted
 ## string/integer/real/true/false values) and binary `bplist00` files (string/int/real/bool/
 ## dict/array/data). Returns {} for anything unreadable.
 
+## Objects materialized per binary plist. References may be shared, so a small file can describe an
+## exponentially large tree (array of N refs to an array of N refs ...); real Info.plists hold a
+## few hundred objects.
+const MAX_OBJECTS := 50000
+
 
 static func parse(bytes: PackedByteArray) -> Dictionary:
 	if bytes.size() >= 8 and bytes.slice(0, 6).get_string_from_ascii() == "bplist":
@@ -65,12 +70,12 @@ static func _parse_binary(b: PackedByteArray) -> Variant:
 	var table := _be(b, t + 24, 8)
 	if offset_size < 1 or offset_size > 8 or ref_size < 1 or ref_size > 8 or count <= 0 or count > 100000:
 		return null
-	if table + count * offset_size > t:
+	if table < 8 or top < 0 or table + count * offset_size > t:
 		return null
 	var offsets := []
 	for i in count:
 		offsets.append(_be(b, table + i * offset_size, offset_size))
-	return _read_object(b, offsets, ref_size, top, 0)
+	return _read_object(b, offsets, ref_size, top, 0, [MAX_OBJECTS])
 
 
 static func _read_length(b: PackedByteArray, pos: int, info: int) -> Array:
@@ -86,9 +91,11 @@ static func _read_length(b: PackedByteArray, pos: int, info: int) -> Array:
 	return [_be(b, pos + 2, n), pos + 2 + n]
 
 
-static func _read_object(b: PackedByteArray, offsets: Array, ref_size: int, index: int, depth: int) -> Variant:
-	if depth > 16 or index < 0 or index >= offsets.size():
+## `budget` is a one-element Array shared across the whole parse (remaining objects).
+static func _read_object(b: PackedByteArray, offsets: Array, ref_size: int, index: int, depth: int, budget: Array) -> Variant:
+	if depth > 16 or index < 0 or index >= offsets.size() or budget[0] <= 0:
 		return null
+	budget[0] -= 1
 	var pos: int = offsets[index]
 	if pos < 8 or pos >= b.size():
 		return null
@@ -134,9 +141,11 @@ static func _read_object(b: PackedByteArray, offsets: Array, ref_size: int, inde
 			var arr := []
 			for i in l4[0]:
 				var ro: int = l4[1] + i * ref_size
-				if ro + ref_size > b.size():
+				if ro < 0 or ro + ref_size > b.size():
 					break
-				arr.append(_read_object(b, offsets, ref_size, _be(b, ro, ref_size), depth + 1))
+				if budget[0] <= 0:
+					break
+				arr.append(_read_object(b, offsets, ref_size, _be(b, ro, ref_size), depth + 1, budget))
 			return arr
 		0xD:
 			var l5 := _read_length(b, pos, info)
@@ -144,10 +153,12 @@ static func _read_object(b: PackedByteArray, offsets: Array, ref_size: int, inde
 			for i in l5[0]:
 				var ko: int = l5[1] + i * ref_size
 				var vo: int = l5[1] + (l5[0] + i) * ref_size
-				if vo + ref_size > b.size():
+				if ko < 0 or vo < 0 or vo + ref_size > b.size():
 					break
-				var k: Variant = _read_object(b, offsets, ref_size, _be(b, ko, ref_size), depth + 1)
+				if budget[0] <= 0:
+					break
+				var k: Variant = _read_object(b, offsets, ref_size, _be(b, ko, ref_size), depth + 1, budget)
 				if k is String:
-					dict[k] = _read_object(b, offsets, ref_size, _be(b, vo, ref_size), depth + 1)
+					dict[k] = _read_object(b, offsets, ref_size, _be(b, vo, ref_size), depth + 1, budget)
 			return dict
 	return null

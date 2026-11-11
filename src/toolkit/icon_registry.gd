@@ -65,6 +65,16 @@ static func default_item_texture() -> Texture2D:
 	return builtin_texture(DEFAULT_ID)
 
 
+static var _drive_regex: RegEx
+
+
+## "^[a-zA-Z]:/" compiled once (icon sources are resolved while drawing).
+static func _drive_re() -> RegEx:
+	if _drive_regex == null:
+		_drive_regex = RegEx.create_from_string("^[a-zA-Z]:/")
+	return _drive_regex
+
+
 ## Port of getIconSrc: returns the source string for an icon value without loading it.
 ## Built-ins/legacy names -> their res:// path; data:/http(s) URLs and file URLs/paths as the TS did
 ## (Windows paths become file:/// URLs, UNC paths file:// URLs, unix paths unchanged);
@@ -81,9 +91,7 @@ static func get_icon_src(icon: String) -> String:
 	if icon.begins_with("file://"):
 		return icon
 	var normalized := icon.replace("\\", "/")
-	var re := RegEx.new()
-	re.compile("^[a-zA-Z]:/")
-	if re.search(normalized) != null:
+	if _drive_re().search(normalized) != null:
 		return "file:///" + normalized
 	if normalized.begins_with("//"):
 		return "file:" + normalized
@@ -97,9 +105,7 @@ static func file_url_to_path(url: String) -> String:
 	var rest := url.trim_prefix("file:").uri_decode()
 	if rest.begins_with("///"):
 		rest = rest.substr(2)  # "/C:/x" or "/usr/x"
-		var re := RegEx.new()
-		re.compile("^/[a-zA-Z]:/")
-		if re.search(rest) != null:
+		if _drive_re().search(rest.substr(1)) != null:  # rest starts with "/" here
 			rest = rest.substr(1)
 		return rest
 	return rest  # "//host/share/x" stays a UNC path

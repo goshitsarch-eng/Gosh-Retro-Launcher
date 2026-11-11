@@ -40,6 +40,8 @@ func focus_window(group_id: String) -> void:
 
 
 func set_active_window(group_id: String) -> void:
+	if active_window_id == group_id:
+		return  # sync_mdi_state() calls this on every refresh; an unchanged value must not rebuild menus
 	active_window_id = group_id
 	windows_changed.emit()
 

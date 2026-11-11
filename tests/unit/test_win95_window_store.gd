@@ -101,3 +101,32 @@ func test_focus_raises_z_order_and_close_activates_the_next_visible_window() -> 
 	expect_eq(w.active_window_id, "")
 	expect_eq(w.by_z().size(), 0)
 	store.free()
+
+
+func test_focusing_the_active_topmost_window_is_a_no_op() -> void:
+	var made := _make()
+	var store: Node = made[0]
+	var w: Win95WindowStore = made[1]
+	w.open_group("one")
+	w.open_group("two")
+	var count := [0]
+	w.changed.connect(func(): count[0] += 1)
+	w.focus_window("group:two")
+	expect_eq(count[0], 0, "already active and on top: no resync/repaint")
+	w.focus_window("group:one")
+	expect_eq(count[0], 1)
+	expect_eq(w.active_window_id, "group:one")
+	expect(w.find_entry("group:one").zIndex > w.find_entry("group:two").zIndex)
+	store.free()
+
+
+func test_mdi_active_window_only_notifies_on_change() -> void:
+	var before := MdiState.active_window_id
+	var count := [0]
+	var cb := func(): count[0] += 1
+	MdiState.windows_changed.connect(cb)
+	MdiState.set_active_window("pm-test-x")
+	MdiState.set_active_window("pm-test-x")
+	expect_eq(count[0], 1)
+	MdiState.windows_changed.disconnect(cb)
+	MdiState.active_window_id = before

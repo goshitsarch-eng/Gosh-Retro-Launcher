@@ -425,3 +425,105 @@ func test_load_any_sniffs_formats() -> void:
 	expect_null(IconImage.load_any("not an image at all".to_utf8_buffer()))
 	expect_null(IconImage.load_any(PackedByteArray()))
 	expect_null(IconImage.load_file("/nonexistent/none.png"))
+
+
+# --------------------------------------------------------------------------- hostile input
+
+func _png_header(w: int, h: int) -> PackedByteArray:
+	var b := PackedByteArray([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13])
+	b.append_array("IHDR".to_ascii_buffer())
+	for v in [w, h]:
+		b.append_array(PackedByteArray([(v >> 24) & 0xff, (v >> 16) & 0xff, (v >> 8) & 0xff, v & 0xff]))
+	b.append_array(PackedByteArray([8, 6, 0, 0, 0, 0, 0, 0, 0]))
+	return b
+
+
+func test_declared_image_sizes_are_read_without_decoding() -> void:
+	var img := PlatformFixtures.quad(24)
+	img.resize(37, 21, Image.INTERPOLATE_NEAREST)
+	expect_eq(IconImage.declared_size(img.save_png_to_buffer()), [37, 21], "png")
+	expect_eq(IconImage.declared_size(img.save_jpg_to_buffer()), [37, 21], "jpeg")
+	expect_eq(IconImage.declared_size(img.save_webp_to_buffer(false)), [37, 21], "webp lossless")
+	expect_eq(IconImage.declared_size(img.save_webp_to_buffer(true, 0.8)), [37, 21], "webp lossy")
+	var bmp := PackedByteArray([0x42, 0x4D])
+	bmp.resize(54)
+	bmp.encode_u32(14, 40)
+	bmp.encode_s32(18, 37)
+	bmp.encode_s32(22, -21)
+	expect_eq(IconImage.declared_size(bmp), [37, 21], "top-down bmp")
+	expect_eq(IconImage.declared_size("not an image".to_ascii_buffer()), [])
+
+
+func test_decompression_bombs_are_refused_before_decoding() -> void:
+	var bomb := _png_header(100000, 100000)
+	expect(not IconImage.size_ok(bomb, IconImage.MAX_IMAGE_PIXELS))
+	expect(not IcoFile.png_size_ok(bomb, IcoFile.MAX_ICON_PNG_PIXELS))
+	expect(not IcoFile.png_size_ok(_png_header(0xFFFFFFFF, 0xFFFFFFFF), IcoFile.MAX_ICON_PNG_PIXELS), "no 64-bit overflow")
+	expect_null(IconImage.load_any(bomb))
+	expect_null(IcoFile.decode_image_data(bomb))
+	var url := "data:image/png;base64," + Marshalls.raw_to_base64(bomb)
+	expect_null(Assets.from_data_url(url), "persisted data-URL icon")
+	var ok_url := "data:image/png;base64," + Marshalls.raw_to_base64(PlatformFixtures.quad(32).save_png_to_buffer())
+	expect(Assets.from_data_url(ok_url) != null, "normal icons still decode")
+	expect(IcoFile.png_size_ok(PlatformFixtures.quad(256).save_png_to_buffer(), IcoFile.MAX_ICON_PNG_PIXELS))
+	var huge_svg := '<svg xmlns="http://www.w3.org/2000/svg" width="200000" height="200000"><rect width="10" height="10"/></svg>'.to_utf8_buffer()
+	expect(not IconImage.svg_size_ok(huge_svg, IconImage.MAX_IMAGE_PIXELS))
+	expect_null(IconImage.load_svg(huge_svg))
+	var small_svg := '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="10" height="10"/></svg>'.to_utf8_buffer()
+	expect(IconImage.load_svg(small_svg) != null, "normal svg still loads")
+
+
+func test_pe_icon_resources_are_spans_and_decode_attempts_are_bounded() -> void:
+	var pe := PlatformFixtures.build_pe([[{"image": PlatformFixtures.quad(16), "bpp": 32}]])
+	var rs: Dictionary = PeIcon._read_resource_section(_pe_source(pe))
+	var res := PeIcon._collect_icon_resources(rs.data, rs.rva)
+	expect(res.groups.size() == 1 and res.groups[0] is Array, "groups are [offset, size] spans")
+	for id in res.icons:
+		expect(res.icons[id] is Array, "icons are spans, not copies")
+	# A group listing 256 entries that all reference an undecodable icon spends the shared budget
+	# instead of attempting 256 (x 4096 groups) decodes.
+	var junk := PackedByteArray()
+	junk.resize(64)
+	var group := PackedByteArray([0, 0, 1, 0, 0, 1])  # reserved, type 1, count 256
+	for i in 256:
+		group.append_array(PackedByteArray([32, 32, 0, 0, 1, 0, 32, 0, 64, 0, 0, 0, 7, 0]))
+	var budget := [PeIcon.MAX_DECODE_ATTEMPTS]
+	expect_null(PeIcon._best_from_group(group, junk, {7: [0, 64]}, budget))
+	expect_eq(budget[0], 0, "attempts stop at the budget")
+
+
+func _pe_source(pe: PackedByteArray) -> PeIcon.Source:
+	var src := PeIcon.Source.new()
+	src.bytes = pe
+	src.length = pe.size()
+	return src
+
+
+func test_binary_plist_with_shared_references_cannot_explode() -> void:
+	# obj0 = {"k": obj2}; obj2..obj17 = arrays of 8 refs to the next array; obj18 = 1.
+	# Fully expanded that is 8^16 nodes; the reader must stop at its object budget.
+	var b := "bplist00".to_ascii_buffer()
+	var offsets := []
+	offsets.append(b.size())
+	b.append_array(PackedByteArray([0xD1, 1, 2]))
+	offsets.append(b.size())
+	b.append_array(PackedByteArray([0x51, 0x6B]))
+	for i in range(2, 18):
+		offsets.append(b.size())
+		b.append(0xA8)
+		for _r in 8:
+			b.append(i + 1)
+	offsets.append(b.size())
+	b.append_array(PackedByteArray([0x10, 1]))
+	var table := b.size()
+	for o in offsets:
+		b.append_array(PackedByteArray([(o >> 8) & 0xff, o & 0xff]))
+	var trailer := PackedByteArray([0, 0, 0, 0, 0, 0, 2, 1])
+	for v in [offsets.size(), 0, table]:
+		for k in range(7, -1, -1):
+			trailer.append((v >> (k * 8)) & 0xff)
+	b.append_array(trailer)
+	var t0 := Time.get_ticks_msec()
+	var d := PlistReader.parse(b)
+	expect(Time.get_ticks_msec() - t0 < 5000, "terminates promptly")
+	expect(d.has("k"), "still returns the readable top level")

@@ -25,6 +25,7 @@ const CONNECT_TIMEOUT_MS := 400
 const REPLY_TIMEOUT_MS := 600
 const POLL_INTERVAL := 0.2
 const MAX_LINE := 512
+const MAX_CLIENTS := 8  ## a real second instance needs one; the handshake takes milliseconds
 
 var profile := ""
 var port := 0
@@ -143,8 +144,12 @@ func poll() -> void:
 		return
 	while _server.is_connection_available():
 		var peer := _server.take_connection()
-		if peer != null:
-			_clients.append({"peer": peer, "buf": PackedByteArray(), "started": Time.get_ticks_msec()})
+		if peer == null:
+			continue
+		if _clients.size() >= MAX_CLIENTS:
+			peer.disconnect_from_host()  # any local process can connect; don't let it queue unbounded peers
+			continue
+		_clients.append({"peer": peer, "buf": PackedByteArray(), "started": Time.get_ticks_msec()})
 	var keep := []
 	for c in _clients:
 		var peer2: StreamPeerTCP = c.peer

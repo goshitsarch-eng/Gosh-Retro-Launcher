@@ -370,7 +370,7 @@ func test_powershell_launch_payload_and_encoding() -> void:
 	expect(not decoded.contains("$args"), "does not rely on $args (unset under -Command)")
 	var payload: Dictionary = JSON.parse_string(l.env.GOSH_LAUNCH)
 	expect_eq(payload.file, "C:\\Program Files\\App\\app.exe")
-	expect_eq(payload.args, ["--name", "John Smith", "say \"hi\""])
+	expect_eq(payload.argline, '--name "John Smith" "say \\"hi\\""', "arguments pre-quoted for CommandLineToArgvW")
 	expect_eq(payload.style, "Minimized")
 	expect_eq(payload.cwd, "C:\\Work Dir")
 	expect_eq(payload.env, {"FOO": "bar baz"})
@@ -396,7 +396,7 @@ func test_posix_launch_applies_cwd_env_and_arguments() -> void:
 	expect(out.begins_with("bar|two words|"), "got: " + out)
 	expect(out.strip_edges().ends_with(dir.get_file()), "cwd honoured")
 	# Missing working directory is reported instead of silently doing nothing.
-	var missing := Launcher.launch_program({"id": "i", "name": "t", "path": "/bin/true", "icon": "default", "workingDir": "/definitely/not/here"})
+	var missing := Launcher.launch_program({"id": "i", "name": "t", "path": "/bin/sh", "icon": "default", "workingDir": "/definitely/not/here"})
 	expect_eq(missing.success, false)
 	expect(String(missing.error).contains("Working directory"))
 	# Nonexistent program.
@@ -410,3 +410,25 @@ func test_platform_launch_validates_payload() -> void:
 	var r := await Platform.launch_batch([{"nope": true}], 0)
 	expect_eq(r[0].success, false)
 	expect_eq(Platform.version(), "2.0.0")
+
+
+func test_posix_launch_env_names_and_paths_are_not_options() -> void:
+	if Launcher.platform() == "win32":
+		return
+	var dir := PlatformFixtures.tmp_dir()
+	# A program whose path contains '=' run with a working directory: the old `env "$@"` wrapper
+	# parsed it as an assignment; an env name with a leading dash was parsed as an env(1) option.
+	var script := dir.path_join("a=b.sh")
+	PlatformFixtures.write_text(script, "#!/bin/sh\necho \"$FOO|$PWD\" > out.txt\n")
+	FileAccess.set_unix_permissions(script, FileAccess.UNIX_READ_OWNER | FileAccess.UNIX_WRITE_OWNER | FileAccess.UNIX_EXECUTE_OWNER)
+	var had_sentinel := OS.has_environment("PM_TEST_SENTINEL")
+	var item := {"id": "i", "name": "t", "path": script, "icon": "default", "workingDir": dir,
+		"environment": "-i=1\nFOO=bar\nPM_TEST_SENTINEL=1"}
+	expect_eq(Launcher.launch_program(item), {"success": true})
+	var out := await _wait_for_file(dir.path_join("out.txt"))
+	expect(out.begins_with("bar|"), "got: " + out)
+	expect(out.strip_edges().ends_with(dir.get_file()), "cwd honoured")
+	expect_eq(OS.has_environment("PM_TEST_SENTINEL"), had_sentinel, "env additions do not leak into the launcher")
+	expect_eq(Launcher._invalid_env_key({"A=B": "1"}), "A=B")
+	expect_eq(Launcher._invalid_env_key({"OK": "1", "-x": "2"}), "")
+	PlatformFixtures.rm_rf(dir)

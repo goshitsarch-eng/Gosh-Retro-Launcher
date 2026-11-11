@@ -75,6 +75,13 @@ func _top_visible(excluded_id: String = "") -> String:
 	return String(best.id) if not best.is_empty() else ""
 
 
+func _is_topmost(entry: Dictionary) -> bool:
+	for e in windows:
+		if e.id != entry.id and int(e.zIndex) >= int(entry.zIndex):
+			return false
+	return true
+
+
 func _bring_to_front(id: String, z: int) -> void:
 	for e in windows:
 		if e.id == id:
@@ -138,6 +145,8 @@ func focus_window(id: String) -> void:
 	var target := find_entry(id)
 	if target.is_empty() or entry_is_minimized(target):
 		return
+	if active_window_id == id and _is_topmost(target):
+		return  # every click in a window lands here; don't resync the desktop + repaint the taskbar
 	_bring_to_front(id, next_z_index)
 	active_window_id = id
 	next_z_index += 1

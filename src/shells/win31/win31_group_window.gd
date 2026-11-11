@@ -321,6 +321,11 @@ func _motion(ev: InputEventMouseMotion) -> void:
 		var x := maxf(0.0, minf(cs.x - float(st.width), float(st.x) + delta.x))
 		var y := maxf(0.0, minf(cs.y - Win31Arrange.CAPTION_KEEP_VISIBLE, float(st.y) + delta.y))
 		_live = {"x": Win31Arrange.js_round(x), "y": Win31Arrange.js_round(y), "width": st.width, "height": st.height}
+		# A move only changes the position: nothing drawn depends on it (patterns are anchored to
+		# local coordinates), so skip the full re-layout + window/grid repaint per mouse event.
+		position = Vector2(float(_live.x), float(_live.y))
+		accept_event()
+		return
 	else:
 		_live = Win31Arrange.resize_rect(_op.dir, st, delta, cs.x, cs.y)
 	apply_state()

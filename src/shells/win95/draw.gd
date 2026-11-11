@@ -254,10 +254,51 @@ static func texture_image(tex: Texture2D) -> Image:
 
 ## Draws the selected-state dither of an icon (50% blend look) over a drawn icon texture.
 static func icon_selection(ci: CanvasItem, tex: Texture2D, pos: Vector2, color: Color) -> void:
+	if pos == pos.floor():
+		var mask := selection_mask(tex)
+		if mask != null:
+			ci.draw_texture(mask, pos, color)  # white texels x color == the per-pixel rects below
+			return
 	var img := texture_image(tex)
 	if img == null:
 		return
 	dither_sparse(ci, Rect2(pos, tex.get_size()), pos, color, img, pos)
+
+
+## texture RID id -> {tex: WeakRef, mask: ImageTexture}
+static var _selection_masks := {}
+
+
+## White-on-transparent texture of the dither_sparse() pattern (odd x, even y, where the icon is
+## opaque), built once per icon. Drawing it modulated is pixel-identical to the per-pixel loop,
+## which costs w*h iterations + get_pixel calls per selected icon on every redraw (marquee drags
+## redraw on every mouse move).
+static func selection_mask(tex: Texture2D) -> Texture2D:
+	if tex == null:
+		return null
+	var key := tex.get_rid().get_id()
+	var hit: Variant = _selection_masks.get(key)
+	if hit != null and hit.tex.get_ref() == tex:
+		return hit.mask
+	var img := texture_image(tex)
+	if img == null:
+		return null
+	var w := int(tex.get_size().x)
+	var h := int(tex.get_size().y)
+	if w <= 0 or h <= 0:
+		return null
+	var m := Image.create_empty(w, h, false, Image.FORMAT_RGBA8)
+	var y := 0
+	while y < h:
+		var x := 1
+		while x < w:
+			if _mask_alpha(img, x, y):
+				m.set_pixel(x, y, Color.WHITE)
+			x += 2
+		y += 2
+	var mask := ImageTexture.create_from_image(m)
+	_selection_masks[key] = {"tex": weakref(tex), "mask": mask}
+	return mask
 
 
 static func icon(ci: CanvasItem, tex: Texture2D, pos: Vector2, modulate: Color = Color.WHITE) -> void:

@@ -40,12 +40,19 @@ static func icon_id(icon: String) -> String:
 
 
 ## Resource path of the 32px (logical size) catalog image for an icon string.
+## Memoized: called for every visible icon on every redraw, and the optional local pack cannot
+## appear or vanish while the app runs, so the filesystem is probed once per id.
+static var _catalog_paths := {}
+
+
 static func catalog_path(icon: String) -> String:
 	var id := icon_id(icon)
+	if _catalog_paths.has(id):
+		return _catalog_paths[id]
 	var local := "res://assets/wfw-rtm-local/%s-32.png" % id
-	if FileAccess.file_exists(local) or ResourceLoader.exists(local):
-		return local
-	return "res://assets/wfw/%s-32.png" % id
+	var path := local if (FileAccess.file_exists(local) or ResourceLoader.exists(local)) else "res://assets/wfw/%s-32.png" % id
+	_catalog_paths[id] = path
+	return path
 
 
 ## Texture for an icon string (never null for catalog icons; external icons that fail to decode

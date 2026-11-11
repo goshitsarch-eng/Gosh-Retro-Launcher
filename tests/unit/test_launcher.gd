@@ -55,3 +55,22 @@ func test_desktop_file_parsing() -> void:
 
 func test_lnk_rejects_garbage() -> void:
 	expect_eq(LnkFile.parse(PackedByteArray([1, 2, 3])), {})
+
+
+func test_windows_argument_quoting_round_trips_through_argv_rules() -> void:
+	expect_eq(Launcher.quote_windows_arg("plain"), "plain")
+	expect_eq(Launcher.quote_windows_arg(""), '""', "empty arguments are kept")
+	expect_eq(Launcher.quote_windows_arg("two words"), '"two words"')
+	expect_eq(Launcher.quote_windows_arg('say "hi"'), '"say \\"hi\\""')
+	expect_eq(Launcher.quote_windows_arg("C:\\dir\\"), "C:\\dir\\", "no quoting needed: backslashes literal")
+	# A trailing backslash inside quotes must be doubled or it escapes the closing quote.
+	expect_eq(Launcher.quote_windows_arg("C:\\Program Files\\"), '"C:\\Program Files\\\\"')
+	expect_eq(Launcher.quote_windows_arg('a\\"b c'), '"a\\\\\\"b c"', "backslashes before a quote are doubled + 1")
+	expect_eq(Launcher.windows_command_line(PackedStringArray(["-x", "a b", ""])), '-x "a b" ""')
+
+
+func test_uri_schemes_are_detected_but_drive_letters_are_not() -> void:
+	for bad in ["ms-msdt:/id PCWDiagnostic", "search-ms:query=x", "file:///C:/x.exe", "mailto:a@b", " shell:startup"]:
+		expect(Launcher.has_uri_scheme(bad), bad)
+	for ok in ["C:\\Windows\\notepad.exe", "C:/x.exe", "notepad.exe", "\\\\server\\share\\x.exe", "relative\\a.bat", "/usr/bin/x"]:
+		expect(not Launcher.has_uri_scheme(ok), ok)

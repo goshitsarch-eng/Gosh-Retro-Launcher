@@ -49,10 +49,16 @@ static func filter_named(entries: Array, query: String) -> Array:
 	return out
 
 
+## id -> whether the optional local pack has it (probed once; drawn for every Change Icon cell).
+static var _local_exists := {}
+
+
 static func catalog_texture(id: String) -> Texture2D:
 	var local := "res://assets/wfw-rtm-local/%s-32.png" % id
+	if not _local_exists.has(id):
+		_local_exists[id] = FileAccess.file_exists(local) or ResourceLoader.exists(local)
 	var t: Texture2D = null
-	if FileAccess.file_exists(local) or ResourceLoader.exists(local):
+	if _local_exists[id]:
 		t = Assets.tex(local)
 	if t == null:
 		t = Assets.tex("res://assets/wfw/%s-32.png" % id)

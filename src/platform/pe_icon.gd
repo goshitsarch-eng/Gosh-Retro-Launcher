@@ -10,6 +10,11 @@ const RT_ICON := 3
 const RT_GROUP_ICON := 14
 const MAX_RSRC_READ := 64 * 1024 * 1024
 const MAX_ENTRIES := 4096
+## A single RT_ICON image is at most a few hundred KB (256x256 PNG/DIB); anything larger is bogus.
+const MAX_ICON_BYTES := 8 * 1024 * 1024
+## Decode attempts across all groups: real files succeed on the first or second try, crafted ones
+## could otherwise queue 4096 groups x 256 failing (but expensive) decodes.
+const MAX_DECODE_ATTEMPTS := 32
 
 
 ## Source abstraction: whole buffer or an open file; both expose size() and read_range().
@@ -62,10 +67,13 @@ static func _image_from_source(src: Source) -> Image:
 	if rs.is_empty():
 		return null
 	var res := _collect_icon_resources(rs.data, rs.rva)
-	for group in res.groups:
-		var img := _best_from_group(group, res.icons)
+	var budget := [MAX_DECODE_ATTEMPTS]
+	for gspan in res.groups:
+		var img := _best_from_group(_slice(rs.data, gspan), rs.data, res.icons, budget)
 		if img != null:
 			return img
+		if budget[0] <= 0:
+			break
 	return null
 
 
@@ -127,11 +135,11 @@ static func _read_resource_section(src: Source) -> Dictionary:
 
 
 ## Entries of the resource directory at `off`: [{id, named, target, is_dir}].
-static func _dir_entries(rs: PackedByteArray, off: int) -> Array:
+static func _dir_entries(rs: PackedByteArray, off: int, limit: int = MAX_ENTRIES) -> Array:
 	var out := []
 	if off < 0 or off + 16 > rs.size():
 		return out
-	var n := mini(_u16(rs, off + 12) + _u16(rs, off + 14), MAX_ENTRIES)
+	var n := mini(_u16(rs, off + 12) + _u16(rs, off + 14), limit)
 	for i in n:
 		var eo := off + 16 + i * 8
 		if eo + 8 > rs.size():
@@ -147,51 +155,57 @@ static func _dir_entries(rs: PackedByteArray, off: int) -> Array:
 	return out
 
 
-## Reads the first data leaf below a (sub)directory entry. Returns the raw resource bytes or empty.
-static func _leaf_data(rs: PackedByteArray, rva_base: int, entry: Dictionary) -> PackedByteArray:
+## Locates the first data leaf below a (sub)directory entry. Returns [offset, size] into `rs`
+## or [] when there is none. Spans (not slices) are collected so a crafted directory with
+## thousands of entries aliasing one huge range cannot multiply memory use.
+static func _leaf_span(rs: PackedByteArray, rva_base: int, entry: Dictionary) -> Array:
 	var node := entry
 	var depth := 0
 	while node.is_dir and depth < 4:
-		var kids := _dir_entries(rs, int(node.target))
+		var kids := _dir_entries(rs, int(node.target), 1)
 		if kids.is_empty():
-			return PackedByteArray()
+			return []
 		node = kids[0]
 		depth += 1
 	if node.is_dir:
-		return PackedByteArray()
+		return []
 	var de := int(node.target)
 	if de + 16 > rs.size():
-		return PackedByteArray()
+		return []
 	var rva := _u32(rs, de)
 	var size := _u32(rs, de + 4)
 	var rel := rva - rva_base
-	if rel < 0 or size <= 0 or rel + size > rs.size():
-		return PackedByteArray()
-	return rs.slice(rel, rel + size)
+	if rel < 0 or size <= 0 or size > MAX_ICON_BYTES or rel + size > rs.size():
+		return []
+	return [rel, size]
 
 
-## {groups: [PackedByteArray in resource order], icons: {id: PackedByteArray}}
+static func _slice(rs: PackedByteArray, span: Array) -> PackedByteArray:
+	return rs.slice(int(span[0]), int(span[0]) + int(span[1]))
+
+
+## {groups: [[offset, size] in resource order], icons: {id: [offset, size]}} (spans into `rs`)
 static func _collect_icon_resources(rs: PackedByteArray, rva_base: int) -> Dictionary:
-	var groups := []
-	var icons := {}
+	var group_spans := []
+	var icon_spans := {}
 	for t in _dir_entries(rs, 0):
 		if t.named or not t.is_dir:
 			continue
 		if t.id == RT_ICON:
 			for e in _dir_entries(rs, int(t.target)):
-				var data := _leaf_data(rs, rva_base, e)
-				if not data.is_empty() and not e.named:
-					icons[e.id] = data
+				var span := _leaf_span(rs, rva_base, e)
+				if not span.is_empty() and not e.named:
+					icon_spans[e.id] = span
 		elif t.id == RT_GROUP_ICON:
 			for e2 in _dir_entries(rs, int(t.target)):
-				var gdata := _leaf_data(rs, rva_base, e2)
-				if not gdata.is_empty():
-					groups.append(gdata)
-	return {"groups": groups, "icons": icons}
+				var gspan := _leaf_span(rs, rva_base, e2)
+				if not gspan.is_empty():
+					group_spans.append(gspan)
+	return {"groups": group_spans, "icons": icon_spans}
 
 
 ## GRPICONDIR: 6-byte header + 14-byte entries (width, height, colors, 0, planes, bpp, bytes, id).
-static func _best_from_group(group: PackedByteArray, icons: Dictionary) -> Image:
+static func _best_from_group(group: PackedByteArray, rs: PackedByteArray, icons: Dictionary, budget: Array) -> Image:
 	if group.size() < 6 or _u16(group, 2) != 1:
 		return null
 	var count := mini(_u16(group, 4), 256)
@@ -212,7 +226,10 @@ static func _best_from_group(group: PackedByteArray, icons: Dictionary) -> Image
 	for e in entries:
 		if not icons.has(e.id):
 			continue
-		var img := IcoFile.decode_image_data(icons[e.id])
+		if budget[0] <= 0:
+			return null
+		budget[0] -= 1
+		var img := IcoFile.decode_image_data(_slice(rs, icons[e.id]))
 		if img != null:
 			return img
 	return null

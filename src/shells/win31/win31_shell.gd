@@ -245,7 +245,12 @@ func _on_desktop_move(phase: String, delta: Vector2) -> void:
 		persist_desktop_bounds(b)
 	else:
 		desktop_bounds = b
-		_layout()
+		if _desktop_mode() and not desktop_maximized and not _desktop_minimized():
+			# Only the position changes while dragging: a full _layout() would re-lay out and
+			# repaint every group window per mouse event. The "end" phase still does it.
+			pm.position = Vector2(float(b.x), float(b.y))
+		else:
+			_layout()
 
 
 func _on_desktop_resize(phase: String, direction: String, delta: Vector2) -> void:

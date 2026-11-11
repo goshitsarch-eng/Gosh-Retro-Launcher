@@ -7,6 +7,10 @@ extends RefCounted
 
 const PNG_SIGNATURE := [0x89, 0x50, 0x4E, 0x47]
 const MAX_DIM := 1024
+## Largest PNG payload decoded inside an icon container (real entries are <= 1024x1024).
+const MAX_ICON_PNG_PIXELS := 4096 * 4096
+## Decode attempts per .ico (a crafted directory may list 65535 entries).
+const MAX_DECODE_ATTEMPTS := 32
 
 
 static func _u16(b: PackedByteArray, o: int) -> int:
@@ -24,6 +28,16 @@ static func _i32(b: PackedByteArray, o: int) -> int:
 
 static func is_png(data: PackedByteArray) -> bool:
 	return data.size() > 8 and data[0] == 0x89 and data[1] == 0x50 and data[2] == 0x4E and data[3] == 0x47
+
+
+## True when the PNG IHDR is sane and decoding it allocates at most `max_pixels` pixels:
+## a few hundred bytes of PNG can otherwise declare a multi-gigabyte image.
+static func png_size_ok(data: PackedByteArray, max_pixels: int) -> bool:
+	if data.size() < 24 or not is_png(data) or data.slice(12, 16).get_string_from_ascii() != "IHDR":
+		return false
+	var w := (data[16] << 24) | (data[17] << 16) | (data[18] << 8) | data[19]
+	var h := (data[20] << 24) | (data[21] << 16) | (data[22] << 8) | data[23]
+	return w > 0 and h > 0 and w <= max_pixels and h <= max_pixels and w * h <= max_pixels
 
 
 static func is_ico(bytes: PackedByteArray) -> bool:
@@ -69,7 +83,7 @@ static func compare_entries(a: Dictionary, b: Dictionary) -> bool:
 static func best_image(bytes: PackedByteArray) -> Image:
 	var entries := parse_entries(bytes)
 	entries.sort_custom(compare_entries)
-	for e in entries:
+	for e in entries.slice(0, MAX_DECODE_ATTEMPTS):
 		var img := decode_image_data(bytes.slice(int(e.offset), int(e.offset) + int(e.size)))
 		if img != null:
 			return img
@@ -79,6 +93,8 @@ static func best_image(bytes: PackedByteArray) -> Image:
 ## One icon image: PNG or DIB (BITMAPINFOHEADER + pixels + optional AND mask).
 static func decode_image_data(data: PackedByteArray) -> Image:
 	if is_png(data):
+		if not png_size_ok(data, MAX_ICON_PNG_PIXELS):
+			return null
 		var img := Image.new()
 		if img.load_png_from_buffer(data) == OK and not img.is_empty():
 			img.convert(Image.FORMAT_RGBA8)

@@ -5,6 +5,9 @@ extends RefCounted
 
 static var _cache := {}
 
+## Custom icons are 128x128 (or 32x32) PNGs; anything above this is not an icon.
+const MAX_DATA_URL_PIXELS := 4096 * 4096
+
 
 static func tex(path: String) -> Texture2D:
 	if _cache.has(path):
@@ -24,6 +27,13 @@ static func tex(path: String) -> Texture2D:
 static func _from_image_file(path: String) -> Texture2D:
 	if not FileAccess.file_exists(path):
 		return null  # optional files (local icon packs, stale user paths) are expected to be absent
+	if not path.begins_with("res://"):
+		# User-referenced file (stored icon path): check its declared size before decoding it.
+		var f := FileAccess.open(path, FileAccess.READ)
+		if f == null or f.get_length() > IconImage.MAX_IMAGE_BYTES \
+				or not IconImage.size_ok(f.get_buffer(mini(f.get_length(), 64 * 1024)), IconImage.MAX_IMAGE_PIXELS):
+			return null
+		f.close()
 	var img := Image.load_from_file(path)
 	if img == null or img.is_empty():
 		return null
@@ -46,6 +56,12 @@ static func from_data_url(url: String) -> Texture2D:
 			bytes = payload.uri_decode().to_utf8_buffer()
 		var img := Image.new()
 		var err := ERR_FILE_UNRECOGNIZED
+		# Data URLs come from the store (and therefore from imported files) and are decoded on
+		# every start: a few bytes declaring a huge canvas must not allocate it.
+		if not IconImage.size_ok(bytes, MAX_DATA_URL_PIXELS) \
+				or (header.begins_with("image/svg") and not IconImage.svg_size_ok(bytes, MAX_DATA_URL_PIXELS)):
+			_cache[url] = null
+			return null
 		if header.begins_with("image/png"):
 			err = img.load_png_from_buffer(bytes)
 		elif header.begins_with("image/jpeg"):

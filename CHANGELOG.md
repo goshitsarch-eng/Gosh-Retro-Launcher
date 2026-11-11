@@ -21,6 +21,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dropping files onto a WfW group window adds items; dragging an item between WfW group windows moves it (Ctrl copies).
 - Optional local RTM icon/font packs are honored for both shells (`assets/win95-rtm-local`, `assets/wfw-rtm-local`).
 
+### Security
+
+- POSIX launches no longer route through `env(1)`: environment names starting with `-` were parsed as `env` options and a program path containing `=` as an assignment, so the process that ran could differ from the item's path. Environment additions are now applied around the fork, and the `cd` wrapper takes only positional operands.
+- Windows: launch arguments are quoted with the MSVC/`CommandLineToArgvW` rules (a trailing `\` inside quotes no longer swallows the closing quote and merges arguments; empty arguments are kept), matching Node's `spawn`.
+- Windows: item paths with a URI scheme other than http(s) (`ms-msdt:`, `search-ms:`, `file:` ...) are refused instead of being handed to `ShellExecute`, as the http/https-only URL policy intends.
+- Store and backup files are created owner-only (`0600`) on macOS/Linux; items can carry environment variables such as tokens.
+- Hostile icon files can no longer exhaust memory or CPU: PE resource extraction keeps spans instead of copies and caps resource size and decode attempts; binary plists have an object budget (shared references allowed exponential expansion); PNG/JPEG/WebP/BMP/SVG headers are size-checked before decoding, including the data-URL icons decoded from the store at every start.
+- The single-instance listener caps concurrent loopback connections; the capture harness no longer uses a predictable `/tmp` directory.
+
+### Fixed
+
+- Performance: dragging a WfW group window, or Program Manager in desktop mode, moves the window instead of re-laying out and repainting every group on each mouse event; unchanged active-window/focus updates no longer rebuild menus or resync the Win95 desktop and taskbar; selected Win95 icons draw a cached dither mask instead of a per-pixel loop (marquee drags redraw per mouse move); icon pack lookups and icon-path regexes are no longer repeated on every draw; throttled auto-backups skip snapshotting the whole store.
+- The POSIX launch unit test no longer assumes `/bin/true` exists (it does not on macOS).
+
 ### Known differences from 1.x
 
 - The Ctrl/Cmd+Shift+Space shortcut no longer works while the app is in the background (Godot has no OS-wide hotkey API); use the tray's Quick Search item.

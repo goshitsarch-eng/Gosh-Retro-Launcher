@@ -635,8 +635,7 @@ func _motion(mm: InputEventMouseMotion) -> void:
 		_set_outline(_geom_rect(d.kind, d.rect, mm.global_position - d.start))
 		return
 	if _pressed != "":
-		queue_redraw()
-		return
+		return  # the held button is drawn from _pressed alone; moving changes nothing visible
 	mouse_default_cursor_shape = cursor_for_edge(_edge_at(p)) as CursorShape
 	if menu_id != "":
 		var rects := _menubar_rects()

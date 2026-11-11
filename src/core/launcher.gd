@@ -10,6 +10,13 @@ static func is_valid_launch_url(url: String) -> bool:
 	return re.search(url) != null
 
 
+## "scheme:..." with a scheme of 2+ characters (a single letter is a drive: "C:\\x", "C:/x").
+static func has_uri_scheme(value: String) -> bool:
+	var re := RegEx.new()
+	re.compile("^[A-Za-z][A-Za-z0-9+.\\-]+:")
+	return re.search(value.strip_edges()) != null
+
+
 ## Tokenize a shell-like command string, respecting quotes.
 static func tokenize_command(cmd: String) -> PackedStringArray:
 	var tokens := PackedStringArray()
@@ -143,8 +150,10 @@ static func resolve_executable(command: String) -> String:
 	return ""
 
 
-## Detached spawn honouring cwd/env/hidden window. create_process has no cwd/env
-## parameters, so a tiny wrapper (sh / PowerShell) applies them.
+## Detached spawn honouring cwd/env/hidden window. create_process has no cwd/env parameters:
+## on POSIX the env additions are set in this process around the fork (the child inherits them,
+## exactly like Node's spawn({env})) and a tiny /bin/sh wrapper only performs the `cd`; on
+## Windows a PowerShell wrapper applies both.
 static func spawn_detached(command: String, args: PackedStringArray, cwd: String, env_additions: Dictionary) -> Dictionary:
 	if platform() == "win32":
 		if cwd.is_empty() and env_additions.is_empty():
@@ -153,35 +162,108 @@ static func spawn_detached(command: String, args: PackedStringArray, cwd: String
 		return _spawn_powershell(command, args, "", cwd, env_additions)
 	if resolve_executable(command).is_empty():
 		return _fail("Program not found: %s" % command)
-	if cwd.is_empty() and env_additions.is_empty():
-		var pid2 := OS.create_process(command, args)
-		return _ok() if pid2 > 0 else _fail("Failed to spawn %s" % command)
 	if not cwd.is_empty() and not DirAccess.dir_exists_absolute(cwd):
 		return _fail("Working directory not found: %s" % cwd)
-	# POSIX: cd then exec through env(1) so KEY=VALUE additions apply to the child only.
-	var sh_args := PackedStringArray(["-c", 'cd "$1" || exit 1; shift; exec env "$@"', "sh", cwd if not cwd.is_empty() else "."])
-	for k in env_additions:
-		sh_args.append("%s=%s" % [k, env_additions[k]])
-	sh_args.append(command)
-	sh_args.append_array(args)
-	var spid := OS.create_process("/bin/sh", sh_args)
+	var bad_key := _invalid_env_key(env_additions)
+	if bad_key != "":
+		return _fail("Invalid environment variable name: %s" % bad_key)
+	var saved := _push_env(env_additions)
+	var spid: int
+	if cwd.is_empty():
+		spid = OS.create_process(command, args)
+	else:
+		# Positional parameters only: nothing user-supplied is ever parsed as shell text, and
+		# leading dashes cannot be mistaken for options of cd/exec.
+		var sh_args := PackedStringArray(["-c", POSIX_CD_EXEC, "sh", _no_leading_dash(cwd), _no_leading_dash(command)])
+		sh_args.append_array(args)
+		spid = OS.create_process("/bin/sh", sh_args)
+	_pop_env(saved)
 	return _ok() if spid > 0 else _fail("Failed to spawn %s" % command)
+
+
+const POSIX_CD_EXEC := 'cd "$1" || exit 1; shift; exec "$@"'
+
+
+## "-x" -> "./-x" so a relative operand is never parsed as an option.
+static func _no_leading_dash(path: String) -> String:
+	return "./" + path if path.begins_with("-") else path
+
+
+## First key that cannot be an environment variable name (empty or containing '='), or "".
+static func _invalid_env_key(env_additions: Dictionary) -> String:
+	for k in env_additions:
+		var key := String(k)
+		if key.is_empty() or key.contains("="):
+			return key if not key.is_empty() else "(empty)"
+	return ""
+
+
+## Applies env additions to this process; returns what is needed to undo them.
+static func _push_env(env_additions: Dictionary) -> Dictionary:
+	var saved := {}
+	for k in env_additions:
+		var key := String(k)
+		saved[key] = OS.get_environment(key) if OS.has_environment(key) else null
+		OS.set_environment(key, String(env_additions[k]))
+	return saved
+
+
+static func _pop_env(saved: Dictionary) -> void:
+	for key in saved:
+		if saved[key] == null:
+			OS.unset_environment(key)
+		else:
+			OS.set_environment(key, saved[key])
+
+
+## Quotes one argument for a Windows command line the way CommandLineToArgvW / the MSVC CRT
+## parse it back (what Node's spawn does): backslashes are literal except before a quote, so
+## runs of them are doubled in front of an embedded or the closing quote.
+static func quote_windows_arg(arg: String) -> String:
+	if arg.is_empty():
+		return '""'
+	var needs := false
+	for ch in [" ", "\t", "\n", "\v", '"']:
+		if arg.contains(ch):
+			needs = true
+			break
+	if not needs:
+		return arg
+	var out := '"'
+	var slashes := 0
+	for ch in arg:
+		if ch == "\\":
+			slashes += 1
+		elif ch == '"':
+			out += "\\".repeat(slashes * 2 + 1) + '"'
+			slashes = 0
+		else:
+			out += "\\".repeat(slashes) + ch
+			slashes = 0
+	return out + "\\".repeat(slashes * 2) + '"'
+
+
+static func windows_command_line(args: PackedStringArray) -> String:
+	var parts := PackedStringArray()
+	for a in args:
+		parts.append(quote_windows_arg(a))
+	return " ".join(parts)
 
 
 ## Start-Process wrapper. Everything (file, args, window style, cwd, env) travels as JSON in the
 ## GOSH_LAUNCH environment variable and the script is passed with -EncodedCommand: `-Command
 ## <script> <args...>` does NOT populate $args (PowerShell pastes the arguments into the command
-## text), and Start-Process joins ArgumentList without quoting, so both are handled explicitly.
+## text). Start-Process joins ArgumentList verbatim, so the arguments arrive as one command line
+## already quoted by quote_windows_arg().
 const PS_SCRIPT := "$ErrorActionPreference='Stop';$j=$env:GOSH_LAUNCH|ConvertFrom-Json;Remove-Item Env:GOSH_LAUNCH;" \
 	+ "if($j.env){foreach($e in $j.env.PSObject.Properties){Set-Item -Path ('env:'+$e.Name) -Value ([string]$e.Value)}};" \
 	+ "$l=@{FilePath=$j.file};if($j.style){$l.WindowStyle=$j.style};if($j.cwd){$l.WorkingDirectory=$j.cwd};" \
-	+ "$a=@($j.args|ForEach-Object{if($_ -match '[\\s\"]'){'\"'+($_ -replace '\"','\\\"')+'\"'}else{$_}});" \
-	+ "if($a.Count -gt 0){$l.ArgumentList=$a};Start-Process @l"
+	+ "if($j.argline){$l.ArgumentList=$j.argline};Start-Process @l"
 
 
 ## {"args": PackedStringArray for powershell.exe, "env": {"GOSH_LAUNCH": json}} (pure; unit-tested).
 static func build_powershell_launch(file: String, args: PackedStringArray, window_style: String, cwd: String, env_additions: Dictionary) -> Dictionary:
-	var payload := {"file": file, "args": Array(args), "style": window_style, "cwd": cwd, "env": env_additions}
+	var payload := {"file": file, "argline": windows_command_line(args), "style": window_style, "cwd": cwd, "env": env_additions}
 	return {
 		"args": PackedStringArray(["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Marshalls.raw_to_base64(PS_SCRIPT.to_utf16_buffer())]),
 		"env": {"GOSH_LAUNCH": JSON.stringify(payload)},
@@ -233,6 +315,10 @@ static func launch_program(item: Dictionary) -> Dictionary:
 				cargs.append_array(item_args)
 				return spawn_detached(com if com != "" else "cmd.exe", cargs, working_dir, env)
 			else:
+				# ShellExecute also dispatches URI schemes (ms-msdt:, search-ms:, file:, ...); only
+				# http(s) URLs are allowed to launch, so anything scheme-like that got here is refused.
+				if has_uri_scheme(program_path):
+					return _fail("Only http and https URLs are allowed")
 				var oerr := OS.shell_open(program_path)
 				if oerr != OK:
 					return _fail(error_string(oerr))

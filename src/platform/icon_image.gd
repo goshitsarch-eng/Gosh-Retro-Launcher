@@ -16,6 +16,8 @@ const ICON_SIZE := 128
 const WIN31_SIZE := 32
 const ALPHA_CUTOFF := 16
 const MAX_IMAGE_BYTES := 64 * 1024 * 1024
+## Upper bound on a decoded PNG (8192x8192 RGBA = 256 MB) so a tiny "PNG bomb" cannot exhaust memory.
+const MAX_IMAGE_PIXELS := 8192 * 8192
 
 
 ## Index into WFW_PALETTE of the nearest colour (squared RGB distance, first wins on ties).
@@ -106,6 +108,8 @@ static func icons_from_image(img: Image) -> Dictionary:
 static func load_any(bytes: PackedByteArray, svg_size: int = ICON_SIZE) -> Image:
 	if bytes.size() < 4 or bytes.size() > MAX_IMAGE_BYTES:
 		return null
+	if not size_ok(bytes, MAX_IMAGE_PIXELS):
+		return null
 	if IcoFile.is_png(bytes):
 		return _finish(_try(bytes, "load_png_from_buffer"))
 	if bytes[0] == 0xFF and bytes[1] == 0xD8:
@@ -122,6 +126,76 @@ static func load_any(bytes: PackedByteArray, svg_size: int = ICON_SIZE) -> Image
 		return load_svg(bytes, svg_size)
 	# Last resort for TGA and anything else Godot can sniff.
 	return _finish(_try(bytes, "load_tga_from_buffer"))
+
+
+## [width, height] declared by a PNG/JPEG/WebP/BMP header, or [] when the format is not one of
+## those (or the header is malformed). Read without decoding, so it is safe on hostile input.
+static func declared_size(b: PackedByteArray) -> Array:
+	var n := b.size()
+	if IcoFile.is_png(b):
+		if n < 24 or b.slice(12, 16).get_string_from_ascii() != "IHDR":
+			return []
+		return [(b[16] << 24) | (b[17] << 16) | (b[18] << 8) | b[19], (b[20] << 24) | (b[21] << 16) | (b[22] << 8) | b[23]]
+	if n >= 4 and b[0] == 0xFF and b[1] == 0xD8:
+		var i := 2
+		while i + 9 < n:
+			if b[i] != 0xFF:
+				return []
+			var m := b[i + 1]
+			if m == 0xFF:
+				i += 1
+				continue
+			if m == 0x01 or (m >= 0xD0 and m <= 0xD8):
+				i += 2
+				continue
+			if m >= 0xC0 and m <= 0xCF and m != 0xC4 and m != 0xC8 and m != 0xCC:  # SOFn
+				return [(b[i + 7] << 8) | b[i + 8], (b[i + 5] << 8) | b[i + 6]]
+			var seg := (b[i + 2] << 8) | b[i + 3]
+			if seg < 2:
+				return []
+			i += 2 + seg
+		return []
+	if n >= 30 and b.slice(0, 4).get_string_from_ascii() == "RIFF" and b.slice(8, 12).get_string_from_ascii() == "WEBP":
+		match b.slice(12, 16).get_string_from_ascii():
+			"VP8 ":
+				return [(b[26] | (b[27] << 8)) & 0x3FFF, (b[28] | (b[29] << 8)) & 0x3FFF]
+			"VP8L":
+				return [1 + (((b[22] & 0x3F) << 8) | b[21]), 1 + (((b[24] & 0x0F) << 10) | (b[23] << 2) | ((b[22] & 0xC0) >> 6))]
+			"VP8X":
+				return [1 + (b[24] | (b[25] << 8) | (b[26] << 16)), 1 + (b[27] | (b[28] << 8) | (b[29] << 16))]
+		return []
+	if n >= 26 and b[0] == 0x42 and b[1] == 0x4D:
+		var hs := b[14] | (b[15] << 8) | (b[16] << 16) | (b[17] << 24)
+		if hs == 12:
+			return [b[18] | (b[19] << 8), b[20] | (b[21] << 8)]
+		var w := b[18] | (b[19] << 8) | (b[20] << 16) | (b[21] << 24)
+		var h := b[22] | (b[23] << 8) | (b[24] << 16) | (b[25] << 24)
+		if h >= 0x80000000:
+			h = 0x100000000 - h  # top-down DIB
+		return [w, h]
+	return []
+
+
+## False when a recognised header declares more than `max_pixels` pixels (or a non-positive size).
+## Unrecognised formats pass: their own decoder still applies Godot's limits.
+static func size_ok(bytes: PackedByteArray, max_pixels: int) -> bool:
+	var d := declared_size(bytes)
+	if d.is_empty():
+		return not IcoFile.is_png(bytes)  # a PNG without a readable IHDR is corrupt anyway
+	var w: int = d[0]
+	var h: int = d[1]
+	return w > 0 and h > 0 and w <= max_pixels and h <= max_pixels and w * h <= max_pixels
+
+
+## SVG documents can declare any canvas size; rasterizing at 1:1 would allocate it all. A 1/16
+## probe reveals the size for a sixteenth squared of the cost.
+static func svg_size_ok(bytes: PackedByteArray, max_pixels: int) -> bool:
+	var probe := Image.new()
+	if probe.load_svg_from_buffer(bytes, 1.0 / 16.0) != OK or probe.is_empty():
+		return false
+	var w := probe.get_width() * 16
+	var h := probe.get_height() * 16
+	return w * h <= max_pixels
 
 
 static func _try(bytes: PackedByteArray, method: String) -> Image:
@@ -145,6 +219,8 @@ static func _looks_like_svg(bytes: PackedByteArray) -> bool:
 
 ## Rasterizes an SVG so that its larger side is `target` pixels.
 static func load_svg(bytes: PackedByteArray, target: int = ICON_SIZE) -> Image:
+	if not svg_size_ok(bytes, MAX_IMAGE_PIXELS):
+		return null
 	var probe := Image.new()
 	if probe.load_svg_from_buffer(bytes, 1.0) != OK or probe.is_empty():
 		return null

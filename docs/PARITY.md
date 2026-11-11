@@ -1,7 +1,7 @@
 # Electron → Godot parity
 
 Every user-visible behavior of the 1.0.6 Electron build and how the Godot build was checked.
-**T** unit-tested (headless, 257 tests) · **V** pixel-diffed against the Electron baseline · **S** inspected in a real render ·
+**T** unit-tested (headless, 268 tests) · **V** pixel-diffed against the Electron baseline · **S** inspected in a real render ·
 **E** exercised end-to-end with injected input in the running app · **X** exported Linux build run · **M** platform-specific, *not run in this
 environment* (code written and reviewed, parts unit-tested) · **GAP** known difference.
 

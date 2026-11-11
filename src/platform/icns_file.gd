@@ -57,7 +57,7 @@ static func best_image(bytes: PackedByteArray) -> Image:
 	var by_type := {}
 	for e in elements:
 		by_type[e.type] = e.data
-		if IcoFile.is_png(e.data):
+		if IcoFile.is_png(e.data) and IcoFile.png_size_ok(e.data, IcoFile.MAX_ICON_PNG_PIXELS):
 			var img := Image.new()
 			if img.load_png_from_buffer(e.data) == OK and not img.is_empty():
 				if best == null or img.get_width() * img.get_height() > best.get_width() * best.get_height():
