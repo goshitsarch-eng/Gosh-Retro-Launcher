@@ -37,6 +37,7 @@ func _init() -> void:
 	clip_contents = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	focus_mode = Control.FOCUS_NONE
+	A11y.track(self)
 
 
 func setup(p_shell: Control) -> void:
@@ -366,7 +367,10 @@ func _desktop_menu() -> Array:
 		{"id": "paste", "label": "&Paste", "disabled": true},
 		{"id": "paste-shortcut", "label": "Paste &Shortcut", "disabled": true},
 		{"id": "sep-2", "separator": true},
-		{"id": "new-folder", "label": "&New Folder...", "onSelect": func(): Win95Dialogs.open_new_folder(shell, {})},
+		# Win95Desktop.tsx: create "New Folder" right away and open its property sheet to rename it.
+		{"id": "new-folder", "label": "&New Folder...", "onSelect": func():
+			var gid := ProgramStore.add_group("New Folder")
+			Win95Dialogs.open_properties(shell, {"kind": "group", "group": ProgramStore.find_group(gid)})},
 		{"id": "new-shortcut", "label": "New &Shortcut...", "icon": "new-shortcut", "onSelect": func():
 			if ProgramStore.groups.size() > 0:
 				Win95Dialogs.open_wizard(shell, {"groupId": ProgramStore.groups[0].id})
@@ -454,3 +458,53 @@ func auto_lookup(id: String) -> Variant:
 		if positions.has(key):
 			return Rect2(global_position + positions[key], Vector2(M.desktopCellWidth, 70))
 	return null
+
+
+# ------------------------------------------------------------------ accessibility
+
+var _a11y_list: Array = []    ## [icons list box]
+var _a11y_icons: Array = []
+
+
+## Desktop icons: a multi-select list box (Win95Desktop.tsx: role="listbox") beside the windows.
+func a11y_icon_specs() -> Array:
+	var out := []
+	for i in ICONS.size():
+		var icon: Dictionary = ICONS[i]
+		var spec := A11y.option(String(icon.label), selection.selected.has(icon.id), i, ICONS.size(), _icon_cell(icon.id))
+		spec["focus"] = _a11y_select.bind(String(icon.id))
+		spec["click"] = _a11y_open.bind(String(icon.id))
+		out.append(spec)
+	return out
+
+
+func _a11y_select(_data: Variant, id: String) -> void:
+	_select_icon(id, false, false)
+	queue_redraw()
+
+
+func _a11y_open(data: Variant, id: String) -> void:
+	_a11y_select(data, id)
+	open_icon(id)
+
+
+## The focused desktop icon (reported while no window is active).
+func a11y_focus() -> RID:
+	var focused: String = selection.focused if selection.focused != "" else (String(selection.selected[0]) if selection.selected.size() > 0 else "")
+	var i := -1
+	for k in ICONS.size():
+		if ICONS[k].id == focused:
+			i = k
+	return A11y.child_or(_a11y_icons, i, A11y.child_or(_a11y_list, 0, get_accessibility_element()))
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		var ae := get_accessibility_element()
+		A11y.apply(ae, {"role": DisplayServer.ROLE_CONTAINER, "name": "Desktop"})
+		A11y.sync_children(ae, _a11y_list, [{"role": DisplayServer.ROLE_LIST_BOX, "name": "Desktop icons",
+			"multiselect": true, "count": ICONS.size()}])
+		A11y.sync_children(A11y.child_or(_a11y_list, 0, RID()), _a11y_icons, a11y_icon_specs())
+	elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+		_a11y_list.clear()
+		_a11y_icons.clear()

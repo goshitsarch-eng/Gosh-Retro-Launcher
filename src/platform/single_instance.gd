@@ -3,8 +3,9 @@ extends Node
 ## Single-instance lock over loopback TCP (replacement for app.requestSingleInstanceLock).
 ##
 ## The first instance listens on 127.0.0.1:<port>. A second instance connects, sends
-## "SHOW\t<profile>\n" and quits when the first answers "OK\t<profile>\n"; the first instance emits
-## `show_requested` (main.gd restores + focuses the window). Properties:
+## "SHOW\t<profile>\n" (or "QUICKSEARCH\t<profile>\n" for `--quick-search`) and quits when the first
+## answers "OK\t<profile>\n"; the first instance emits `show_requested` / `quick_search_requested`
+## (main.gd restores + focuses the window, or opens Quick Search). Properties:
 ##  * no lock file: the OS releases the port when the process dies, so crashes never leave stale state;
 ##  * the port is derived from the user-data directory, so different profiles (PM_USER_DATA) can
 ##    run side by side, exactly like Electron's per-userData lock;
@@ -12,6 +13,7 @@ extends Node
 ##    the handshake and skipped (next port), so the app still starts.
 
 signal show_requested
+signal quick_search_requested
 
 enum Result { PRIMARY, SECONDARY, UNAVAILABLE }
 
@@ -20,6 +22,7 @@ const PORT_SPAN := 800
 const PORT_TRIES := 6
 const HOST := "127.0.0.1"
 const MAGIC_REQUEST := "SHOW"
+const QUICK_SEARCH_REQUEST := "QUICKSEARCH"  ## `program-manager --quick-search`: the OS-bindable hotkey
 const MAGIC_REPLY := "OK"
 const CONNECT_TIMEOUT_MS := 400
 const REPLY_TIMEOUT_MS := 600
@@ -28,6 +31,7 @@ const MAX_LINE := 512
 const MAX_CLIENTS := 8  ## a real second instance needs one; the handshake takes milliseconds
 
 var profile := ""
+var command := MAGIC_REQUEST  ## what a SECONDARY instance asks the primary to do
 var port := 0
 var _server: TCPServer
 var _clients: Array = []  ## [{peer: StreamPeerTCP, buf: PackedByteArray, started: int}]
@@ -44,8 +48,8 @@ static func candidate_ports(profile_dir: String, base: int = BASE_PORT, span: in
 	return out
 
 
-static func request_line(profile_dir: String) -> String:
-	return "%s\t%s\n" % [MAGIC_REQUEST, profile_dir.replace("\n", " ").replace("\t", " ")]
+static func request_line(profile_dir: String, cmd: String = MAGIC_REQUEST) -> String:
+	return "%s\t%s\n" % [cmd, profile_dir.replace("\n", " ").replace("\t", " ")]
 
 
 static func reply_line(profile_dir: String) -> String:
@@ -56,7 +60,7 @@ static func reply_line(profile_dir: String) -> String:
 ## valid request for this profile.
 static func handle_request(line: String, profile_dir: String) -> String:
 	var parts := line.strip_edges(false, true).split("\t", true, 1)
-	if parts.size() != 2 or parts[0] != MAGIC_REQUEST:
+	if parts.size() != 2 or not (parts[0] in [MAGIC_REQUEST, QUICK_SEARCH_REQUEST]):
 		return ""
 	if parts[1] != profile_dir.replace("\n", " ").replace("\t", " "):
 		return ""
@@ -110,7 +114,7 @@ func _probe(p: int, tree: SceneTree) -> String:
 			peer.disconnect_from_host()
 			return "foreign"
 		await tree.process_frame
-	peer.put_data(request_line(profile).to_utf8_buffer())
+	peer.put_data(request_line(profile, command).to_utf8_buffer())
 	var buf := PackedByteArray()
 	var reply_deadline := Time.get_ticks_msec() + REPLY_TIMEOUT_MS
 	while Time.get_ticks_msec() < reply_deadline:
@@ -168,7 +172,10 @@ func poll() -> void:
 				var reply := handle_request(line, profile)
 				if reply != "":
 					peer2.put_data(reply.to_utf8_buffer())
-					show_requested.emit()
+					if line.begins_with(QUICK_SEARCH_REQUEST + "\t"):
+						quick_search_requested.emit()
+					else:
+						show_requested.emit()
 				done = true
 			elif PackedByteArray(c.buf).size() > MAX_LINE or Time.get_ticks_msec() - int(c.started) > 2000:
 				done = true

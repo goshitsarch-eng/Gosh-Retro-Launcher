@@ -5,16 +5,15 @@ extends Control
 ## see src/app/capture.gd.
 
 const VERSION := "2.0.0"
-const STARTUP_CHIME_DELAY := 0.3  ## App.tsx: chime 300 ms after the data loaded (WfW only)
 
 var shell: ShellBase
 var capture: Node
 var tray: TrayController
 var single_instance: SingleInstance
+var desktop: DesktopBridge
 
 var _applied_shell := ""
 var _frame_shell := ""
-var _startup_done := false
 
 
 func _ready() -> void:
@@ -44,8 +43,11 @@ func _ready() -> void:
 	ProgramStore.settings_changed.connect(_on_settings_changed)
 	if not is_capture:
 		_setup_tray()
-		_schedule_startup_chime()
+		_setup_desktop_bridge()
 		_center_initial_window.call_deferred()
+		if wants_quick_search(args, OS.get_cmdline_args()):
+			Platform.trigger_quick_search.call_deferred()  # `--quick-search` with no instance running yet
+	# (The WfW startup chime is played by Win31Shell.on_activate, 300 ms after mounting.)
 	win.title = WindowLayout.window_title(current_shell_id())
 	if capture:
 		capture.run()
@@ -60,6 +62,12 @@ static func _parse_args() -> Dictionary:
 	return out
 
 
+## `program-manager --quick-search` (OS-bindable hotkey). Godot passes unknown flags through in
+## get_cmdline_args(), so the `--` separator is optional.
+static func wants_quick_search(user_args: Dictionary, engine_args: PackedStringArray) -> bool:
+	return user_args.has("quick-search") or engine_args.has("--quick-search")
+
+
 func _single_instance_disabled(args: Dictionary) -> bool:
 	return args.has("no-single-instance") or OS.get_environment("PM_NO_SINGLE_INSTANCE") != "" \
 		or DisplayServer.get_name() == "headless"
@@ -69,12 +77,15 @@ func _single_instance_disabled(args: Dictionary) -> bool:
 func _acquire_single_instance() -> bool:
 	single_instance = SingleInstance.new()
 	single_instance.name = "SingleInstance"
+	if wants_quick_search(_parse_args(), OS.get_cmdline_args()):
+		single_instance.command = SingleInstance.QUICK_SEARCH_REQUEST
 	add_child(single_instance)
 	var result: int = await single_instance.acquire(Persistence.default_user_data_dir(), get_tree())
 	if result == SingleInstance.Result.SECONDARY:
 		return false
 	if result == SingleInstance.Result.PRIMARY:
 		single_instance.show_requested.connect(_on_second_instance)
+		single_instance.quick_search_requested.connect(Platform.trigger_quick_search)
 	return true  # UNAVAILABLE (port blocked): run without the lock rather than refuse to start
 
 
@@ -205,14 +216,15 @@ func _setup_tray() -> void:
 	tray.quit_requested.connect(quit_app)
 
 
-func _schedule_startup_chime() -> void:
-	if _startup_done:
-		return
-	_startup_done = true
-	await get_tree().create_timer(STARTUP_CHIME_DELAY).timeout
-	# Win95 no longer emits the synthetic startup tone (absent from RTM defaults).
-	if current_shell_id() == "win31":
-		Sounds.play("startup_chime")
+## Real "hide to tray" and the OS-wide Quick Search hotkey (see DesktopBridge).
+func _setup_desktop_bridge() -> void:
+	desktop = DesktopBridge.new()
+	desktop.name = "DesktopBridge"
+	add_child(desktop)
+	Platform.desktop = desktop
+	desktop.hotkey_pressed.connect(Platform.trigger_quick_search)
+	desktop.shown.connect(Platform._on_desktop_shown)
+	desktop.start(Launcher.platform(), true)
 
 
 func _notification(what: int) -> void:

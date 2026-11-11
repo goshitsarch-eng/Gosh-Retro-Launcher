@@ -79,3 +79,15 @@ func activate_access_key() -> void:
 	if not disabled:
 		grab_focus()
 		toggle()
+
+
+func a11y_spec() -> Dictionary:
+	var spec := A11y.check_box(text, checked, disabled)
+	spec["click"] = _a11y_activate
+	return spec
+
+
+## Screen-reader "click" action.
+func _a11y_activate(_data: Variant = null) -> void:
+	if not disabled:
+		toggle()

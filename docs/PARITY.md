@@ -1,7 +1,7 @@
 # Electron → Godot parity
 
 Every user-visible behavior of the 1.0.6 Electron build and how the Godot build was checked.
-**T** unit-tested (headless, 268 tests) · **V** pixel-diffed against the Electron baseline · **S** inspected in a real render ·
+**T** unit-tested (headless, 296 tests) · **V** pixel-diffed against the Electron baseline · **S** inspected in a real render ·
 **E** exercised end-to-end with injected input in the running app · **X** exported Linux build run · **M** platform-specific, *not run in this
 environment* (code written and reviewed, parts unit-tested) · **GAP** known difference.
 
@@ -24,12 +24,12 @@ environment* (code written and reviewed, parts unit-tested) · **GAP** known dif
 | Launch from a real double-click in both shells (spawns the process, args honored) | E (Linux) |
 | `.desktop` Exec parsing | T, E |
 | `.lnk` target/args/cwd, exe/com run modes (min/max via PowerShell), bat/cmd | T (parser, payload); **M** (running) |
-| macOS `.app` via `open -a … --args` | **M** |
+| macOS `.app` via `open -a … --args` | E (macOS: a scratch bundle received its arguments) |
 | URLs (http/https only) | T; opening a browser **M** |
 | Batch launch: delay clamp 0–10 s, ≤200 items, numbered groups, Launch All / Launch Group, order, progress-before-launch | T |
 | Launch-feedback toast | S |
 | Minimize on Use | **M** (no window manager under Xvfb) |
-| Single instance (second launch focuses first) | T + two-process run on Linux; Windows/macOS **M** |
+| Single instance (second launch focuses first; `--quick-search` forwards Quick Search) | T + two-process runs on Linux and macOS; Windows **M** |
 
 ## Shells
 | Feature | Status |
@@ -49,14 +49,15 @@ environment* (code written and reviewed, parts unit-tested) · **GAP** known dif
 ## System integration
 | Feature | Status |
 |---|---|
-| Tray icon + menu, group submenus, Exit, Show, Launcher Tools | **M** (model T) |
-| Minimize to tray on close | **GAP** (minimizes; taskbar entry stays) |
+| Tray icon + menu, group submenus, Exit, Show, Launcher Tools | T (model; Launcher Tools leaves a hidden window alone); macOS icon created **E**; menus **M** |
+| Minimize to tray on close | macOS: app hidden and restored **E**; Windows: `ShowWindow` helper, script + C# compiled and run under PowerShell 7 on macOS up to the Win32 calls **M**; Linux: **GAP** (minimizes; no portable hide) |
 | Drag & drop files onto a group window | T (routing/target resolution); OS drag **M** |
 | Icon extraction exe/dll/ico/icns/.app/.desktop + WfW 16-colour quantization | T (synthetic binaries) |
 | Native open/save dialogs with per-OS filters | T via test provider; native **M** |
 | Window frame (native Win95 / custom Win31), bounds kept on switch | S (borderless flip); OS behavior **M** |
 | Ctrl+Alt+T Launcher Tools, in-app Quick Search shortcut | T |
-| Global hotkey Ctrl/Cmd+Shift+Space while backgrounded | **GAP** (no OS-wide hotkey API; tray "Quick Search" item instead) |
+| Global hotkey Ctrl/Cmd+Shift+Space while backgrounded | Windows: `RegisterHotKey` in the helper **M**; macOS/Linux: **GAP** without a user-bound shortcut, `--quick-search` command provided (E) |
+| Screen readers (1.x had ARIA): roles, names, states, focus and live regions for both shells via AccessKit (`src/toolkit/a11y.gd`) | T + S (macOS accessibility tree read with `--accessibility always`, actions pressed); speech in VoiceOver/NVDA/Orca **M** |
 | Exported Linux build starts and renders both shells with fonts/icons | X |
 | Windows/macOS exports, CI workflows, installers | **M** (never executed) |
 
@@ -76,5 +77,4 @@ local packs installed the build uses them (icons for both shells, the RTM bitmap
   only existed in an unused generic grid. `labelDisplay: ellipsis` is honored. Desktop-mode window is mouse-resizable.
 * WfW dialogs: `©` → "(c)", `×` → "x" (glyphs absent from the strike); combo/radio/checkbox are drawn, not native.
 * Win95 popups draw above the taskbar; outside-click closes the whole cascade.
-* Accessibility: no screen-reader tree (the old build had ARIA); everything is keyboard-reachable.
 * No AppImage/RPM, notarization, or macOS template tray icon (see PLATFORM.md).

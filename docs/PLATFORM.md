@@ -8,8 +8,8 @@ Everything the Electron main process / preload used to do lives in the `Platform
 
 | Capability | Status | Why |
 |------------|--------|-----|
-| **Global Quick Search hotkey** (`globalShortcut` Ctrl/Cmd+Shift+Space while the app is in the background) | **Not possible.** The shortcut works while the window is focused; from the background use the tray menu's **Quick Search** item. | Godot has no API for OS-wide hotkeys (no `RegisterHotKey`, `CGEventTap` or portal GlobalShortcuts binding). A helper process or native plugin was ruled out. |
-| Hiding the window to the tray removes the taskbar button | **Minimizes instead.** The taskbar/Dock entry stays; the tray icon (or taskbar) restores it. | Godot refuses to change the visibility of the main window (`Can't change visibility of main window`) and has no skip-taskbar flag. |
+| **Global Quick Search hotkey** (`globalShortcut` Ctrl/Cmd+Shift+Space while the app is in the background) | **Windows:** Ctrl+Shift+Space is registered OS-wide by the `DesktopBridge` helper. **macOS/Linux:** bind `program-manager --quick-search` to Cmd/Ctrl+Shift+Space in the system keyboard settings (it forwards to the running instance). | Godot has no hotkey API. Windows uses `RegisterHotKey` in a helper process; on macOS the only permission-free API (Carbon `RegisterEventHotKey`) needs native code, and Wayland forbids global grabs (desktops bind commands instead). |
+| Hiding the window to the tray removes the taskbar button | **Windows:** hidden with `ShowWindow(SW_HIDE)` by the helper (no taskbar button) when a tray icon exists. **macOS:** the app is hidden (Dock icon stays, as with Electron's `hide()`; an open Launcher Tools window hides too). **Linux:** minimizes; the taskbar entry stays. | Godot refuses to change the visibility of the main window (`Can't change visibility of main window`). Linux has no portable way to hide a window (Wayland). If the Windows helper cannot start, it minimizes. |
 | macOS tray icon adapting to dark/light menu bars | Coloured icon instead of a template image. | `StatusIndicator` cannot mark an image as a template. |
 | OS file icons for arbitrary files (`app.getFileIcon`) | Real extractors for `.exe/.dll` (PE resources), `.ico`, `.icns`, `.app` bundles, `.desktop` `Icon=` via freedesktop themes, PNG/JPG/WebP/BMP/SVG/TGA. Other files (documents, `.sh`, `.msi`, GIF, XPM, JPEG-2000 icns payloads, 16-bit NE executables) get **no icon**. | Godot cannot query shell icons. |
 | Display add/remove events | `display_changed` fires on DPI change and when the window moves to another screen. | Godot has no hot-plug signal. |
@@ -17,7 +17,6 @@ Everything the Electron main process / preload used to do lives in the `Platform
 | Native file dialogs on Linux without `xdg-desktop-portal` | Falls back to Godot's own `FileDialog`. | `DisplayServer.file_dialog_show` needs the portal. |
 | Notarized macOS builds | Presets sign ad-hoc; set `codesign/identity` / `notarization/*` for releases. | Needs Apple credentials. |
 | AppImage and RPM packages | Not produced (tar.gz, deb, NSIS installer + zip, dmg + zip are). | Out of scope for the Godot pipeline. |
-| Launcher Tools as a separate OS window | `Platform.open_launcher_tools()` emits `launcher_tools_requested` (falls back to the Settings dialog). | Up to the shell's Launcher Tools implementation. |
 
 ## Behaviour notes
 
@@ -28,12 +27,20 @@ Everything the Electron main process / preload used to do lives in the `Platform
   exiting (Godot creates the window before any script runs).
 * **Close**: `Platform.close_window()` honours `trayOnClose`; OS close requests are routed through it
   (`auto_accept_quit` is off). Quit paths call `ProgramStore.flush()`.
+* **DesktopBridge** (`src/platform/desktop_bridge.gd`): on Windows one `powershell.exe` helper (an `Add-Type` C# class,
+  started hidden at launch, ~2 s compile in the background) owns `RegisterHotKey(Ctrl+Shift+Space)` and calls
+  `ShowWindow(SW_HIDE/SW_SHOW)` on the main HWND; it speaks a line protocol over stdin/stdout and exits with the app.
+  When PowerShell or `Add-Type` is blocked (constrained language mode, policy) it never reports `ready` and the app falls
+  back to minimizing and an in-app shortcut. On macOS hiding is `NSRunningApplication.hide` via `osascript` (no
+  permission prompt); showing activates the app.
+* **`--quick-search`**: `program-manager --quick-search` sends `QUICKSEARCH` over the single-instance channel (or, with
+  no instance running, starts the app with Quick Search open). Bind it to a key in the OS keyboard settings.
 * **Window**: min size 400x300 DIP, initial size `min(work area, 640x480 x scale)` of the primary display, centred;
   Win31 is borderless, Win95 uses the OS frame; switching shells flips the frame and restores the outer bounds.
   Bounds in `Platform` are physical pixels (outer rect, frame included); `work_area()` / `get_display_work_area()` are DIPs.
 * **Drag and drop**: `Platform.files_dropped(files, logical_pos)`; `main.gd` forwards it to `ShellBase.on_files_dropped`.
 * **Shortcuts handled by `Platform`**: Ctrl/Cmd+Shift+Space (Quick Search) and Ctrl+Alt+T (Launcher Tools), via the
-  window's `window_input` (before any shell sees the key).
+  window's `window_input` (before any shell sees the key), plus the OS-wide hotkey from the `DesktopBridge`.
 * **Dialogs**: `Platform.dialog_provider` (a `Callable`) overrides every file chooser, for tests and automation.
 * **Sounds**: effects are rendered once into `AudioStreamWAV`s; at most 6 pooled players, released after 5 s of silence.
 * **Icons**: `IconRegistry.get_icon_src()` mirrors `getIconSrc()`; http(s) icons are never fetched (default icon).

@@ -12,6 +12,7 @@ func _init() -> void:
 	custom_minimum_size = size
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	focus_mode = Control.FOCUS_NONE
+	A11y.track(self)
 
 
 func _draw() -> void:
@@ -37,3 +38,15 @@ func _gui_input(event: InputEvent) -> void:
 				pressed.emit()
 		queue_redraw()
 		accept_event()
+
+
+func a11y_spec() -> Dictionary:
+	var spec := A11y.button("Open list")
+	spec["popup"] = DisplayServer.POPUP_LIST
+	spec["click"] = func(_d: Variant) -> void: pressed.emit()
+	return spec
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		A11y.apply_node(self, a11y_spec())

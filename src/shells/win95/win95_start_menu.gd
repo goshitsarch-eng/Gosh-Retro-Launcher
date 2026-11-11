@@ -46,6 +46,7 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	focus_mode = Control.FOCUS_NONE
 	visible = false
+	A11y.track(self)
 
 
 func setup(p_shell: Control) -> void:
@@ -65,6 +66,11 @@ func setup(p_shell: Control) -> void:
 func _on_open_changed(open: bool) -> void:
 	visible = open
 	_clear_delay()
+	if open:
+		A11y.push_overlay(self)
+	else:
+		A11y.remove_overlay(self)
+	queue_accessibility_update()  # a hidden control does not redraw, so refresh explicitly
 	if open:
 		open_top = ""
 		open_group = ""
@@ -527,3 +533,76 @@ func auto_lookup(id: String) -> Variant:
 		if rows.size() > 0:
 			return rows[0].rect
 	return null
+
+
+# ------------------------------------------------------------------ accessibility
+
+var _a11y_levels: Array = []                ## menu element per cascade level
+var _a11y_rows: Array = [[], [], []]        ## row elements per level
+
+
+func _exit_tree() -> void:
+	A11y.remove_overlay(self)
+
+
+## Menu container specs for the three cascade levels (hidden while closed).
+func a11y_level_specs() -> Array:
+	var names := ["Start", _a11y_level_name(1), _a11y_level_name(2)]
+	var out := []
+	for lv in 3:
+		var r := main_rect() if lv == 0 else level_rect(lv)
+		out.append({"role": DisplayServer.ROLE_MENU, "name": names[lv], "bounds": r, "hidden": not visible or r.size == Vector2.ZERO})
+	return out
+
+
+func _a11y_level_name(lv: int) -> String:
+	if lv == 1:
+		for it in TOP_ITEMS:
+			if it.id == open_top:
+				return A11y.plain(it.label)
+		return ""
+	return String(ProgramStore.find_group(open_group).get("name", "")) if open_group != "" else ""
+
+
+## Row specs of one level (rects are in this control's space, like the levels).
+func a11y_row_specs(lv: int) -> Array:
+	var out := []
+	if lv > 0 and level_rect(lv).size == Vector2.ZERO:
+		return out
+	for r in level_rows(lv):
+		var item: Dictionary = r.item
+		var submenu: bool = item.get("child", false) or (lv == 1 and open_top == "programs" and r.index >= 0)
+		var label := _row_label(item, lv) if item.has("label") else String(item.get("name", "")).replace("&", "&&")
+		var spec := A11y.menu_item(label, r.rect, bool(item.get("disabled", false)), "item", false, submenu)
+		if submenu:
+			spec["expanded"] = (lv == 0 and open_top == String(item.get("id", ""))) or (lv == 1 and open_group == String(item.get("id", "")))
+		spec["click"] = _a11y_activate.bind(lv, r)
+		out.append(spec)
+	return out
+
+
+func _a11y_activate(_data: Variant, lv: int, row: Dictionary) -> void:
+	if visible:
+		_activate_row(lv, row)
+
+
+func a11y_focus() -> RID:
+	if not visible or _a11y_levels.size() < 3:
+		return RID()
+	var rows := level_rows(level)
+	for i in rows.size():
+		if rows[i].index == int(indices[level]):
+			return A11y.child_or(_a11y_rows[level], i, _a11y_levels[level])
+	return A11y.child_or(_a11y_levels, level, RID())
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		var ae := get_accessibility_element()
+		A11y.apply(ae, {"role": DisplayServer.ROLE_CONTAINER, "name": ""})
+		A11y.sync_children(ae, _a11y_levels, a11y_level_specs())
+		for lv in 3:
+			A11y.sync_children(A11y.child_or(_a11y_levels, lv, RID()), _a11y_rows[lv], a11y_row_specs(lv) if visible else [])
+	elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+		_a11y_levels.clear()
+		_a11y_rows = [[], [], []]

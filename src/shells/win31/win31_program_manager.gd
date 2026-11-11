@@ -36,6 +36,7 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	focus_mode = Control.FOCUS_CLICK
 	add_to_group("pm_auto")
+	A11y.track(self)
 	menu_bar = Win31MenuBar.new()
 	add_child(menu_bar)
 	client = Win31MdiClient.new()
@@ -50,6 +51,36 @@ func _init() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED and menu_bar != null:
 		_layout()
+	elif what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		var ae := get_accessibility_element()
+		A11y.apply(ae, A11y.window("Program Manager"))
+		A11y.sync_children(ae, _a11y_buttons, a11y_button_specs())
+	elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+		_a11y_buttons.clear()
+
+
+# ------------------------------------------------------------------ accessibility
+
+var _a11y_buttons: Array = []
+
+
+func a11y_button_specs() -> Array:
+	var sys := A11y.button("Control Menu")
+	sys["bounds"] = system_button_rect()
+	sys["popup"] = DisplayServer.POPUP_MENU
+	sys["expanded"] = _sys_menu != null
+	sys["click"] = func(_d: Variant) -> void: toggle_system_menu()
+	var mn := A11y.button("Minimize")
+	mn["bounds"] = min_button_rect()
+	mn["click"] = func(_d: Variant) -> void: minimize_requested.emit()
+	var mx := A11y.button("Restore" if maximized else "Maximize")
+	mx["bounds"] = max_button_rect()
+	mx["click"] = func(_d: Variant) -> void: maximize_toggle_requested.emit()
+	return [sys, mn, mx]
+
+
+func _get_focused_accessibility_element() -> RID:
+	return A11y.resolve(get_accessibility_element())
 
 
 func apply_layout() -> void:
@@ -167,6 +198,7 @@ func open_system_menu() -> void:
 	if _sys_menu != null:
 		return
 	_sys_menu = Win31PopupMenu.new()
+	_sys_menu.a11y_name = "Program Manager Control Menu"
 	_sys_menu.min_width = 144
 	_sys_menu.command_chosen.connect(func(c):
 		close_system_menu()

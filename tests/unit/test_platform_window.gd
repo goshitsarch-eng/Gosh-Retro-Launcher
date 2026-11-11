@@ -282,6 +282,32 @@ func test_launcher_tools_fallback_opens_settings_dialog() -> void:
 	UIState.close_dialog()
 
 
+func test_tray_launcher_tools_leaves_a_hidden_main_window_alone() -> void:
+	# tray.ts only created/focused the separate tools window; Program Manager stayed in the tray.
+	var hits := [0]
+	var tools := func() -> void: hits[0] += 1
+	Platform.launcher_tools_requested.connect(tools)
+	Platform._hidden = true
+	Platform.open_launcher_tools()
+	expect_eq(hits[0], 1)
+	expect(Platform.is_window_hidden(), "main window not restored")
+	Platform._hidden = false
+	Platform.launcher_tools_requested.disconnect(tools)
+
+
+func test_close_to_tray_without_bridge_minimizes() -> void:
+	# Headless/Linux path: no DesktopBridge (or it cannot hide) -> the window is minimized and
+	# remembered as hidden until shown again.
+	var saved := Platform.desktop
+	Platform.desktop = null
+	Platform.hide_window()
+	expect(Platform.is_window_hidden())
+	expect(not Platform._os_hidden, "not OS-hidden without a bridge")
+	Platform.show_window()
+	expect(not Platform.is_window_hidden())
+	Platform.desktop = saved
+
+
 func test_files_dropped_is_forwarded_with_logical_position() -> void:
 	var got := []
 	var cb := func(files: PackedStringArray, pos: Vector2) -> void: got.append([files, pos])
@@ -431,4 +457,30 @@ func test_posix_launch_env_names_and_paths_are_not_options() -> void:
 	expect_eq(OS.has_environment("PM_TEST_SENTINEL"), had_sentinel, "env additions do not leak into the launcher")
 	expect_eq(Launcher._invalid_env_key({"A=B": "1"}), "A=B")
 	expect_eq(Launcher._invalid_env_key({"OK": "1", "-x": "2"}), "")
+	PlatformFixtures.rm_rf(dir)
+
+
+func test_posix_relative_command_resolves_like_the_child() -> void:
+	if Launcher.platform() == "win32":
+		return
+	var dir := PlatformFixtures.tmp_dir()
+	DirAccess.make_dir_recursive_absolute(dir.path_join("bin"))
+	for p in [dir.path_join("start.sh"), dir.path_join("bin/tool")]:
+		PlatformFixtures.write_text(p, "#!/bin/sh\necho \"$0|$PWD\" > out.txt\n")
+		FileAccess.set_unix_permissions(p, FileAccess.UNIX_READ_OWNER | FileAccess.UNIX_WRITE_OWNER | FileAccess.UNIX_EXECUTE_OWNER)
+	# Electron spawn({cwd}) ran "./start.sh" relative to the working directory.
+	expect_eq(Launcher.resolve_executable("./start.sh", dir), dir.path_join("./start.sh"))
+	expect_eq(Launcher.resolve_executable("./start.sh", ""), "", "no cwd: relative to the launcher, where it does not exist")
+	# A bare name is looked up on the item's own PATH (environment field) first.
+	expect_eq(Launcher.resolve_executable("tool", "", {"PATH": dir.path_join("bin")}), dir.path_join("bin/tool"))
+	expect_eq(Launcher.resolve_executable("tool", "", {"PATH": "/nonexistent"}), "")
+	var item := {"id": "i", "name": "t", "path": "./start.sh", "icon": "default", "workingDir": dir}
+	expect_eq(Launcher.launch_program(item), {"success": true})
+	var out := await _wait_for_file(dir.path_join("out.txt"))
+	expect(out.strip_edges().ends_with(dir.get_file()), "ran in the working directory, got: " + out)
+	DirAccess.remove_absolute(dir.path_join("out.txt"))
+	var item2 := {"id": "i", "name": "t", "path": "tool", "icon": "default", "workingDir": dir,
+		"environment": "PATH=%s:/usr/bin:/bin" % dir.path_join("bin")}
+	expect_eq(Launcher.launch_program(item2), {"success": true})
+	expect(await _wait_for_file(dir.path_join("out.txt")) != "", "bare name found on the item's PATH")
 	PlatformFixtures.rm_rf(dir)

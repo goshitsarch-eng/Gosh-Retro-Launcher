@@ -128,3 +128,14 @@ func activate_access_key() -> void:
 func click() -> void:
 	if not disabled:
 		pressed.emit()
+
+
+func a11y_spec() -> Dictionary:
+	var spec := A11y.button(text, disabled, is_default)
+	spec["click"] = _a11y_activate
+	return spec
+
+
+## Screen-reader "click" action.
+func _a11y_activate(_data: Variant = null) -> void:
+	click()

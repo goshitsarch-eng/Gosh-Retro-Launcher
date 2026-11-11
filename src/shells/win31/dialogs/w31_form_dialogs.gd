@@ -155,6 +155,7 @@ class Help extends W31Dialog:
 			search = W31TextField.new()
 			search.set_field_size(cw - 16, 19)
 			search.placeholder_text = "Type a subject..."
+			search.set_a11y_label("Search help")
 			search.text = query
 			search.text_changed.connect(_on_query)
 			add_widget(search, 8, well_y + 8)

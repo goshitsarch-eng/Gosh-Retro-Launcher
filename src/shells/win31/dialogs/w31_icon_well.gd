@@ -12,6 +12,12 @@ func _init(p_icon: String = "default") -> void:
 	icon = p_icon
 	size = Vector2(42, 42)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	A11y.track(self)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		A11y.apply_node(self, {"role": DisplayServer.ROLE_IMAGE, "name": "Icon: " + W31IconGrid.a11y_icon_name({"id": W31Icons.icon_id(icon)})})
 
 
 func _draw() -> void:

@@ -55,6 +55,12 @@ func client_size() -> Vector2:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED and _inner != null:
 		apply_layout()
+	elif what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		A11y.apply_node(self, {"role": DisplayServer.ROLE_CONTAINER, "name": "Program groups"})
+
+
+func _get_focused_accessibility_element() -> RID:
+	return A11y.resolve(get_accessibility_element())
 
 
 func apply_layout() -> void:

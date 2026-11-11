@@ -28,6 +28,7 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE  # hit-testing is done in _input
 	focus_mode = Control.FOCUS_NONE
 	_born_frame = Engine.get_process_frames()
+	A11y.track(self)
 
 
 func set_items(new_items: Array, keep_highlight: bool = true) -> void:
@@ -170,3 +171,49 @@ func auto_row(label: String) -> Variant:
 			var r := item_rect(i)
 			return Rect2(get_global_rect().position + r.position, r.size)
 	return null
+
+
+# ------------------------------------------------------------------ accessibility
+
+var a11y_name := ""  ## menu caption ("File", control menu of a group...)
+var _a11y_items: Array = []
+
+
+## Menu rows as A11y specs (separators included so indexes match `items`).
+func a11y_item_specs() -> Array:
+	var out := []
+	for i in items.size():
+		var it: Dictionary = items[i]
+		if it.get("separator", false):
+			out.append(A11y.menu_item("", item_rect(i), false, "separator"))
+			continue
+		var spec := A11y.menu_item(String(it.get("label", "")), item_rect(i), bool(it.get("disabled", false)),
+			"check" if it.has("checked") else "item", bool(it.get("checked", false)))
+		spec["click"] = _a11y_choose.bind(i)
+		out.append(spec)
+	return out
+
+
+func _a11y_choose(_data: Variant, i: int) -> void:
+	if i >= 0 and i < items.size() and not items[i].get("disabled", false) and items[i].get("command") != null:
+		command_chosen.emit(String(items[i].command))
+
+
+func a11y_focus() -> RID:
+	return A11y.child_or(_a11y_items, highlighted, get_accessibility_element())
+
+
+func _enter_tree() -> void:
+	A11y.push_overlay(self)
+
+
+func _exit_tree() -> void:
+	A11y.remove_overlay(self)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		A11y.apply_node(self, {"role": DisplayServer.ROLE_MENU, "name": A11y.plain(a11y_name)})
+		A11y.sync_children(get_accessibility_element(), _a11y_items, a11y_item_specs())
+	elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+		_a11y_items.clear()

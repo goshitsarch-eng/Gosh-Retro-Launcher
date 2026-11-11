@@ -23,3 +23,7 @@ func _draw() -> void:
 	# label box: left 7, padding 0 3px, 13px tall centred on the top border (top -7)
 	Px.fill(self, 7, -7, w + 6, 13, W31.FACE)
 	W31.text(self, 10, -7, title, W31.BLACK, 11)
+
+
+func a11y_spec() -> Dictionary:
+	return {"role": DisplayServer.ROLE_CONTAINER, "name": A11y.plain(title)}

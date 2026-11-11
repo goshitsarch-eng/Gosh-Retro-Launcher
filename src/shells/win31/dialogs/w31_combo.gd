@@ -144,16 +144,24 @@ func _exit_tree() -> void:
 	_popup = null
 
 
+func a11y_spec() -> Dictionary:
+	var current: String = items[selected] if selected < items.size() else ""
+	return A11y.combo(a11y_label(), current, is_open(), disabled)
+
+
 class _Popup extends Control:
 	var combo: W31Combo
 	var hover := -1
 	var top := 0  ## first visible row
 	var sb: W31ScrollBar
 
+	var _a11y_items: Array = []
+
 	func _init(p_combo: W31Combo) -> void:
 		combo = p_combo
 		mouse_filter = Control.MOUSE_FILTER_STOP
 		focus_mode = Control.FOCUS_NONE
+		A11y.track(self)
 		var rows := mini(combo.items.size(), MAX_ROWS)
 		size = Vector2(combo.size.x, rows * ROW + 2)
 		hover = combo.selected
@@ -173,6 +181,31 @@ class _Popup extends Control:
 
 	func _rows() -> int:
 		return mini(combo.items.size(), MAX_ROWS)
+
+	func _enter_tree() -> void:
+		A11y.push_overlay(self)
+
+	func _exit_tree() -> void:
+		A11y.remove_overlay(self)
+
+	func a11y_item_specs() -> Array:
+		var out := []
+		var n := combo.items.size()
+		for i in n:
+			var spec := A11y.option(String(combo.items[i]), i == hover, i, n, Rect2(1, 1 + (i - top) * ROW, size.x - 2, ROW))
+			spec["hidden"] = i < top or i >= top + _rows()
+			out.append(spec)
+		return out
+
+	func a11y_focus() -> RID:
+		return A11y.child_or(_a11y_items, hover, get_accessibility_element())
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+			A11y.apply_node(self, {"role": DisplayServer.ROLE_LIST_BOX, "name": combo.a11y_label(), "count": combo.items.size()})
+			A11y.sync_children(get_accessibility_element(), _a11y_items, a11y_item_specs())
+		elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+			_a11y_items.clear()
 
 	func _draw() -> void:
 		var r := Rect2(Vector2.ZERO, size)

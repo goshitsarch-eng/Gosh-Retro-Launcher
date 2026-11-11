@@ -15,6 +15,7 @@ var style := "sheet"
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	focus_mode = Control.FOCUS_NONE
+	A11y.track(self)
 
 
 func configure(p_tabs: Array, p_style: String, p_selected: String = "") -> void:
@@ -87,3 +88,31 @@ func _gui_input(event: InputEvent) -> void:
 				select(String(tabs[i].id))
 				break
 		accept_event()
+
+
+# ------------------------------------------------------------------ accessibility
+
+var _a11y_tabs: Array = []
+
+
+func a11y_tab_specs() -> Array:
+	var out := []
+	for i in tabs.size():
+		var label := String(tabs[i].label)
+		out.append({"role": DisplayServer.ROLE_TAB, "name": A11y.plain(label), "selected": String(tabs[i].id) == selected,
+			"shortcut": A11y.access_shortcut(label), "bounds": tab_rect(i), "index": i, "count": tabs.size(),
+			"click": _a11y_select.bind(String(tabs[i].id))})
+	return out
+
+
+func _a11y_select(_data: Variant, id: String) -> void:
+	select(id)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		var ae := get_accessibility_element()
+		A11y.apply(ae, {"role": DisplayServer.ROLE_TAB_BAR, "name": ""})
+		A11y.sync_children(ae, _a11y_tabs, a11y_tab_specs())
+	elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+		_a11y_tabs.clear()

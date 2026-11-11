@@ -38,6 +38,7 @@ func _init() -> void:
 	clip_contents = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	focus_mode = Control.FOCUS_NONE
+	A11y.track(self)
 
 
 func setup(p_shell: Control, p_kind: String, p_group_id: String) -> void:
@@ -677,3 +678,56 @@ func auto_lookup(id: String) -> Variant:
 		var r := entry_rect(int(id.get_slice(":", 1)))
 		return r if r.size != Vector2.ZERO else null
 	return null
+
+
+# ------------------------------------------------------------------ accessibility
+
+var _a11y_items: Array = []
+
+
+## Folder contents as a multi-select list box (Win95FolderView.tsx: role="listbox").
+func a11y_spec() -> Dictionary:
+	var name := "My Computer" if kind == "my-computer" else String(group().get("name", ""))
+	return {"role": DisplayServer.ROLE_LIST_BOX, "name": name, "multiselect": true, "count": entries().size(),
+		"vertical": view_mode != "large" and view_mode != "small"}
+
+
+func a11y_item_specs() -> Array:
+	var ents := entries()
+	var out := []
+	var sel := {}
+	for s in selection.selected:
+		sel[s] = true
+	for i in ents.size():
+		var e: Dictionary = ents[i]
+		var lay := _item_layout(String(e.id)) if not _computed.is_empty() else {}
+		var r := Rect2(float(lay.x) - scroll.x, float(lay.y) - scroll.y, float(lay.width), float(lay.height)) if not lay.is_empty() else Rect2()
+		var spec := A11y.option(String(e.name), sel.has(e.id), i, ents.size(), r)
+		spec["description"] = "Folder" if e.is_group else "Shortcut"
+		spec["focus"] = _a11y_select.bind(String(e.id))
+		spec["click"] = _a11y_open.bind(String(e.id))
+		out.append(spec)
+	return out
+
+
+func _a11y_select(_data: Variant, id: String) -> void:
+	choose(id)
+
+
+func _a11y_open(_data: Variant, id: String) -> void:
+	choose(id)
+	open_entry(_entry(id))
+
+
+## Element of the focused entry (the window reports it while this folder is active).
+func a11y_focus() -> RID:
+	return A11y.child_or(_a11y_items, entry_ids().find(focused_id()), get_accessibility_element())
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		var ae := get_accessibility_element()
+		A11y.apply(ae, a11y_spec())
+		A11y.sync_children(ae, _a11y_items, a11y_item_specs())
+	elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+		_a11y_items.clear()

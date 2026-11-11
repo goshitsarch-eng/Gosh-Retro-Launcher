@@ -86,6 +86,7 @@ func _ready() -> void:
 	footer.add_theme_stylebox_override("panel", fs)
 	status_label = Label.new()
 	status_label.text = "Ready."
+	status_label.accessibility_live = DisplayServer.LIVE_POLITE  # the old footer was role="status"
 	status_label.set_meta("auto_id", "tools.status")
 	footer.add_child(status_label)
 	_root.add_child(footer)
@@ -215,6 +216,8 @@ func _labeled(parent: Control, label: String, ctl: Control, expand: bool = true)
 	var l := Label.new()
 	l.text = label
 	v.add_child(l)
+	if ctl.accessibility_name == "":
+		ctl.accessibility_name = label  # screen readers announce the field with its caption
 	ctl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.add_child(ctl)
 	parent.add_child(v)

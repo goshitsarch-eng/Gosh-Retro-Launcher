@@ -156,3 +156,48 @@ func _ensure_visible() -> void:
 		_scroll += cr.end.y - (size.y - 1)
 	_sb.value = _scroll
 	_scroll = _sb.value
+
+
+# ------------------------------------------------------------------ accessibility
+
+var _a11y_items: Array = []
+
+
+## Readable name of an icon id ("network-neighborhood" -> "network neighborhood").
+static func a11y_icon_name(entry: Dictionary) -> String:
+	return String(entry.get("name", entry.get("id", ""))).replace("-", " ").replace("_", " ")
+
+
+func a11y_spec() -> Dictionary:
+	var name := a11y_label()
+	return {"role": DisplayServer.ROLE_LIST_BOX, "name": name if name != "" else "Icons", "count": entries.size()}
+
+
+func a11y_item_specs() -> Array:
+	var out := []
+	for i in entries.size():
+		var spec := A11y.option(a11y_icon_name(entries[i]), String(entries[i].id) == selected_id, i, entries.size(), cell_rect(i))
+		spec["hidden"] = false
+		spec["focus"] = _a11y_pick.bind(i)
+		spec["click"] = _a11y_pick.bind(i)
+		out.append(spec)
+	return out
+
+
+func _a11y_pick(_data: Variant, i: int) -> void:
+	if i >= 0 and i < entries.size():
+		_cursor = i
+		chosen.emit(entries[i].id)
+		_ensure_visible()
+		queue_redraw()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		A11y.sync_children(get_accessibility_element(), _a11y_items, a11y_item_specs())
+	elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+		_a11y_items.clear()
+
+
+func _get_focused_accessibility_element() -> RID:
+	return A11y.resolve(A11y.child_or(_a11y_items, _cursor, get_accessibility_element()))

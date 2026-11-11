@@ -110,3 +110,7 @@ func _set_value(v: float) -> void:
 	value = v
 	if value != old:
 		scrolled.emit(value)
+
+
+func a11y_spec() -> Dictionary:
+	return A11y.scroll_bar(a11y_label(), value, max_value(), page, true)

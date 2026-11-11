@@ -16,6 +16,22 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	visible = false
+	A11y.track(self)
+
+
+## Status toast = a polite live region (LaunchFeedback.tsx: role="status" aria-live="polite").
+func a11y_spec(fb: Dictionary = UIState.launch_feedback) -> Dictionary:
+	var l := layout(fb)
+	var text := String(l.title)
+	if String(l.detail) != "":
+		text += ". " + String(l.detail)
+	return {"role": DisplayServer.ROLE_STATIC_TEXT, "name": text, "live": DisplayServer.LIVE_POLITE,
+		"bounds": l.rect}
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		A11y.apply_node(self, a11y_spec())
 
 
 func _ready() -> void:

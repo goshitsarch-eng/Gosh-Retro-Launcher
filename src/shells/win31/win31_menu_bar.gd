@@ -25,6 +25,7 @@ func _init() -> void:
 	focus_mode = Control.FOCUS_NONE
 	custom_minimum_size = Vector2(0, BAR_H)
 	add_to_group("pm_auto")
+	A11y.track(self)
 
 
 func set_menus(new_menus: Array) -> void:
@@ -72,6 +73,7 @@ func open_menu(id: String) -> void:
 	var m := _menu(id)
 	_popup = Win31PopupMenu.new()
 	_popup.min_width = 172
+	_popup.a11y_name = String(m.get("label", ""))
 	_popup.command_chosen.connect(_on_command)
 	_popup.dismissed.connect(close_menu)
 	popup_layer.add_child(_popup)
@@ -202,3 +204,31 @@ func auto_lookup(id: String) -> Variant:
 	elif id.begins_with("wfw.popup-item:") and _popup != null:
 		return _popup.auto_row(id.substr(15))
 	return null
+
+
+# ------------------------------------------------------------------ accessibility
+
+var _a11y_items: Array = []
+
+
+func a11y_item_specs() -> Array:
+	var out := []
+	for i in menus.size():
+		var spec := A11y.menu_item(String(menus[i].get("label", "")), root_rect(i) if i < ROOT_WIDTHS.size() else Rect2(),
+			disabled, "item", false, true)
+		spec["expanded"] = menus[i].id == active_menu
+		spec["click"] = _a11y_open.bind(String(menus[i].id))
+		out.append(spec)
+	return out
+
+
+func _a11y_open(_data: Variant, id: String) -> void:
+	open_menu(id)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		A11y.apply_node(self, {"role": DisplayServer.ROLE_MENU_BAR, "name": "Menu"})
+		A11y.sync_children(get_accessibility_element(), _a11y_items, a11y_item_specs())
+	elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+		_a11y_items.clear()

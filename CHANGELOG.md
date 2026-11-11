@@ -17,7 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Visual regression harness that drives the real app with injected input and diffs against the Electron-era baselines; ports of the vitest suites plus tests for every new module.
-- Runtime shell switching without recreating the process; in-app Ctrl/Cmd+Shift+Space Quick Search and a Quick Search item in the tray menu.
+- Runtime shell switching without recreating the process; a Quick Search item in the tray menu.
+- `program-manager --quick-search` opens Quick Search in the running instance (or starts with it open), so macOS and Linux users can bind Cmd/Ctrl+Shift+Space in their system keyboard settings.
 - Dropping files onto a WfW group window adds items; dragging an item between WfW group windows moves it (Ctrl copies).
 - Optional local RTM icon/font packs are honored for both shells (`assets/win95-rtm-local`, `assets/wfw-rtm-local`).
 
@@ -34,14 +35,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Performance: dragging a WfW group window, or Program Manager in desktop mode, moves the window instead of re-laying out and repainting every group on each mouse event; unchanged active-window/focus updates no longer rebuild menus or resync the Win95 desktop and taskbar; selected Win95 icons draw a cached dither mask instead of a per-pixel loop (marquee drags redraw per mouse move); icon pack lookups and icon-path regexes are no longer repeated on every draw; throttled auto-backups skip snapshotting the whole store.
 - The POSIX launch unit test no longer assumes `/bin/true` exists (it does not on macOS).
+- Parity: "Minimize to Tray on Close" hides the window again instead of minimizing it: on Windows through a small background helper (`ShowWindow`, no taskbar button; only when a tray icon exists), on macOS by hiding the app (the Dock icon brings it back). Linux still minimizes.
+- Parity: Ctrl+Shift+Space opens Quick Search system-wide on Windows again (`RegisterHotKey` in the same helper), including while the window is hidden.
+- Regression: on macOS/Linux a relative Command Line such as `./start.sh` is resolved against the item's working directory, and a bare program name is looked up on the PATH from the item's Environment field, as Electron's `spawn` did; both were reported as "Program not found".
+- Regression: the WfW startup chime played twice on top of itself at launch.
+- Regression: Win95 desktop right-click **New Folder...** creates "New Folder" and opens its property sheet again, instead of the name prompt used by folder windows.
+- Parity: screen readers see the interface again (the 1.x build had ARIA). Both shells expose roles, names, states and keyboard focus through Godot's AccessKit layer, and launch feedback and search status are announced.
+- Regression: the tray's **Launcher Tools...** restored and raised the hidden main window; it now only opens the tools window, like 1.x.
 
 ### Known differences from 1.x
 
-- The Ctrl/Cmd+Shift+Space shortcut no longer works while the app is in the background (Godot has no OS-wide hotkey API); use the tray's Quick Search item.
-- "Minimize to tray on close" minimizes (the taskbar/Dock entry stays) because Godot cannot hide its main window.
+- On macOS and Linux, Cmd/Ctrl+Shift+Space works from the background only after binding `program-manager --quick-search` in the system settings (Godot has no hotkey API; Windows uses a helper).
+- On Linux, "Minimize to tray on close" minimizes (the taskbar entry stays): Linux desktops offer no portable way to hide a window.
 - macOS tray icon is coloured instead of a template image; AppImage and RPM packages are no longer produced.
 - File icons are extracted for exe/dll, ico, icns, .app, .desktop and common image formats; other file types get the default icon.
-- The interface does not expose widgets to screen readers (the old build had ARIA labels).
 - See [docs/PLATFORM.md](docs/PLATFORM.md) for the full list.
 
 ## [Unreleased]

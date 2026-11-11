@@ -21,6 +21,7 @@ var disabled := false:
 func _init() -> void:
 	focus_mode = Control.FOCUS_ALL
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	A11y.track(self)
 
 
 func _fit() -> void:
@@ -60,3 +61,18 @@ func _gui_input(event: InputEvent) -> void:
 			if Rect2(Vector2.ZERO, size).has_point(event.position):
 				click()
 		accept_event()
+
+
+func a11y_spec() -> Dictionary:
+	var spec := A11y.check_box(label, checked, disabled)
+	spec["click"] = func(_d: Variant) -> void: click()
+	return spec
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		A11y.apply_node(self, a11y_spec())
+
+
+func _get_focused_accessibility_element() -> RID:
+	return A11y.resolve(get_accessibility_element())

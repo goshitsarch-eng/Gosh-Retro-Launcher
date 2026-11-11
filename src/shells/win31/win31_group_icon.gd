@@ -20,6 +20,7 @@ func _init() -> void:
 	custom_minimum_size = CELL
 	size = CELL
 	add_to_group("pm_auto")
+	A11y.track(self)
 
 
 func _ready() -> void:
@@ -98,3 +99,17 @@ func _gui_input(event: InputEvent) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_VISIBILITY_CHANGED:
 		_drag = {}
+	elif what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		A11y.apply_node(self, a11y_spec())
+
+
+## Minimized group: a button that restores the group window (Enter / double-click).
+func a11y_spec() -> Dictionary:
+	var spec := A11y.button(String(_group().get("name", "")).replace("&", "&&"))
+	spec["description"] = "Minimized group" + (", selected" if is_selected() else "")
+	spec["click"] = func(_d: Variant) -> void: restore_requested.emit(group_id)
+	return spec
+
+
+func _get_focused_accessibility_element() -> RID:
+	return A11y.resolve(get_accessibility_element())

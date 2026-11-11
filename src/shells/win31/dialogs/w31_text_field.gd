@@ -94,6 +94,12 @@ func focus_target() -> Control:
 	return edit
 
 
+## The LineEdit/TextEdit is what the screen reader focuses: it carries the caption.
+func set_a11y_label(label: String) -> void:
+	super.set_a11y_label(label)
+	edit.accessibility_name = accessibility_name
+
+
 func is_tab_stop() -> bool:
 	return is_visible_in_tree() and edit.focus_mode != Control.FOCUS_NONE
 

@@ -44,6 +44,7 @@ var _last_size := Vector2.ZERO
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	focus_mode = Control.FOCUS_NONE
+	A11y.track(self)
 
 
 func setup(p_shell: Control, entry: Dictionary) -> void:
@@ -749,3 +750,81 @@ func auto_lookup(id: String) -> Variant:
 	if id == "w95.window.active:caption-icon":
 		return Rect2(origin + _icon_rect().position, _icon_rect().size)
 	return null
+
+
+# ------------------------------------------------------------------ accessibility
+
+var _a11y_parts: Array = []    ## [control menu, minimize, maximize, close, menu bar, status]
+var _a11y_menus: Array = []    ## menu bar entries
+
+
+## Window named after its title with caption buttons, menu bar and status bar.
+func a11y_spec() -> Dictionary:
+	var spec := A11y.window(title_text())
+	var states := []
+	if looks_active():
+		states.append("active")
+	if is_minimized():
+		states.append("minimized")
+	spec["description"] = ", ".join(states)
+	return spec
+
+
+func a11y_part_specs() -> Array:
+	var maximized := is_maximized()
+	var sys := A11y.button("Control Menu")
+	sys["bounds"] = _icon_rect()
+	sys["popup"] = DisplayServer.POPUP_MENU
+	sys["expanded"] = system_menu_open
+	sys["click"] = func(_d: Variant) -> void: open_system_menu()
+	var mn := A11y.button("Minimize")
+	mn["bounds"] = _button_rect("min")
+	mn["click"] = func(_d: Variant) -> void: minimize()
+	var mx := A11y.button("Restore" if maximized else "Maximize")
+	mx["bounds"] = _button_rect("max")
+	mx["click"] = func(_d: Variant) -> void: toggle_maximize()
+	var cl := A11y.button("Close")
+	cl["bounds"] = _button_rect("close")
+	cl["click"] = func(_d: Variant) -> void: close()
+	var bar := {"role": DisplayServer.ROLE_MENU_BAR, "name": "Menu"}
+	var n := object_count()
+	var status := A11y.static_text("%d object%s" % [n, "" if n == 1 else "s"], _status_rect())
+	return [sys, mn, mx, cl, bar, status]
+
+
+func a11y_menu_specs() -> Array:
+	var rects := _menubar_rects()
+	var out := []
+	for i in MENU_IDS.size():
+		var spec := A11y.menu_item(MENU_LABELS[i], rects[i], false, "item", false, true)
+		spec["expanded"] = menu_id == MENU_IDS[i]
+		spec["click"] = _a11y_open_menu.bind(String(MENU_IDS[i]))
+		out.append(spec)
+	return out
+
+
+func _a11y_open_menu(_data: Variant, id: String) -> void:
+	open_menu(id)
+
+
+## Keyboard focus inside this window: the highlighted menu-bar title, else the client's focused
+## item (folder view / Find results), else the window itself.
+func a11y_focus() -> RID:
+	if menu_bar_index >= 0 and menu_id == "" and not system_menu_open:
+		return A11y.child_or(_a11y_menus, menu_bar_index, get_accessibility_element())
+	if client != null and is_instance_valid(client) and client.has_method("a11y_focus"):
+		var r: RID = client.a11y_focus()
+		if r.is_valid():
+			return r
+	return get_accessibility_element()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		var ae := get_accessibility_element()
+		A11y.apply(ae, a11y_spec())
+		A11y.sync_children(ae, _a11y_parts, a11y_part_specs())
+		A11y.sync_children(A11y.child_or(_a11y_parts, 4, RID()), _a11y_menus, a11y_menu_specs())
+	elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+		_a11y_parts.clear()
+		_a11y_menus.clear()

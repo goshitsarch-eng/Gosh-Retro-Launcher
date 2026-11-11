@@ -85,6 +85,7 @@ class _SearchDialog extends W31Dialog:
 		field = W31TextField.new()
 		field.set_field_size(cw, 19)
 		field.placeholder_text = "Search programs... (Esc to close)"
+		field.set_a11y_label("Search programs")
 		field.set_auto_id("wfw.quick-search.input")
 		add_widget(field, 0, 0)
 		results = _Results.new()
@@ -293,6 +294,55 @@ class _Results extends W31Widget:
 			var s2: String = view.moreText
 			if y2 + 23 > clip_top and y2 < clip_bottom and y2 + 16 <= clip_bottom:
 				W31.text(self, 1 + floorf((inner_w - W31.text_w(s2, 10)) / 2.0), y2 + 5, s2, W31.SHADOW, 10, {"line_height": 13})
+
+	# -------------------------------------------------------------- accessibility
+	# The search field keeps keyboard focus (Up/Down move the highlight), so the highlighted
+	# result is announced through a polite live region, like aria-live on the old list.
+
+	var _a11y_rows: Array = []
+	var _a11y_status: Array = []
+
+	func a11y_spec() -> Dictionary:
+		return {"role": DisplayServer.ROLE_LIST_BOX, "name": "Search results", "count": displayed().size()}
+
+	func a11y_row_name(i: int) -> String:
+		var d := displayed()
+		if i < 0 or i >= d.size():
+			return ""
+		return "%s, %s" % [String(d[i].item.get("name", "")), String(d[i].group.get("name", ""))]
+
+	## Text of the live region: the highlighted result with its position, or "No results found".
+	func a11y_status() -> String:
+		var d := displayed()
+		if d.is_empty():
+			return "No results found" if view.get("empty", false) else ""
+		return "%s, %d of %d" % [a11y_row_name(selected), selected + 1, d.size()]
+
+	func a11y_row_specs() -> Array:
+		var d := displayed()
+		var out := []
+		var inner_w := size.x - 2 - (W31ScrollBar.WIDTH if _sb.visible else 0)
+		for i in d.size():
+			var spec := A11y.option(a11y_row_name(i), i == selected, i, d.size(), Rect2(1, 1 + i * ROW_H - scroll_y, inner_w, ROW_H))
+			spec["click"] = _a11y_launch.bind(i)
+			out.append(spec)
+		return out
+
+	func _a11y_launch(_data: Variant, i: int) -> void:
+		var d := displayed()
+		if i >= 0 and i < d.size():
+			_launch(d[i].item)
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+			var ae := get_accessibility_element()
+			A11y.sync_children(ae, _a11y_rows, a11y_row_specs())
+			var status := A11y.static_text(a11y_status())
+			status["live"] = DisplayServer.LIVE_POLITE
+			A11y.sync_children(ae, _a11y_status, [status])
+		elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+			_a11y_rows.clear()
+			_a11y_status.clear()
 
 	func _fill_clipped(r: Rect2, c: Color, top: float, bottom: float) -> void:
 		var y0 := maxf(r.position.y, top)

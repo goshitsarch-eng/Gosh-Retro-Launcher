@@ -204,7 +204,9 @@ Quick Search lets you find and launch any program item across all groups without
 
 ### Opening Quick Search
 
-- Press **Ctrl+Shift+Space** (Windows/Linux) or **Cmd+Shift+Space** (macOS) while Program Manager is focused, or choose **Quick Search** from the tray menu when it is in the background (operating-system-wide hotkeys are not available in this version)
+- Press **Ctrl+Shift+Space** (Windows/Linux) or **Cmd+Shift+Space** (macOS). On Windows this works from anywhere, even while Program Manager is hidden in the tray. On macOS and Linux it works while Program Manager is focused; to use it from anywhere, see [Global Quick Search shortcut on macOS and Linux](#global-quick-search-shortcut-on-macos-and-linux)
+- Choose **Quick Search** from the tray menu
+- Run `program-manager --quick-search` (it opens Quick Search in the running instance)
 - In Windows 95, choose **Start → Find → Files or Folders...**
 
 Windows 95 opens or reactivates a modeless **Find: All Files** primary window and task button. WfW retains `QuickSearchOverlay` unchanged.
@@ -299,7 +301,11 @@ The imported data replaces your current groups and settings. The application rel
 
 ## System Tray
 
-When the **Minimize to Tray on Close** setting is enabled (default), closing the main window minimizes Program Manager and keeps it running; the tray icon restores it. (The taskbar or Dock entry stays visible, because Godot cannot hide a window from the taskbar.)
+When the **Minimize to Tray on Close** setting is enabled (default), closing the main window hides Program Manager and keeps it running; the tray icon restores it.
+
+- **Windows**: the window and its taskbar button disappear. If the background helper cannot start (for example when PowerShell is restricted by policy), the window is minimized instead.
+- **macOS**: the app is hidden; its Dock icon stays and clicking it brings the window back.
+- **Linux**: the window is minimized and its taskbar entry stays, because Linux desktops offer no portable way to hide a window.
 
 ### Tray Menu
 
@@ -326,11 +332,21 @@ The tray icons are `assets/icons/tray-win.png`, `tray-linux.png` and `tray-mac.p
 
 | Shortcut | Action |
 |----------|--------|
-| Ctrl+Shift+Space (Cmd+Shift+Space on macOS) | Toggle Quick Search/Win95 Find (while the app is focused; use the tray's Quick Search when it is in the background) |
+| Ctrl+Shift+Space (Cmd+Shift+Space on macOS) | Toggle Quick Search/Win95 Find (system-wide on Windows; on macOS/Linux while the app is focused unless bound as below) |
 | Ctrl+Alt+T | Open Launcher Tools from either shell |
 | Enter | Launch the selected program item |
 | Delete | Delete the selected program item (with confirmation) |
 | Arrow keys | Navigate between items in the grid |
+
+### Global Quick Search shortcut on macOS and Linux
+
+On Windows, Ctrl+Shift+Space opens Quick Search from anywhere. macOS and Linux need the shortcut bound once in the system settings, pointing at the `--quick-search` command:
+
+- **macOS**: in the Shortcuts app, create a shortcut with a **Run Shell Script** action containing `open -n -a "Program Manager" --args --quick-search` (`-n` starts a short-lived second copy that hands the request to the running one and exits), then use **Add Keyboard Shortcut** in its details and press Cmd+Shift+Space.
+- **GNOME**: Settings → Keyboard → Custom Shortcuts → add the command `program-manager --quick-search` with Ctrl+Shift+Space.
+- **KDE Plasma**: System Settings → Shortcuts → Add New → Command or Script, with the same command.
+
+If Program Manager is not running, the command starts it with Quick Search open.
 
 ### Windows 3.1 Shell
 
@@ -448,4 +464,5 @@ To reset the application to its default state, delete the `program-manager-data.
 ### The window is hidden and cannot be restored
 
 - If the window is minimized to tray, look for the tray icon and double-click it (Windows/Linux) or click it (macOS).
-- If the tray icon is not visible, you can kill the process and relaunch the application. The `trayOnClose` setting can be changed to `false` in the data file to prevent this behavior.
+- Start Program Manager again: the running copy brings its window back instead of opening a second one. On macOS, clicking the Dock icon also works.
+- On Windows the window is only hidden when a tray icon exists. To quit instead of hiding, turn off **Minimize to Tray on Close** (or set `trayOnClose` to `false` in the data file).

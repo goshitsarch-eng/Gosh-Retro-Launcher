@@ -50,6 +50,7 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	focus_mode = Control.FOCUS_NONE
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	A11y.track(self)
 
 
 func _build() -> void:
@@ -283,3 +284,37 @@ func auto_lookup(id: String) -> Variant:
 			if w is Win95Button and String(w.label).replace("&", "") == label:
 				return Rect2(w.global_position, w.size)
 	return null
+
+
+# ------------------------------------------------------------------ accessibility
+
+var _a11y_buttons: Array = []
+
+
+## Modal dialog named after its caption, bounded to the frame (the control itself covers the shell).
+func a11y_spec() -> Dictionary:
+	var spec := A11y.dialog(title)
+	spec["bounds"] = frame_rect()
+	return spec
+
+
+func a11y_button_specs() -> Array:
+	var out := []
+	if context_help != "":
+		var help := A11y.button("Help")
+		help["bounds"] = _help_rect()
+		out.append(help)
+	var cl := A11y.button("Close")
+	cl["bounds"] = _close_rect()
+	cl["click"] = func(_d: Variant) -> void: cancel()
+	out.append(cl)
+	return out
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		var ae := get_accessibility_element()
+		A11y.apply(ae, a11y_spec())
+		A11y.sync_children(ae, _a11y_buttons, a11y_button_specs())
+	elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+		_a11y_buttons.clear()

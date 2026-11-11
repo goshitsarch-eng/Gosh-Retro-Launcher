@@ -69,6 +69,7 @@ func setup(p_shell: Control, p_window: Control) -> void:
 	_sb_clip.add_child(_sb)
 	_sb.hide()
 	add_to_group("pm_auto")
+	A11y.track(self)
 	ProgramStore.groups_changed.connect(_on_groups_changed)
 	shell.windows.changed.connect(_on_windows_changed)
 	resized.connect(_layout)
@@ -457,3 +458,62 @@ func auto_lookup(id: String) -> Variant:
 			if String(b.label).replace("&", "") == label2:
 				return Rect2(b.global_position, b.size)
 	return null
+
+
+# ------------------------------------------------------------------ accessibility
+
+var _a11y_parts: Array = []   ## [results list box, status text]
+var _a11y_rows: Array = []
+
+
+## "Searching..." / "No files found." / "N file(s) found" (announced politely, like the status bar).
+func a11y_status() -> String:
+	if running:
+		return "Searching..."
+	if not searched:
+		return ""
+	if results.is_empty():
+		return "No files found."
+	return "%d file(s) found" % results.size()
+
+
+func a11y_row_specs() -> Array:
+	var out := []
+	var ids := _ids()
+	var sel := {}
+	for s in selection.selected:
+		sel[s] = true
+	var inner := _results_rect().grow(-2)
+	var rows_top := inner.position.y + 18
+	for i in results.size():
+		var r: Dictionary = results[i]
+		var spec := A11y.option("%s, %s" % [String(r.item.get("name", "")), String(r.group.get("name", ""))], sel.has(ids[i]), i, results.size(),
+			Rect2(inner.position.x + 1, rows_top + i * ROW_H - scroll, inner.size.x - 1, ROW_H))
+		spec["click"] = _a11y_launch.bind(i)
+		out.append(spec)
+	return out
+
+
+func _a11y_launch(_data: Variant, i: int) -> void:
+	if i >= 0 and i < results.size():
+		_launch(results[i])
+
+
+func a11y_focus() -> RID:
+	if results.is_empty() or _a11y_parts.is_empty():
+		return RID()
+	return A11y.child_or(_a11y_rows, _focused_index(), _a11y_parts[0])
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		var ae := get_accessibility_element()
+		var list := {"role": DisplayServer.ROLE_LIST_BOX, "name": "Results", "multiselect": true, "count": results.size(),
+			"bounds": _results_rect()}
+		var status := A11y.static_text(a11y_status())
+		status["live"] = DisplayServer.LIVE_POLITE
+		A11y.sync_children(ae, _a11y_parts, [list, status])
+		A11y.sync_children(A11y.child_or(_a11y_parts, 0, RID()), _a11y_rows, a11y_row_specs())
+	elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+		_a11y_parts.clear()
+		_a11y_rows.clear()

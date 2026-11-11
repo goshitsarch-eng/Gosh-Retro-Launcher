@@ -33,6 +33,7 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	size = Vector2(Win95Tokens.M.buttonMinWidth, Win95Tokens.M.buttonHeight)
 	custom_minimum_size = size
+	A11y.track(self)
 
 
 func access_key() -> String:
@@ -82,3 +83,18 @@ func _gui_input(event: InputEvent) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_FOCUS_ENTER or what == NOTIFICATION_FOCUS_EXIT:
 		queue_redraw()
+	elif what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		A11y.apply_node(self, a11y_spec())
+
+
+func a11y_spec() -> Dictionary:
+	var spec := A11y.button(label if label != "" else accessibility_name, disabled, default_button)
+	spec["click"] = func(_d: Variant) -> void: click()
+	if set_state:
+		spec["role"] = DisplayServer.ROLE_CHECK_BUTTON
+		spec["checked"] = true
+	return spec
+
+
+func _get_focused_accessibility_element() -> RID:
+	return A11y.resolve(get_accessibility_element())

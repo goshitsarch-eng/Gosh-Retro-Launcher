@@ -17,6 +17,7 @@ func _init() -> void:
 	size = CELL
 	custom_minimum_size = CELL
 	add_to_group("pm_auto")
+	A11y.track(self)
 
 
 func _ready() -> void:
@@ -58,3 +59,19 @@ func auto_lookup(id: String) -> Variant:
 	if id == "wfw.desktop-icon:program-manager" and is_visible_in_tree():
 		return get_global_rect()
 	return null
+
+
+func a11y_spec() -> Dictionary:
+	var spec := A11y.button("Program Manager")
+	spec["description"] = "Minimized"
+	spec["click"] = func(_d: Variant) -> void: restore_requested.emit()
+	return spec
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		A11y.apply_node(self, a11y_spec())
+
+
+func _get_focused_accessibility_element() -> RID:
+	return A11y.resolve(get_accessibility_element())

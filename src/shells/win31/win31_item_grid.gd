@@ -24,6 +24,7 @@ func _init() -> void:
 	focus_mode = Control.FOCUS_ALL
 	clip_contents = true
 	add_to_group("pm_auto")
+	A11y.track(self)
 
 
 func _group() -> Dictionary:
@@ -77,6 +78,12 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
 		_clamp_scroll()
 		queue_redraw()
+	elif what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		var ae := get_accessibility_element()
+		A11y.apply(ae, a11y_spec())
+		A11y.sync_children(ae, _a11y_items, a11y_item_specs())
+	elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+		_a11y_items.clear()
 
 
 # ------------------------------------------------------------------ drawing
@@ -360,3 +367,48 @@ func item_global_rect(index: int) -> Rect2:
 		return Rect2()
 	var r := cell_rect(index)
 	return Rect2(get_global_rect().position + r.position, r.size)
+
+
+# ------------------------------------------------------------------ accessibility
+
+var _a11y_items: Array = []
+
+
+## The group's item area is a list box of program items (Win31ItemGrid.tsx: role="listbox").
+func a11y_spec() -> Dictionary:
+	return {"role": DisplayServer.ROLE_LIST_BOX, "name": String(_group().get("name", "")), "count": _items().size()}
+
+
+func a11y_item_specs() -> Array:
+	var items := _items()
+	var out := []
+	if items.is_empty():
+		return out
+	var positions := _positions()
+	var selected := _selected_index()
+	for i in items.size():
+		var spec := A11y.option(String(items[i].get("name", "")), i == selected, i, items.size(), cell_rect(i, positions))
+		spec["focus"] = _a11y_select.bind(i)
+		spec["click"] = _a11y_launch.bind(i)
+		out.append(spec)
+	return out
+
+
+func _a11y_select(_data: Variant, i: int) -> void:
+	var items := _items()
+	if i >= 0 and i < items.size():
+		UIState.set_win31_selection({"kind": "item", "groupId": group_id, "itemId": items[i].id})
+		UIState.set_selected_item(items[i].id, group_id)
+		_scroll_into_view(i)
+		queue_redraw()
+
+
+func _a11y_launch(data: Variant, i: int) -> void:
+	_a11y_select(data, i)
+	var items := _items()
+	if i >= 0 and i < items.size():
+		launch_requested.emit(items[i])
+
+
+func _get_focused_accessibility_element() -> RID:
+	return A11y.resolve(A11y.child_or(_a11y_items, _selected_index(), get_accessibility_element()))

@@ -174,6 +174,7 @@ class ItemProperties extends W31Dialog:
 			var filter := W31TextField.new()
 			filter.set_field_size(fw, 19)
 			filter.placeholder_text = "Filter icons..."
+			filter.set_a11y_label("Filter icons")
 			filter.text = icon_search
 			filter.text_changed.connect(func(t: String):
 				icon_search = t

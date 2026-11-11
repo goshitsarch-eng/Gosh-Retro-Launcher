@@ -49,6 +49,16 @@ func _init(p_title: String = "", p_width: int = 400) -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	focus_mode = Control.FOCUS_NONE
 	set_auto_id("wfw.dialog")
+	A11y.track(self)
+
+
+func a11y_spec() -> Dictionary:
+	return A11y.dialog(title)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		A11y.apply_node(self, a11y_spec())
 
 
 func set_auto_id(id: String) -> void:
@@ -144,6 +154,7 @@ func add_widget(w: Control, x: int, y: int, sz: Vector2 = Vector2.ZERO) -> Contr
 
 func add_text(x: int, y: int, s: String, px: int = 11, opts: Dictionary = {}) -> void:
 	body.ops.append(func(ci: CanvasItem): W31.text(ci, x, y, s, opts.get("color", W31.BLACK), px, opts))
+	body.texts.append({"text": s, "rect": Rect2(x, y, W31.text_w(s, px), int(opts.get("line_height", 13)))})
 
 
 ## Wrapped paragraph; returns its height.
@@ -151,6 +162,7 @@ func add_paragraph(x: int, y: int, s: String, width: int, line_h: int, px: int =
 	var lines := W31.font(px).wrap(s, width)
 	var o := opts.duplicate()
 	o["line_height"] = line_h
+	body.texts.append({"text": s, "rect": Rect2(x, y, width, maxi(1, lines.size()) * line_h)})
 	for i in lines.size():
 		var line := lines[i]
 		var yy := y + i * line_h
@@ -179,6 +191,8 @@ func add_label(x: int, y: int, s: String, width: int = 106) -> void:
 func add_form_row(y: int, label: String, ctl: Control, ctl_w: int, ctl_h: int = 19, label_x: int = 0) -> void:
 	add_label(label_x, y + (ctl_h - 13) / 2 if ctl_h <= 19 else y, label)
 	add_widget(ctl, label_x + 106 + 5, y, Vector2(ctl_w, ctl_h))
+	if ctl.has_method("set_a11y_label"):
+		ctl.set_a11y_label(label)
 
 
 func add_text_field(x: int, y: int, w: int, value: String = "", h: int = 19, multiline: bool = false) -> W31TextField:
@@ -439,10 +453,24 @@ func cancel() -> void:
 
 class W31Body extends Control:
 	var ops: Array = []
+	var texts: Array = []  ## [{text, rect}] static text drawn by `ops`, exposed to screen readers
+	var _a11y_items: Array = []
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_PASS
 		focus_mode = Control.FOCUS_NONE
+
+	func a11y_text_specs() -> Array:
+		var out := []
+		for t in texts:
+			out.append(A11y.static_text(String(t.text), t.rect))
+		return out
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+			A11y.sync_children(get_accessibility_element(), _a11y_items, a11y_text_specs())
+		elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+			_a11y_items.clear()
 
 	func _draw() -> void:
 		for op in ops:
@@ -454,10 +482,33 @@ class _SysMenu extends Control:
 	var hover := -1
 	const ITEMS := ["Move", "-", "Close"]
 
+	var _a11y_items: Array = []
+
 	func _init(p_dialog: W31Dialog) -> void:
 		dialog = p_dialog
 		size = Vector2(MENU_W, 46)
 		mouse_filter = Control.MOUSE_FILTER_STOP
+		A11y.track(self)
+
+	func _enter_tree() -> void:
+		A11y.push_overlay(self)
+
+	func _exit_tree() -> void:
+		A11y.remove_overlay(self)
+
+	func a11y_item_specs() -> Array:
+		return [A11y.menu_item("&Move", _item_rect(0)), A11y.menu_item("&Close", _item_rect(1))]
+
+	func a11y_focus() -> RID:
+		var i := 0 if hover == 0 else (1 if hover == 2 else -1)
+		return A11y.child_or(_a11y_items, i, get_accessibility_element())
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+			A11y.apply_node(self, {"role": DisplayServer.ROLE_MENU, "name": "System"})
+			A11y.sync_children(get_accessibility_element(), _a11y_items, a11y_item_specs())
+		elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+			_a11y_items.clear()
 
 	func _item_rect(i: int) -> Rect2:
 		return Rect2(3, 3, MENU_W - 6, 17) if i == 0 else Rect2(3, 3 + 17 + 6, MENU_W - 6, 17)

@@ -27,6 +27,7 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	focus_mode = Control.FOCUS_CLICK
 	add_to_group("pm_auto")
+	A11y.track(self)
 	grid = Win31ItemGrid.new()
 	add_child(grid)
 	grid.launch_requested.connect(func(item): launch_requested.emit(item))
@@ -74,6 +75,51 @@ func _layout() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED and grid != null:
 		_layout()
+	elif what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		var ae := get_accessibility_element()
+		A11y.apply(ae, a11y_spec())
+		A11y.sync_children(ae, _a11y_buttons, a11y_button_specs())
+	elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+		_a11y_buttons.clear()
+
+
+# ------------------------------------------------------------------ accessibility
+
+var _a11y_buttons: Array = []
+
+
+## Group window: a window named after the group with its three caption buttons.
+func a11y_spec() -> Dictionary:
+	var spec := A11y.window(String(_group().get("name", "")))
+	spec["description"] = "active" if active else ""
+	return spec
+
+
+func a11y_button_specs() -> Array:
+	var maximized := is_maximized()
+	var sys := A11y.button("Control Menu")
+	sys["bounds"] = system_button_rect()
+	sys["popup"] = DisplayServer.POPUP_MENU
+	sys["expanded"] = _menu != null
+	sys["click"] = func(_d: Variant) -> void: toggle_system_menu()
+	var mn := A11y.button("Minimize")
+	mn["bounds"] = min_button_rect()
+	mn["click"] = func(_d: Variant) -> void: minimize()
+	var mx := A11y.button("Restore" if maximized else "Maximize")
+	mx["bounds"] = max_button_rect()
+	mx["click"] = _a11y_toggle_maximize
+	return [sys, mn, mx]
+
+
+func _a11y_toggle_maximize(_data: Variant = null) -> void:
+	if is_maximized():
+		restore()
+	else:
+		maximize()
+
+
+func _get_focused_accessibility_element() -> RID:
+	return A11y.resolve(get_accessibility_element())
 
 
 # ---------------------------------------------------------------- geometry
@@ -180,6 +226,7 @@ func open_system_menu() -> void:
 	if _menu != null or client == null:
 		return
 	_menu = Win31PopupMenu.new()
+	_menu.a11y_name = "%s Control Menu" % String(_group().get("name", ""))
 	_menu.min_width = 140
 	_menu.command_chosen.connect(_system_command)
 	_menu.dismissed.connect(close_system_menu)

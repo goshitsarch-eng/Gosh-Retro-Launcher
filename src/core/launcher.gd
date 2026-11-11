@@ -138,13 +138,22 @@ static func _ok() -> Dictionary:
 	return {"success": true}
 
 
-## POSIX: absolute/relative path with a slash must exist; bare names are looked up on $PATH.
+## POSIX: a path with a slash must exist; bare names are looked up on $PATH. Resolved the way the
+## child will see it (like Node's spawn): a relative path against the working directory when one is
+## set, and the item's own PATH (environment field) before the launcher's.
 ## fork() succeeds even when exec() later fails, so this is the only way to report a missing program.
-static func resolve_executable(command: String) -> String:
+static func resolve_executable(command: String, cwd: String = "", env_additions: Dictionary = {}) -> String:
 	if command.contains("/"):
-		return command if FileAccess.file_exists(command) else ""
-	for dir in OS.get_environment("PATH").split(":", false):
-		var candidate := String(dir).path_join(command)
+		var path := command
+		if not command.is_absolute_path() and not cwd.is_empty():
+			path = cwd.path_join(command)
+		return path if FileAccess.file_exists(path) else ""
+	var search_path := String(env_additions.get("PATH", OS.get_environment("PATH")))
+	for dir in search_path.split(":", false):
+		var base := String(dir)
+		if not base.is_absolute_path() and not cwd.is_empty():
+			base = cwd.path_join(base)
+		var candidate := base.path_join(command)
 		if FileAccess.file_exists(candidate):
 			return candidate
 	return ""
@@ -160,10 +169,10 @@ static func spawn_detached(command: String, args: PackedStringArray, cwd: String
 			var pid := OS.create_process(command, args)
 			return _ok() if pid > 0 else _fail("Failed to spawn %s" % command)
 		return _spawn_powershell(command, args, "", cwd, env_additions)
-	if resolve_executable(command).is_empty():
-		return _fail("Program not found: %s" % command)
 	if not cwd.is_empty() and not DirAccess.dir_exists_absolute(cwd):
 		return _fail("Working directory not found: %s" % cwd)
+	if resolve_executable(command, cwd, env_additions).is_empty():
+		return _fail("Program not found: %s" % command)
 	var bad_key := _invalid_env_key(env_additions)
 	if bad_key != "":
 		return _fail("Invalid environment variable name: %s" % bad_key)

@@ -11,6 +11,7 @@ var label := "":
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	focus_mode = Control.FOCUS_NONE
+	A11y.track(self)
 
 
 ## Content origin: children are expected at this offset (fieldset padding 10px 8px 8px).
@@ -25,3 +26,12 @@ func _draw() -> void:
 		var tw := Win95Draw.measure(label)
 		Win95Draw.fill(self, Rect2(8, 0, tw + 8, 13), Win95Draw.FACE)
 		Win95Draw.text(self, Vector2(12, 0), label, Win95Draw.TEXT)
+
+
+func a11y_spec() -> Dictionary:
+	return {"role": DisplayServer.ROLE_CONTAINER, "name": A11y.plain(label)}
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		A11y.apply_node(self, a11y_spec())

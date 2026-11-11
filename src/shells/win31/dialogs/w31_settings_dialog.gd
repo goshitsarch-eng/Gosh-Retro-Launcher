@@ -75,6 +75,7 @@ func _build(cw: int) -> void:
 	var scale_combo := _scale_combo(scale_key)
 	add_label(8, 351 + 3, scale_label, lw)
 	add_widget(scale_combo, 8 + lw + 5, 351, Vector2(inner_w - lw - 5, 19))
+	scale_combo.set_a11y_label(scale_label)
 	# ---- Batch Launch
 	var g3 := W31GroupBox.new("Batch Launch")
 	add_widget(g3, 0, 393, Vector2(cw, 38))
@@ -90,6 +91,7 @@ func _build(cw: int) -> void:
 		form.launchDelay = int(v)
 		value_label.text = "%dms" % int(v))
 	add_widget(slider, 8 + dlw + 7, 393 + 11, Vector2(slider_w, 18))
+	slider.set_a11y_label(dl)
 	add_widget(value_label, 8 + dlw + 7 + slider_w + 7, 393 + 12 + 1, Vector2(value_w, 13))
 	# ---- buttons
 	var ok := make_button("OK", true, _submit)

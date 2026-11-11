@@ -48,6 +48,7 @@ func _init() -> void:
 	edit.focus_exited.connect(queue_redraw)
 	add_child(edit)
 	resized.connect(_layout)
+	A11y.track(self)
 	_layout()
 
 
@@ -66,3 +67,17 @@ func has_text_focus() -> bool:
 
 func _draw() -> void:
 	Win95Draw.sunken(self, Rect2(Vector2.ZERO, size), Win95Draw.FACE if disabled else Win95Draw.WINDOW)
+
+
+## The LineEdit carries the caption a screen reader announces (set once the form is assembled).
+func _ready() -> void:
+	_name_edit.call_deferred()
+
+
+func _name_edit() -> void:
+	if edit == null or not is_inside_tree() or edit.accessibility_name != "":
+		return
+	var caption := A11y.clean_caption(label) if label != "" else Win95Label.caption_near(self)
+	if caption == "" and accessibility_name != "":
+		caption = accessibility_name
+	edit.accessibility_name = caption

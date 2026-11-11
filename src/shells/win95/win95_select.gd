@@ -26,6 +26,7 @@ func _init() -> void:
 	custom_minimum_size = Vector2(0, 21)
 	focus_mode = Control.FOCUS_ALL
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	A11y.track(self)
 
 
 func current_text() -> String:
@@ -67,3 +68,19 @@ func _gui_input(event: InputEvent) -> void:
 		else:
 			open_list()
 		accept_event()
+
+
+func a11y_spec() -> Dictionary:
+	var name := accessibility_name if accessibility_name != "" else Win95Label.caption_near(self)
+	var spec := A11y.combo(name, current_text(), _menu != null and is_instance_valid(_menu), disabled)
+	spec["click"] = func(_d: Variant) -> void: open_list()
+	return spec
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		A11y.apply_node(self, a11y_spec())
+
+
+func _get_focused_accessibility_element() -> RID:
+	return A11y.resolve(get_accessibility_element())

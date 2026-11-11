@@ -55,6 +55,7 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	A11y.ensure_proxy(get_tree())
 	ProgramStore.groups_changed.connect(_on_groups_changed)
 	ProgramStore.settings_changed.connect(_on_settings_changed)
 	UIState.selection_changed.connect(_on_selection_changed)

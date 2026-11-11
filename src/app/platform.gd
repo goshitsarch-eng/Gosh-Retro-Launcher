@@ -20,12 +20,18 @@ const GRP_UNSAFE := "[<>:\"/\\\\|?*]+"
 ## request = {title, mode: "open"|"save", filters: Array, default_name: String, start_dir: String}.
 var dialog_provider: Callable = Callable()
 
-## Set by the app host once the tray icon exists (informational: Godot cannot hide its main window,
-## so "hide to tray" always minimizes and the window can never be stranded invisible).
+## Set by the app host once the tray icon exists. On Windows the window is only really hidden when
+## there is a tray icon to bring it back (it can never be stranded invisible).
 var tray_present := false
+## Set by the app host: OS-level window hiding and the global hotkey (Godot itself refuses to hide
+## the main window). Null in tests/headless runs: "hide to tray" then minimizes.
+var desktop: DesktopBridge
 
 var _quitting := false
-var _hidden := false  ## minimized by "close to tray" and not restored yet
+var _hidden := false  ## put away by "close to tray" and not restored yet
+var _os_hidden := false  ## ... and really hidden by the OS (not just minimized)
+var _awaiting_shown := false
+const SHOWN_TIMEOUT_S := 2.0
 var _state_pending := false
 var _last_state: Dictionary = {}
 var _last_screen := -1
@@ -280,7 +286,7 @@ func is_window_minimized() -> bool:
 	return DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_MINIMIZED
 
 
-## True after "close to tray" until the window is shown again (the window itself is minimized).
+## True after "close to tray" until the window is shown again (hidden, or minimized as a fallback).
 func is_window_hidden() -> bool:
 	return _hidden
 
@@ -309,18 +315,53 @@ func close_window() -> void:
 		hide_window()
 
 
-## "Hide to tray". Godot refuses to hide the main window ("Can't change visibility of main
-## window"), so this minimizes it; the tray icon (or the taskbar/Dock) restores it.
+## "Hide to tray", like BrowserWindow.hide(). Godot refuses to hide the main window ("Can't change
+## visibility of main window"), so the DesktopBridge asks the OS (Windows: ShowWindow(SW_HIDE),
+## no taskbar entry; macOS: the app is hidden, the Dock icon stays). Where that is unavailable
+## (Linux, helper failed, no tray on Windows) the window is minimized instead.
 func hide_window() -> void:
 	_hidden = true
-	minimize_window()
+	if desktop and desktop.can_hide(tray_present) and desktop.hide_window():
+		_os_hidden = true
+	else:
+		minimize_window()
 	_queue_state()
 
 
 ## Restores, un-hides and focuses the window (tray click, second instance, quick search...).
 func show_window() -> void:
-	var win := get_window()
 	_hidden = false
+	if _os_hidden:
+		_os_hidden = false
+		match desktop.show_window():
+			DesktopBridge.SHOW_PENDING:
+				# Windows: _on_desktop_shown() focuses once the helper made it visible; if it never
+				# answers, re-show the window ourselves.
+				_awaiting_shown = true
+				get_tree().create_timer(SHOWN_TIMEOUT_S).timeout.connect(_on_shown_timeout)
+				return
+			DesktopBridge.SHOW_FAILED:
+				# Helper gone: Godot's own minimize -> restore makes a hidden HWND visible again.
+				DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_MINIMIZED)
+	_restore_and_focus()
+
+
+## DesktopBridge `shown`: the OS made the window visible again.
+func _on_desktop_shown() -> void:
+	if _awaiting_shown and not _hidden:
+		_awaiting_shown = false
+		_restore_and_focus()
+
+
+func _on_shown_timeout() -> void:
+	if _awaiting_shown and not _hidden:
+		_awaiting_shown = false
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_MINIMIZED)
+		_restore_and_focus()
+
+
+func _restore_and_focus() -> void:
+	var win := get_window()
 	if win.mode == Window.MODE_MINIMIZED:
 		win.mode = Window.MODE_MAXIMIZED if _was_maximized else Window.MODE_WINDOWED
 	win.grab_focus()
@@ -424,11 +465,13 @@ func trigger_quick_search() -> void:
 	quick_search_requested.emit()
 
 
-## Opens Launcher Tools: emits `launcher_tools_requested` for whoever implements the tools window;
-## falls back to the in-window Settings dialog (what App.tsx did) when nobody is connected.
+## Opens Launcher Tools: emits `launcher_tools_requested` for whoever implements the (separate)
+## tools window, leaving a hidden/minimized main window alone like tray.ts did; falls back to the
+## in-window Settings dialog (what App.tsx did), which does need the main window, when nobody is
+## connected.
 func open_launcher_tools() -> void:
-	show_window()
 	if launcher_tools_requested.get_connections().is_empty():
+		show_window()
 		UIState.open_dialog("settings")
 	else:
 		launcher_tools_requested.emit()
@@ -442,7 +485,8 @@ func _on_window_input(event: InputEvent) -> void:
 		return
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
-	# In-app stand-in for the Electron global shortcuts (a Godot app cannot register OS-wide hotkeys).
+	# In-app shortcuts. The OS-wide Ctrl+Shift+Space comes from the DesktopBridge (Windows) or from
+	# `program-manager --quick-search` bound in the system keyboard settings (macOS/Linux).
 	if event.keycode == KEY_SPACE and event.shift_pressed and event.is_command_or_control_pressed() and not event.alt_pressed:
 		get_window().set_input_as_handled()
 		trigger_quick_search()
@@ -468,6 +512,7 @@ func _on_files_dropped(files: PackedStringArray) -> void:
 
 func _on_focus_entered() -> void:
 	_hidden = false  # restored through the taskbar / Dock / alt-tab instead of the tray
+	_os_hidden = false
 	_queue_state()
 
 

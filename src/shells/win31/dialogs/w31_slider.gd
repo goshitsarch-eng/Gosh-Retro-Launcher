@@ -88,3 +88,8 @@ func _gui_input(event: InputEvent) -> void:
 			_:
 				return
 		accept_event()
+
+
+func a11y_spec() -> Dictionary:
+	return {"role": DisplayServer.ROLE_SLIDER, "name": a11y_label(), "value": str(value),
+		"num": {"value": value, "min": min_value, "max": max_value, "step": step}}

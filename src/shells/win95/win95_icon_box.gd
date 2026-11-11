@@ -23,7 +23,17 @@ static func make(p_icon: String, pos: Vector2, p_family: String = "large") -> Wi
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	focus_mode = Control.FOCUS_NONE
+	A11y.track(self)
 
 
 func _draw() -> void:
 	Win95Draw.icon(self, Win95IconCatalog.texture(icon, family), Vector2.ZERO)
+
+
+func a11y_spec() -> Dictionary:
+	return {"role": DisplayServer.ROLE_IMAGE, "name": icon.replace("-", " ") if not Win95IconCatalog.is_external(icon) else ""}
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		A11y.apply_node(self, a11y_spec())

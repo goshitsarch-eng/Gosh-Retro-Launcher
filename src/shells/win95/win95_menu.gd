@@ -61,6 +61,7 @@ static func open(p_shell: Control, p_items: Array, at: Vector2, opts: Dictionary
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	focus_mode = Control.FOCUS_NONE
+	A11y.track(self)
 
 
 func _register() -> void:
@@ -84,8 +85,13 @@ func _unregister() -> void:
 
 
 func _exit_tree() -> void:
+	A11y.remove_overlay(self)
 	if root == self:
 		_unregister()
+
+
+func _enter_tree() -> void:
+	A11y.push_overlay(self)  # every cascade level; the newest (deepest) one reports the focus
 
 
 # ------------------------------------------------------------------ layout
@@ -496,3 +502,49 @@ func _handle_key(event: Dictionary) -> bool:
 			root._activate(self, selectable[match])
 			return true
 	return false
+
+
+# ------------------------------------------------------------------ accessibility
+
+var _a11y_items: Array = []
+
+
+## Rows as A11y menu-item specs (element-local bounds; separators included).
+func a11y_item_specs() -> Array:
+	var out := []
+	for i in _rows.size():
+		var r: Dictionary = _rows[i]
+		var item: Dictionary = r.item
+		var bounds := Rect2(4, r.y, size.x - 8, r.h)
+		if item.get("separator", false):
+			out.append(A11y.menu_item("", bounds, false, "separator"))
+			continue
+		var kind := "item"
+		if item.has("checked"):
+			kind = "radio" if item.get("radio", false) else "check"
+		var spec := A11y.menu_item(String(item.get("label", "")), bounds, bool(item.get("disabled", false)), kind,
+			bool(item.get("checked", false)), _item_has_children(item))
+		if _item_has_children(item):
+			spec["expanded"] = root != null and root._levels.size() > level + 1 \
+				and is_instance_valid(root._levels[level + 1]) and root._levels[level + 1].get_meta("owner_id", "") == String(item.id)
+		spec["click"] = _a11y_activate.bind(String(item.get("id", "")))
+		out.append(spec)
+	return out
+
+
+func _a11y_activate(_data: Variant, id: String) -> void:
+	if root != null and not _closed:
+		root._activate(self, _find_item(id))
+
+
+func a11y_focus() -> RID:
+	return A11y.child_or(_a11y_items, _index_of(selected_id), get_accessibility_element())
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		var ae := get_accessibility_element()
+		A11y.apply(ae, {"role": DisplayServer.ROLE_MENU, "name": ""})
+		A11y.sync_children(ae, _a11y_items, a11y_item_specs())
+	elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+		_a11y_items.clear()

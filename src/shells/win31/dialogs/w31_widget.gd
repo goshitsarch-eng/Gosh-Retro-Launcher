@@ -32,3 +32,33 @@ func consume_escape() -> bool:
 ## Alt+access key pressed.
 func activate_access_key() -> void:
 	grab_focus()
+
+
+# ------------------------------------------------------------------ accessibility
+
+## Screen-reader description of this widget (see A11y); {} keeps Godot's generic element.
+func a11y_spec() -> Dictionary:
+	return {}
+
+
+## Sets the caption a screen reader announces for this widget (its form label).
+func set_a11y_label(label: String) -> void:
+	accessibility_name = A11y.plain(label.trim_suffix(":"))
+
+
+## Caption the owning form gave this widget (form-row label), without access markers.
+func a11y_label() -> String:
+	return A11y.plain(accessibility_name)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ENTER_TREE:
+		A11y.track(self)
+	elif what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		var spec := a11y_spec()
+		if not spec.is_empty():
+			A11y.apply_node(self, spec)
+
+
+func _get_focused_accessibility_element() -> RID:
+	return A11y.resolve(get_accessibility_element())

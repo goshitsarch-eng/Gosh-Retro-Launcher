@@ -136,3 +136,15 @@ func activate_access_key() -> void:
 	if not disabled:
 		grab_focus()
 		select()
+
+
+func a11y_spec() -> Dictionary:
+	var spec := A11y.radio(text, checked, disabled)
+	spec["click"] = _a11y_activate
+	return spec
+
+
+## Screen-reader "click" action.
+func _a11y_activate(_data: Variant = null) -> void:
+	if not disabled:
+		select()

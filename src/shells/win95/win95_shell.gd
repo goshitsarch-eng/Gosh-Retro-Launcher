@@ -59,6 +59,8 @@ func _make_layer() -> Control:
 
 
 func _ready() -> void:
+	A11y.set_base(self)
+	A11y.ensure_proxy(get_tree())
 	if Engine.has_meta("pm_capture"):
 		host_focused = true
 	else:
@@ -116,6 +118,25 @@ func desktop_size() -> Vector2:
 
 func set_dragging(on: bool) -> void:
 	dragging = on
+
+
+func _exit_tree() -> void:
+	A11y.clear_base(self)
+
+
+## Win95 keeps its own keyboard focus model: report the element it points at when no control holds
+## Godot focus (open menus are overlays and win before this; see A11y).
+func a11y_focus() -> RID:
+	for i in range(dialog_layer.get_child_count() - 1, -1, -1):
+		var m := dialog_layer.get_child(i)
+		if m is Win95Modal and m.visible and not m.is_queued_for_deletion():
+			return m.get_accessibility_element()
+	var id: String = windows.active_window_id
+	if id != "":
+		var w := desktop.window_for(id)
+		if w != null and is_instance_valid(w):
+			return w.a11y_focus()
+	return desktop.a11y_focus()
 
 
 # ------------------------------------------------------------------- launching

@@ -34,6 +34,19 @@ static func make(p_text: String, pos: Vector2, opts: Dictionary = {}) -> Win95La
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	focus_mode = Control.FOCUS_NONE
+	A11y.track(self)
+
+
+## Screen-reader caption of form field `c`: the sibling Win95Label beside / above it.
+static func caption_near(c: Control) -> String:
+	var p := c.get_parent()
+	if p == null:
+		return ""
+	var labels := []
+	for n in p.get_children():
+		if n is Win95Label and n.visible and n.text != "":
+			labels.append({"text": n.text, "rect": Rect2(n.position, n.size)})
+	return A11y.caption_for(Rect2(c.position, c.size), labels)
 
 
 func access_key() -> String:
@@ -64,3 +77,15 @@ func _draw() -> void:
 	elif max_width > 0:
 		opts["max_width"] = max_width
 	Win95Draw.text(self, Vector2.ZERO, text, color, opts)
+
+
+func a11y_spec() -> Dictionary:
+	var spec := A11y.static_text(A11y.plain(text))
+	spec["disabled"] = disabled
+	spec["hidden"] = not visible or text.strip_edges() == ""  # e.g. the Run dialog's empty error line
+	return spec
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		A11y.apply_node(self, a11y_spec())

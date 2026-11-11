@@ -22,6 +22,7 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	focus_mode = Control.FOCUS_NONE
 	tooltip_text = ""
+	A11y.track(self)
 
 
 func setup(p_shell: Control) -> void:
@@ -326,3 +327,47 @@ func auto_lookup(id: String) -> Variant:
 		if tb.size() > 0:
 			return Rect2(global_position + (tb[0].rect as Rect2).position, (tb[0].rect as Rect2).size)
 	return null
+
+
+# ------------------------------------------------------------------ accessibility
+
+var _a11y_parts: Array = []
+
+
+## Start button, one button per task (pressed = active window) and the clock.
+func a11y_part_specs() -> Array:
+	var open: bool = shell.input.start_menu_open
+	var start := A11y.button("Start")
+	start["bounds"] = start_rect()
+	start["popup"] = DisplayServer.POPUP_MENU
+	start["expanded"] = open
+	start["click"] = func(_d: Variant) -> void: shell.input.toggle_start_menu()
+	var out := [start]
+	var active_id: String = shell.windows.active_window_id
+	for t in task_buttons():
+		var e: Dictionary = t.entry
+		var state := Win95TaskbarState.button_state(e.id, active_id, shell.windows.entry_is_minimized(e))
+		var spec := A11y.button(_task_title(e).replace("&", "&&"))
+		spec["bounds"] = t.rect
+		spec["description"] = state if state != "inactive" else ""
+		spec["click"] = _a11y_click_task.bind(String(e.id))
+		out.append(spec)
+	out.append(A11y.static_text(_clock, tray_rect()))
+	return out
+
+
+func _a11y_click_task(_data: Variant, id: String) -> void:
+	for t in task_buttons():
+		if t.entry.id == id:
+			click_task(t.entry)
+			return
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ACCESSIBILITY_UPDATE:
+		var ae := get_accessibility_element()
+		A11y.apply(ae, {"role": DisplayServer.ROLE_CONTAINER, "name": "Taskbar"})
+		if shell != null:
+			A11y.sync_children(ae, _a11y_parts, a11y_part_specs())
+	elif what == NOTIFICATION_ACCESSIBILITY_INVALIDATE:
+		_a11y_parts.clear()
