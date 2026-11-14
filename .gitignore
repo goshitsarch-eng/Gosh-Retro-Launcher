@@ -1,13 +1,3 @@
-# Node dependencies
-node_modules/
-
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
 # Local env files
 .env
 .env.*
@@ -15,15 +5,9 @@ lerna-debug.log*
 
 # Build outputs (common)
 dist/
-dist-electron/
 build/
 out/
-.next/
-.nuxt/
-.svelte-kit/
-.vite/
 .cache/
-.parcel-cache/
 coverage/
 wfw-smoke.png
 
@@ -76,9 +60,6 @@ pkg/
 target/
 
 # Packaging temp files
-*.blockmap
-builder-debug.yml
-builder-effective-config.yaml
 resources/*.iconset/
 
 # Godot

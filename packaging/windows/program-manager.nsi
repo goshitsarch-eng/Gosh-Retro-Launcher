@@ -1,4 +1,4 @@
-; Per-user NSIS installer for the exported Godot build (replaces the electron-builder NSIS target).
+; Per-user NSIS installer for the exported Godot build.
 ;   makensis /DVERSION=2.0.0 /DARCH=x64 /DSOURCE=build\windows-x86_64\program-manager.exe /DOUTFILE=dist\Program-Manager-2.0.0-win-x64.exe packaging\windows\program-manager.nsi
 Unicode true
 !include "MUI2.nsh"
