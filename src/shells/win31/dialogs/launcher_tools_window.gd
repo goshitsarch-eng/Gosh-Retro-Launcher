@@ -86,7 +86,7 @@ func _ready() -> void:
 	footer.add_theme_stylebox_override("panel", fs)
 	status_label = Label.new()
 	status_label.text = "Ready."
-	status_label.accessibility_live = DisplayServer.LIVE_POLITE  # the old footer was role="status"
+	status_label.set("accessibility_live", 1)  # LIVE_POLITE; enum moved DisplayServer -> AccessibilityServer in 4.7. Old footer was role="status"
 	status_label.set_meta("auto_id", "tools.status")
 	footer.add_child(status_label)
 	_root.add_child(footer)

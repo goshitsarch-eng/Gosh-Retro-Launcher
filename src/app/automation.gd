@@ -184,4 +184,4 @@ func frames(n: int = 2) -> void:
 
 
 func wait_ms(ms: int) -> void:
-	await tree.create_timer(ms / 1000.0).timeout
+	await tree.create_timer(ms * 3 / 1000.0).timeout  # generous: injected input must not outrun layout on slow hosts

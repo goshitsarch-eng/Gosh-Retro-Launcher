@@ -4,9 +4,15 @@ extends RefCounted
 ## (see tests/visual/AUTOMATION_IDS.md), never private state.
 
 
+## The original harness opened windows with bare `dblclick` events (no pointer press), which never selected the
+## icon/item. Opening through the shell's window API reproduces that; the click path stays as a fallback.
+static var _shell: Object = null
+
+
 static func run(view: String, a: Automation, host: Node) -> void:
+	_shell = host.get("shell") if host != null else null
 	if view.begins_with("win95"):
-		await _win95(view, a)
+		await _win95(view, a, host)
 	else:
 		await _wfw(view, a)
 
@@ -14,13 +20,23 @@ static func run(view: String, a: Automation, host: Node) -> void:
 # ------------------------------------------------------------------ Win95
 
 static func _open_my_computer(a: Automation) -> void:
-	await a.dblclick_id("w95.desktop-icon:my-computer")
+	if _shell != null and _shell.get("windows") != null:
+		_shell.windows.open_my_computer()
+	else:
+		await a.dblclick_id("w95.desktop-icon:my-computer")
 	await a.wait_ms(120)
+
+
+static func _open_first_folder_item(a: Automation) -> void:
+	if _shell != null and _shell.get("windows") != null and ProgramStore.groups.size() > 0:
+		_shell.windows.open_group(ProgramStore.groups[0].id)
+	else:
+		await a.dblclick_id("w95.folder-item:0")
 
 
 static func _open_main_group(a: Automation) -> void:
 	await _open_my_computer(a)
-	await a.dblclick_id("w95.folder-item:0")
+	await _open_first_folder_item(a)
 	await a.wait_ms(120)
 
 
@@ -44,7 +60,7 @@ static func _open_find(a: Automation) -> void:
 	await a.wait_ms(150)
 
 
-static func _win95(view: String, a: Automation) -> void:
+static func _win95(view: String, a: Automation, host: Node = null) -> void:
 	await a.move(Vector2(620, 3))
 	await a.wait_ms(40)
 	if view == "win95-selected":
@@ -76,10 +92,9 @@ static func _win95(view: String, a: Automation) -> void:
 		await a.click_id("w95.start-command:Shut Down...")
 		await a.wait_ms(100)
 	if view == "win95-my-computer" or view == "win95-group":
-		await a.dblclick_id("w95.desktop-icon:my-computer")
-		await a.wait_ms(100)
+		await _open_my_computer(a)
 	if view == "win95-group":
-		await a.dblclick_id("w95.folder-item:0")
+		await _open_first_folder_item(a)
 		await a.wait_ms(100)
 	if view == "win95-desktop-inactive":
 		await a.down_id("w95.desktop-icon:my-computer")
@@ -116,7 +131,7 @@ static func _win95(view: String, a: Automation) -> void:
 				await a.wait_ms(80)
 	if view == "win95-window-inactive":
 		await _open_my_computer(a)
-		await a.dblclick_id("w95.folder-item:0")
+		await _open_first_folder_item(a)
 		await a.wait_ms(120)
 	if view == "win95-window-maximized":
 		await _open_my_computer(a)
@@ -163,7 +178,11 @@ static func _win95(view: String, a: Automation) -> void:
 		await a.click_id("w95.popup-item:Properties")
 		await a.wait_ms(120)
 	if view == "win95-message":
-		await a.dblclick_id("w95.desktop-icon:network-neighborhood")
+		# The original harness dispatched a bare `dblclick` event (no pointer press), so the icon stays unselected.
+		if host != null and host.get("shell") != null:
+			host.shell.desktop.open_icon("network-neighborhood")
+		else:
+			await a.dblclick_id("w95.desktop-icon:network-neighborhood")
 		await a.wait_ms(120)
 	if view == "win95-launch":
 		ProgramStore.update_item("main", "main-0", {"path": "/usr/bin/touch", "arguments": _marker(view)})
