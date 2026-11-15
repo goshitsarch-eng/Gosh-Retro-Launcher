@@ -404,8 +404,9 @@ func test_powershell_launch_payload_and_encoding() -> void:
 	var l := Launcher.build_powershell_launch("C:\\Program Files\\App\\app.exe", PackedStringArray(["--name", "John Smith", "say \"hi\""]),
 			"Minimized", "C:\\Work Dir", {"FOO": "bar baz"})
 	expect_eq(l.args[0], "-NoLogo")
-	expect_eq(l.args[3], "-EncodedCommand")
-	var decoded := Marshalls.base64_to_raw(l.args[4]).get_string_from_utf16()
+	var enc := Array(l.args).find("-EncodedCommand")
+	expect(enc > 0 and enc == l.args.size() - 2, "-EncodedCommand and its value come last")
+	var decoded := Marshalls.base64_to_raw(l.args[enc + 1]).get_string_from_utf16()
 	expect_eq(decoded, Launcher.PS_SCRIPT, "script round-trips through UTF-16LE base64")
 	expect(not decoded.contains("$args"), "does not rely on $args (unset under -Command)")
 	var payload: Dictionary = JSON.parse_string(l.env.GOSH_LAUNCH)
