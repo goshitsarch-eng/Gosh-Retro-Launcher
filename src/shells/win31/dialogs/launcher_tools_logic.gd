@@ -162,6 +162,18 @@ static func save_profile(store: Node, name: String) -> Dictionary:
 	return {"id": id, "status": "Workspace profile saved."}
 
 
+## Apply asks before it replaces every group and item. Returns {required, message}; required is
+## false when no known profile is selected (nothing would be applied).
+static func apply_profile_confirmation(profiles: Array, id: String) -> Dictionary:
+	if id == "":
+		return {"required": false, "message": ""}
+	for p in profiles:
+		if String(p.get("id", "")) == id:
+			return {"required": true, "message":
+				"Replace all groups and items with profile '%s'? A backup of your current data is saved first." % String(p.get("name", ""))}
+	return {"required": false, "message": ""}
+
+
 static func apply_profile(store: Node, id: String) -> String:
 	store.apply_workspace_profile(id)
 	return "Workspace profile applied."

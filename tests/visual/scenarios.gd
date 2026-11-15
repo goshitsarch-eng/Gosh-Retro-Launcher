@@ -238,7 +238,7 @@ static func _wfw(view: String, a: Automation) -> void:
 		await a.wait_ms(60)
 		# Delete goes last, so it cannot remove the selection the other items need.
 		var sweep_items := ["New...", "Open", "Move...", "Copy...", "Properties...", "Delete", "Run...",
-			"Auto Arrange", "Minimize on Use", "Save Settings on Exit", "Contents", "Search for Help On...",
+			"Auto Arrange", "Minimize on Use", "Save Settings on Exit", "Settings...", "Contents", "Search for Help On...",
 			"How to Use Help", "About Program Manager...", "Cascade", "Tile", "Arrange Icons", "Launch All"]
 		for menu_index in 5:
 			for label in sweep_items:
@@ -313,6 +313,11 @@ static func _wfw(view: String, a: Automation) -> void:
 		await a.wait_ms(150)
 		await _menu(a, 0)
 		await _item(a, "Properties...")
+	if view == "wfw-settings":
+		# Options > Settings... ("Settings..." with the ellipsis: the id is a substring match and plain
+		# "Settings" would hit "Save Settings on Exit").
+		await _menu(a, 1)
+		await _item(a, "Settings...")
 	if view == "wfw-new-group":
 		await _menu(a, 0)
 		await _item(a, "New...")

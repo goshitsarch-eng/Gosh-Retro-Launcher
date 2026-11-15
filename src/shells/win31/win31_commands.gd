@@ -143,6 +143,8 @@ static func build_menus(groups: Array, active_group_id: String, selection: Dicti
 			_item("auto-arrange", "&Auto Arrange", st.call("auto-arrange")),
 			_item("minimize-on-use", "&Minimize on Use", st.call("minimize-on-use")),
 			_item("save-settings", "&Save Settings on Exit", st.call("save-settings")),
+			_sep(),
+			_item("settings", "S&ettings..."),
 		]},
 		{"id": "window", "label": "&Window", "mnemonic": "w", "items": window_items},
 		{"id": "launcher", "label": "&Launcher", "mnemonic": "l", "items": launcher_items},
@@ -222,16 +224,31 @@ static func key_name(ev: InputEventKey) -> String:
 	return OS.get_keycode_string(code).to_lower()
 
 
-## Win31Shell.tsx shortcutMatches: "Ctrl+Alt+F5"-style item shortcut keys.
+## Navigation and editing keys that are never item shortcuts, with or without modifiers, so they
+## keep their normal meaning (Enter opens, Delete deletes, arrows move the selection...). Holds the
+## names key_name() produces plus the spellings a stored shortcut may use (JS event.key names).
+const NAVIGATION_KEYS := ["enter", "return", "kp enter", "escape", "esc", "tab", "backtab", " ", "space",
+	"spacebar", "backspace", "delete", "del", "left", "right", "up", "down", "arrowleft", "arrowright",
+	"arrowup", "arrowdown", "home", "end", "pageup", "pagedown", "page up", "page down", "pgup", "pgdn"]
+
+
+## True when `key` (a key_name() result or a shortcut token, any case) is a navigation key.
+static func is_navigation_key(key: String) -> bool:
+	var k := key.to_lower()
+	return NAVIGATION_KEYS.has(k) or NAVIGATION_KEYS.has(k.strip_edges())
+
+
+## Win31Shell.tsx shortcutMatches: "Ctrl+Alt+F5"-style item shortcut keys. Navigation keys never
+## match (see is_navigation_key).
 static func shortcut_matches(shortcut: String, key: String, ctrl: bool, alt: bool, shift: bool, meta: bool) -> bool:
-	if shortcut.strip_edges() == "":
+	if shortcut.strip_edges() == "" or is_navigation_key(key):
 		return false
 	var parts: Array = []
 	for p in shortcut.to_lower().split("+"):
 		var t := p.strip_edges()
 		if t != "":
 			parts.append(t)
-	if parts.is_empty():
+	if parts.is_empty() or is_navigation_key(parts[parts.size() - 1]):
 		return false
 	if key != parts[parts.size() - 1]:
 		return false
