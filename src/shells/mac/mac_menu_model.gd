@@ -47,6 +47,8 @@ static func menu_bar(ctx: Dictionary) -> Array:
 		{"id": "logo", "label": "", "items": logo_items},
 		{"id": "file", "label": "File", "items": [
 			item("new-folder", "New Folder", {"key": "N"}),
+			item("new-program", "New Program…", {"disabled": not active.begins_with("g:")}),
+			item("new-website", "New Website…", {"disabled": not active.begins_with("g:")}),
 			item("open", "Open", {"disabled": not has_sel, "key": "O"}),
 			item("close-window", "Close Window", {"disabled": active == "", "key": "W"}), SEP,
 			item("get-info", "Get Info", {"disabled": not has_sel, "key": "I"}),

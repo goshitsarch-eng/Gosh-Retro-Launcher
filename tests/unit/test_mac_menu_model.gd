@@ -38,6 +38,14 @@ func test_logo_menu_lists_every_group() -> void:
 	expect_eq(_find_item(logo, "open-group:b").label, "Games")
 
 
+func test_file_menu_offers_new_program_and_website_in_a_group_window() -> void:
+	var in_group := _find_menu(MacMenuModel.menu_bar(_ctx({"active_key": "g:a"})), "file")
+	expect(not _find_item(in_group, "new-program").get("disabled", false))
+	expect(not _find_item(in_group, "new-website").get("disabled", false))
+	var on_computer := _find_menu(MacMenuModel.menu_bar(_ctx({"active_key": "computer"})), "file")
+	expect(_find_item(on_computer, "new-website").get("disabled", false), "needs a folder window")
+
+
 func test_file_menu_enables_by_selection() -> void:
 	var none := _find_menu(MacMenuModel.menu_bar(_ctx()), "file")
 	for id in ["open", "get-info", "duplicate", "trash", "close-window"]:

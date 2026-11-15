@@ -14,6 +14,7 @@ var menu_layer: Control
 var dialog_layer: Control
 var popup_layer: Control
 var toast: BeToast
+var _launch_in_progress := false
 
 var find_state := {"q": "", "where": "all", "type": "all", "ran": false}
 var selection := {"key": "", "id": ""}   ## selected entry inside a window ("find" for the Find window)
@@ -341,6 +342,13 @@ func do_action(action: String, args: Dictionary) -> void:
 			BeDialogs.run(self)
 		"computer.open":
 			open_computer()
+		"launch.all":
+			launch_buckets(LaunchGroups.collect_launch_groups(ProgramStore.groups))
+		"launch.group":
+			var n := int(args.get("n", 0))
+			for b in LaunchGroups.collect_launch_groups(ProgramStore.groups):
+				if int(b.groupNumber) == n:
+					launch_buckets([b])
 		"session.restart":
 			restart_session()
 		"session.shutdown":
@@ -380,6 +388,27 @@ func launch_item(item: Dictionary) -> void:
 	toast.show_text("Starting %s…" % item.name)
 	if bool(ProgramStore.settings.get("minimizeOnUse", false)):
 		Platform.minimize_window()
+
+
+## Launch All / Launch Group N (Deskbar menu): batch launch with the configured delay and the shared
+## "Launching group x of y" feedback toast.
+func launch_buckets(buckets: Array) -> void:
+	if _launch_in_progress or buckets.is_empty():
+		return
+	close_all_menus()
+	_launch_in_progress = true
+	Sounds.play("button_click")
+	var total := 0
+	for b in buckets:
+		total += b.items.size()
+	UIState.begin_launch_feedback(buckets.size(), total)
+	var results: Array = await LaunchGroups.launch_group_buckets(self, buckets, ProgramStore.settings.get("launchDelay", 500),
+		func(progress: Dictionary): UIState.update_launch_feedback(progress.groupNumber, progress.groupIndex),
+		Callable(Platform, "launch_batch"))
+	UIState.finish_launch_feedback(results.filter(func(r): return not r.get("success", false)).size())
+	if is_inside_tree() and bool(ProgramStore.settings.get("minimizeOnUse", false)):
+		Platform.minimize_window()
+	_launch_in_progress = false
 
 
 # ------------------------------------------------------------------ host events
