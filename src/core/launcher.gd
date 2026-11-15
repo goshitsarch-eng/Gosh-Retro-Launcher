@@ -233,17 +233,78 @@ static func run_spawn_plan(plan: Dictionary) -> Dictionary:
 			var pid := OS.create_process(plan.command, plan.args)
 			return _ok() if pid > 0 else _fail("Failed to spawn %s" % plan.command)
 		"powershell":
-			var problem := validate_spawn_plan(plan)
-			if problem != "":
-				return _fail(problem)
-			return _spawn_powershell(plan.file, plan.args, plan.style, plan.cwd, plan.env)
+			var route := powershell_route(plan)
+			match String(route.route):
+				"fail":
+					return _fail(route.error)
+				"shell_open":
+					push_warning("Program Manager: working folder not found, started without it: %s" % plan.cwd)
+					return _shell_open_result(plan.file)
+			var outcome := _spawn_powershell(plan.file, plan.args, plan.style, plan.cwd, plan.env)
+			match String(outcome.status):
+				"started":
+					return _ok()
+				"start_failed":
+					# No fallback: the program itself could not start (or a UAC prompt was cancelled),
+					# and ShellExecute would only show the same prompt or error a second time.
+					return _fail(outcome.message)
+			if can_fall_back_to_shell_open(plan):
+				push_warning("Program Manager: the PowerShell launcher is unavailable, started without the working folder: %s" % plan.file)
+				return _shell_open_result(plan.file)
+			return _fail("Failed to spawn %s: the PowerShell launcher is unavailable or blocked" % plan.file)
 		"posix":
 			return _spawn_posix(plan.command, plan.args, plan.cwd, plan.env)
 	return _fail("Unknown spawn method")
 
 
-## Host-side checks for a PowerShell plan, which cannot report a failed start back to us: "" when
-## fine, else an error message. A bare command name (resolved by the OS later) is not checked.
+static func _shell_open_result(file: String) -> Dictionary:
+	var err := OS.shell_open(file)
+	return _ok() if err == OK else _fail(error_string(err))
+
+
+## Whether a PowerShell plan may be started the pre-wrapper way, OS.shell_open(file), when the
+## wrapper cannot apply the working folder. Only a .exe/.com with no arguments: ShellExecute ignores
+## the working folder, environment and window style but still starts the same program, whereas it
+## would drop arguments (and the .bat route's "cmd.exe /c script" would open an empty console).
+static func can_fall_back_to_shell_open(plan: Dictionary) -> bool:
+	var file := String(plan.get("file", ""))
+	var args: PackedStringArray = plan.get("args", PackedStringArray())
+	return ["exe", "com"].has(file.to_lower().get_extension()) and args.is_empty()
+
+
+## Pure route choice for a PowerShell plan before anything is spawned: {"route": "wrapper" | "shell_open" | "fail",
+## "error": String}. A missing program fails; a missing working folder (e.g. an unexpanded %USERPROFILE%
+## path) never fails a launch that ShellExecute can still do, it only loses the working folder.
+static func powershell_route(plan: Dictionary) -> Dictionary:
+	var file := String(plan.get("file", ""))
+	if file.is_absolute_path() and not FileAccess.file_exists(file):
+		return {"route": "fail", "error": "Program not found: %s" % file}
+	var problem := validate_spawn_plan(plan)
+	if problem == "":
+		return {"route": "wrapper", "error": ""}
+	if can_fall_back_to_shell_open(plan):
+		return {"route": "shell_open", "error": ""}
+	return {"route": "fail", "error": problem}
+
+
+## Pure reading of the wrapper's result (see PS_SCRIPT): {"status": "started" | "start_failed" | "unavailable",
+## "message": String}. Exit 0 = started; exit 2 = Process.Start itself threw, with its message on the first
+## non-empty output line; anything else (-1 = powershell.exe could not run, 3 = the script was blocked
+## before Process.Start, e.g. Constrained Language Mode, or exit 2 with no message) = unavailable.
+## The decision never depends on the exception text, which is localised.
+static func interpret_powershell_result(exit_code: int, output_lines: PackedStringArray) -> Dictionary:
+	if exit_code == 0:
+		return {"status": "started", "message": ""}
+	if exit_code == 2:
+		for line in output_lines:
+			var t := String(line).strip_edges()
+			if t != "":
+				return {"status": "start_failed", "message": t}
+	return {"status": "unavailable", "message": ""}
+
+
+## Host-side checks for a PowerShell plan: "" when fine, else an error message. A bare command name
+## (resolved by the OS later) is not checked. run_spawn_plan uses it through powershell_route.
 static func validate_spawn_plan(plan: Dictionary) -> String:
 	var cwd := String(plan.get("cwd", ""))
 	if cwd != "" and not DirAccess.dir_exists_absolute(cwd):
@@ -351,30 +412,45 @@ static func windows_command_line(args: PackedStringArray) -> String:
 ## -EncodedCommand: `-Command <script> <args...>` does NOT populate $args (PowerShell pastes the
 ## arguments into the command text). ProcessStartInfo.Arguments is used verbatim, so the arguments
 ## arrive as one command line already quoted by quote_windows_arg().
-const PS_SCRIPT := "$ErrorActionPreference='Stop';$j=$env:GOSH_LAUNCH|ConvertFrom-Json;Remove-Item Env:GOSH_LAUNCH;" \
+## The wrapper runs synchronously (OS.execute) and reports through its exit code (interpret_powershell_result):
+##   0  Process.Start returned: the program started.
+##   2  Process.Start itself threw (file missing, UAC prompt cancelled, ...): the message goes to stdout
+##      with [Console]::Out.Write. $s marks that Process.Start was reached.
+##   3  something before Process.Start failed: Constrained Language Mode or a policy blocking New-Object /
+##      ProcessStartInfo, a bad payload, ... The catch deliberately uses no .NET type here, so it still
+##      works under CLM, and the launcher falls back to ShellExecute instead of reporting a failed start.
+const PS_SCRIPT := "$ErrorActionPreference='Stop';$s=0;try{$j=$env:GOSH_LAUNCH|ConvertFrom-Json;Remove-Item Env:GOSH_LAUNCH;" \
 	+ "if($j.env){foreach($e in $j.env.PSObject.Properties){Set-Item -Path ('env:'+$e.Name) -Value ([string]$e.Value)}};" \
 	+ "$p=New-Object System.Diagnostics.ProcessStartInfo;$p.FileName=$j.file;if($j.cwd){$p.WorkingDirectory=$j.cwd};" \
 	+ "$p.UseShellExecute=$true;if($j.argline){$p.Arguments=$j.argline};if($j.style){$p.WindowStyle=$j.style};" \
-	+ "[System.Diagnostics.Process]::Start($p)|Out-Null"
+	+ "$s=1;[System.Diagnostics.Process]::Start($p)|Out-Null;exit 0}" \
+	+ "catch{if($s -eq 1){[Console]::Out.Write($_.Exception.Message);exit 2};exit 3}"
 
 
 ## {"args": PackedStringArray for powershell.exe, "env": {"GOSH_LAUNCH": json}} (pure; unit-tested).
 static func build_powershell_launch(file: String, args: PackedStringArray, window_style: String, cwd: String, env_additions: Dictionary) -> Dictionary:
 	var payload := {"file": file, "argline": windows_command_line(args), "style": window_style, "cwd": cwd, "env": env_additions}
 	return {
-		"args": PackedStringArray(["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Marshalls.raw_to_base64(PS_SCRIPT.to_utf16_buffer())]),
+		"args": PackedStringArray(["-NoLogo", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-EncodedCommand", Marshalls.raw_to_base64(PS_SCRIPT.to_utf16_buffer())]),
 		"env": {"GOSH_LAUNCH": JSON.stringify(payload)},
 	}
 
 
+## Runs the wrapper synchronously (it returns as soon as Process.Start does) and returns
+## interpret_powershell_result(): {"status", "message"}.
 static func _spawn_powershell(file: String, args: PackedStringArray, window_style: String, cwd: String, env_additions: Dictionary) -> Dictionary:
 	var launch := build_powershell_launch(file, args, window_style, cwd, env_additions)
 	for k in launch.env:
 		OS.set_environment(k, launch.env[k])
-	var pid := OS.create_process("powershell.exe", launch.args, false)
+	var output: Array = []
+	var code := OS.execute("powershell.exe", launch.args, output, false, false)
 	for k in launch.env:
 		OS.unset_environment(k)
-	return _ok() if pid > 0 else _fail("Failed to spawn %s" % file)
+	var lines := PackedStringArray()
+	for chunk in output:
+		for line in String(chunk).split("\n"):
+			lines.append(line.strip_edges())
+	return interpret_powershell_result(code, lines)
 
 
 static func launch_program(item: Dictionary) -> Dictionary:
