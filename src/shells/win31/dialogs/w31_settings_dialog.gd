@@ -106,8 +106,12 @@ func _submit() -> void:
 	var submitted := form.duplicate(true)
 	UIState.close_dialog()
 	var result := W31DialogLogic.apply_settings(ProgramStore, submitted)
-	if not result.get("success", true):
+	var notice := W31DialogLogic.settings_failure_notice(result)
+	if not notice.is_empty():
+		# A refused transaction leaves the store (and so the mounted shell) unchanged, so this
+		# shell's dialog layer is still the live one.
 		push_error("Failed to apply shell settings: %s" % result.get("error", "unknown"))
+		UIState.open_dialog("unavailable", notice)
 
 
 ## Right-aligned 12px text (the "500ms" readout).

@@ -59,17 +59,51 @@ static func enrich_group(group: Dictionary, info_fn: Callable) -> Dictionary:
 	return enriched
 
 
-## Import .GRP: `result` is Platform.import_grp(). Returns {status, groupId?}.
+## Import .GRP: `result` is Platform.import_grp(). Returns {status, groupId?}. The new group is
+## found by its id (the one id that was not there before), not by its position in the list; the
+## store may give the group a new id when it clashes with an existing one.
 static func import_grp(store: Node, result: Dictionary, info_fn: Callable) -> Dictionary:
 	if not result.get("success", false) or not result.has("group"):
 		if result.get("error", "") != "Canceled":
 			return {"status": String(result.get("error", "")) if String(result.get("error", "")) != "" else "Could not import the group."}
 		return {"status": ""}
 	var enriched := enrich_group(result.group, info_fn)
-	store.import_group(enriched)
+	var known := {}
+	for g in store.groups:
+		known[String(g.id)] = true
+	var r: Dictionary = store.import_group(enriched)
+	if not r.get("success", false):
+		var err := String(r.get("error", ""))
+		return {"status": "Could not import the group: %s." % err if err != "" else "Could not import the group."}
 	store.save_groups_now()
-	var gid: String = store.groups[store.groups.size() - 1].id
-	return {"status": "Imported “%s” from .GRP." % enriched.name, "groupId": gid}
+	var gid := ""
+	for g in store.groups:
+		if not known.has(String(g.id)):
+			gid = String(g.id)
+			break
+	var status := "Imported “%s” from .GRP." % enriched.name
+	var details := repair_summary(int(r.get("normalized", 0)), int(r.get("shortcutsCleared", 0)))
+	if details != "":
+		status += " " + details
+	var out := {"status": status}
+	if gid != "":
+		out["groupId"] = gid
+	return out
+
+
+## One sentence about values an import (or load) had to repair, "" when nothing was changed.
+## e.g. "2 stored values were repaired and 1 shortcut key was cleared (shortcut keys need Ctrl, Alt,
+## Shift or Meta)."
+static func repair_summary(normalized: int, shortcuts_cleared: int) -> String:
+	var parts := []
+	if normalized > 0:
+		parts.append("%d stored %s repaired" % [normalized, "value was" if normalized == 1 else "values were"])
+	if shortcuts_cleared > 0:
+		parts.append("%d shortcut %s cleared (shortcut keys need Ctrl, Alt, Shift or Meta)" % [shortcuts_cleared,
+			"key was" if shortcuts_cleared == 1 else "keys were"])
+	if parts.is_empty():
+		return ""
+	return " and ".join(parts) + "."
 
 
 static func export_grp_status(group_name: String, result: Dictionary) -> String:
@@ -82,7 +116,8 @@ static func export_grp_status(group_name: String, result: Dictionary) -> String:
 
 static func import_json_status(result: Dictionary) -> String:
 	if result.get("success", false):
-		return "Launcher backup imported."
+		var details := repair_summary(int(result.get("normalized", 0)), int(result.get("shortcutsCleared", 0)))
+		return "Launcher backup imported." + (" " + details if details != "" else "")
 	if result.get("error", "") != "Canceled":
 		return String(result.get("error", "")) if String(result.get("error", "")) != "" else "Import failed."
 	return ""
@@ -174,9 +209,18 @@ static func apply_profile_confirmation(profiles: Array, id: String) -> Dictionar
 	return {"required": false, "message": ""}
 
 
+## The status line for Apply: the store's own error text when it refused (for example when the
+## safety backup could not be written), and "Workspace profile applied." only on success.
 static func apply_profile(store: Node, id: String) -> String:
-	store.apply_workspace_profile(id)
-	return "Workspace profile applied."
+	var r: Dictionary = store.apply_workspace_profile(id)
+	return apply_profile_status(r)
+
+
+static func apply_profile_status(result: Dictionary) -> String:
+	if result.get("success", false):
+		return "Workspace profile applied."
+	var err := String(result.get("error", ""))
+	return err if err != "" else "The workspace profile could not be applied."
 
 
 static func rename_profile(store: Node, id: String, name: String) -> void:
@@ -199,6 +243,30 @@ static func backup_label(backup: Dictionary) -> String:
 static func create_backup(store: Node) -> String:
 	store.create_backup("manual")
 	return "Restore point created."
+
+
+## "2026-11-14T10:22:33.123Z" -> "2026-11-14 10:22:33 UTC" (the stored time, which is UTC; the
+## backup list shows the same value).
+static func backup_time_text(created_at: String) -> String:
+	var re := RegEx.new()
+	re.compile("^(\\d{4}-\\d{2}-\\d{2})T(\\d{2}:\\d{2}:\\d{2})")
+	var m := re.search(created_at)
+	if m == null:
+		return created_at
+	return "%s %s UTC" % [m.get_string(1), m.get_string(2)]
+
+
+## Restore replaces all data, so it asks first. Returns {required, message}; required is false when
+## the id is not in `backups` (nothing would be restored). "Backed up first" holds because
+## Persistence.set_all_data writes a forced "store-replaced" backup before it replaces the data.
+static func restore_confirmation(backups: Array, id: String) -> Dictionary:
+	if id == "":
+		return {"required": false, "message": ""}
+	for b in backups:
+		if String(b.get("id", "")) == id:
+			return {"required": true, "message": "Restore the backup from %s? Your current data is backed up first." %
+				backup_time_text(String(b.get("createdAt", "")))}
+	return {"required": false, "message": ""}
 
 
 static func restore_backup(store: Node, id: String) -> String:
