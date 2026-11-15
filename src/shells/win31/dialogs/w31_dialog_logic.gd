@@ -408,6 +408,16 @@ static func apply_settings(store: Node, form: Dictionary) -> Dictionary:
 	return result
 
 
+## What the Settings dialog shows after apply_settings: {} on success, otherwise the payload for an
+## OK message box ({title, message}) so a refused change is never silent.
+static func settings_failure_notice(result: Dictionary) -> Dictionary:
+	if result.get("success", false):
+		return {}
+	var err := String(result.get("error", ""))
+	return {"title": "Settings", "message": "The settings could not be applied%s. Nothing was changed." %
+		((": " + err) if err != "" else "")}
+
+
 # ---------------------------------------------------------- Quick Search
 
 ## {displayed, total, hasMore, moreCount, moreText, empty (show "No results found")}.
