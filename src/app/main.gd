@@ -44,6 +44,7 @@ func _ready() -> void:
 	if not is_capture:
 		_setup_tray()
 		_setup_desktop_bridge()
+		MacAppMenu.install(Platform.open_launcher_tools, Platform.open_launcher_tools, Platform.trigger_quick_search)
 		_center_initial_window.call_deferred()
 		if wants_quick_search(args, OS.get_cmdline_args()):
 			Platform.trigger_quick_search.call_deferred()  # `--quick-search` with no instance running yet
