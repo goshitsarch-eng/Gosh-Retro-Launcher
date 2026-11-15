@@ -24,6 +24,8 @@ var _move_origin := {}
 var _resize_origin := {}
 var _kb_op := {}                 ## active outer keyboard Move/Size: {mode, kind, initial, bounds, born}
 var _activated := false
+var _notices: Array = []          ## host notices ({title, message}) waiting for the dialog slot
+var _notices_live := false        ## true between on_activate and _exit_tree
 
 
 func shell_id() -> String:
@@ -66,6 +68,9 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	_notices_live = false
+	if UIState.dialog_changed.is_connected(_queue_next_notice):
+		UIState.dialog_changed.disconnect(_queue_next_notice)
 	for pair in [[ProgramStore.groups_changed, _on_groups_changed], [ProgramStore.settings_changed, _on_settings_changed],
 			[UIState.selection_changed, _on_selection_changed], [UIState.dialog_changed, _update_menus],
 			[MdiState.windows_changed, _update_menus]]:
@@ -79,6 +84,7 @@ func _exit_tree() -> void:
 
 func on_activate() -> void:
 	_activated = true
+	_notices_live = true
 	var b: Variant = ProgramStore.settings.get("win31ProgramManagerBounds")
 	if b != null:
 		desktop_bounds = b.duplicate()
@@ -113,6 +119,27 @@ func on_host_state_changed(state: Dictionary) -> void:
 
 func on_files_dropped(files: PackedStringArray, logical_pos: Vector2) -> void:
 	pm.client.add_dropped_files(files, logical_pos)
+
+
+## Host notice (a save failure or repaired data, see main.gd) shown as the OK message box. WfW has a
+## single dialog slot, so a notice waits until no other dialog is open instead of replacing it.
+func show_notice(title: String, message: String) -> void:
+	_notices.append({"title": title, "message": message})
+	if not UIState.dialog_changed.is_connected(_queue_next_notice):
+		UIState.dialog_changed.connect(_queue_next_notice)
+	_show_next_notice()
+
+
+## Deferred so a dialog that closes and opens another in the same call (Settings → error box)
+## is not replaced by a queued notice.
+func _queue_next_notice() -> void:
+	_show_next_notice.call_deferred()
+
+
+func _show_next_notice() -> void:
+	if _notices.is_empty() or not _notices_live or UIState.active_dialog != "":
+		return
+	UIState.open_dialog("unavailable", _notices.pop_front())
 
 
 # ----------------------------------------------------------------- layout

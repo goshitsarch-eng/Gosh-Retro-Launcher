@@ -14,6 +14,7 @@ var desktop: DesktopBridge
 
 var _applied_shell := ""
 var _frame_shell := ""
+var _shown_save_failures := {}  ## groups/settings failures already shown (they re-fire on every retry)
 
 
 func _ready() -> void:
@@ -45,7 +46,10 @@ func _ready() -> void:
 	if shell:
 		shell.on_host_state_changed(Platform.get_window_state())
 	ProgramStore.settings_changed.connect(_on_settings_changed)
+	ProgramStore.save_failed.connect(_on_save_failed)
+	ProgramStore.data_normalized.connect(_on_data_normalized)
 	if not is_capture:
+		_show_load_notice.call_deferred()
 		_setup_tray()
 		_setup_desktop_bridge()
 		MacAppMenu.install(Platform.open_launcher_tools, Platform.open_launcher_tools, Platform.trigger_quick_search)
@@ -248,6 +252,71 @@ func _notification(what: int) -> void:
 
 func _open_launcher_tools_window() -> void:
 	LauncherToolsWindow.show_singleton(self)
+
+
+# ------------------------------------------------------------ store notices
+
+const NOTICE_TITLE := "Program Manager"
+const NORMALIZED_PLACES := {"load": "While loading your data", "import": "While importing",
+	"grp-import": "While importing the .GRP group", "profile-apply": "While applying the workspace profile",
+	"save": "Before saving"}
+
+
+## Notice for ProgramStore.save_failed: an alert the user acknowledges. {title, text, alert}.
+static func save_failed_notice(kind: String, message: String) -> Dictionary:
+	var text := message if message != "" else "Program Manager could not save your data."
+	if kind == "groups" or kind == "settings":
+		text += " The change is kept while Program Manager is running, and saving is tried again."
+	return {"title": NOTICE_TITLE, "text": text, "alert": true}
+
+
+## One-line notice for ProgramStore.data_normalized, {} when nothing was changed (counts of zero).
+static func data_normalized_notice(source: String, report: Dictionary) -> Dictionary:
+	var summary := LauncherToolsLogic.repair_summary(int(report.get("normalized", 0)), int(report.get("shortcutsCleared", 0)))
+	if summary == "":
+		return {}
+	var place := String(NORMALIZED_PLACES.get(source, "While saving"))
+	return {"title": NOTICE_TITLE, "text": "%s, %s" % [place, summary], "alert": false}
+
+
+func _on_save_failed(kind: String, message: String) -> void:
+	var n := save_failed_notice(kind, message)
+	if kind == "groups" or kind == "settings":
+		var key := "%s|%s" % [kind, message]
+		if _shown_save_failures.has(key):
+			return
+		_shown_save_failures[key] = true
+	show_notice(n)
+
+
+func _on_data_normalized(source: String, report: Dictionary) -> void:
+	show_notice(data_normalized_notice(source, report))
+
+
+## The "load" report is emitted inside init_store, before anything can connect, so it is read back
+## from ProgramStore.load_report once the shell is up.
+func _show_load_notice() -> void:
+	await get_tree().process_frame
+	show_notice(data_normalized_notice("load", ProgramStore.load_report))
+
+
+## Shows a store notice with the active shell's own OK message box (never an OS alert, which would
+## block). Logged too. Suppressed during visual captures so renders stay deterministic.
+func show_notice(n: Dictionary) -> void:
+	if n.is_empty():
+		return
+	push_warning("Program Manager: " + String(n.text))
+	if capture != null or not is_instance_valid(shell) or not shell.is_inside_tree() or shell.is_queued_for_deletion():
+		return
+	var alert: bool = n.get("alert", false)
+	if shell is Win95Shell:
+		Win95Dialogs.show_message(shell, String(n.title), String(n.text), "warning" if alert else "information")
+	elif shell is MacShell:
+		MacDialogs.alert(shell, [String(n.text)], "caution" if alert else "note")
+	elif shell is BeShell:
+		BeDialogs.message(shell, [String(n.text)], "warning" if alert else "information")
+	elif shell.has_method("show_notice"):
+		shell.show_notice(String(n.title), String(n.text))
 
 
 func show_launcher_tools() -> void:
