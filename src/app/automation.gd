@@ -159,10 +159,12 @@ func type_text(text: String) -> void:
 # ------------------------------------------------------------- id helpers
 
 func click_id(id: String, mods: Dictionary = {}) -> void:
+	await wait_for(id)  # a freshly mounted shell may not have laid out yet
 	await click(center(id), mods)
 
 
 func dblclick_id(id: String) -> void:
+	await wait_for(id)
 	await dblclick(center(id))
 
 

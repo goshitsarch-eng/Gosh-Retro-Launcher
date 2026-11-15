@@ -104,7 +104,15 @@ func _mount_shell() -> void:
 	if shell:
 		remove_child(shell)
 		shell.queue_free()
-	shell = Win95Shell.new() if id == "win95" else Win31Shell.new()
+	match id:
+		"win95":
+			shell = Win95Shell.new()
+		"mac":
+			shell = MacShell.new()
+		"be":
+			shell = BeShell.new()
+		_:
+			shell = Win31Shell.new()
 	shell.host = self
 	shell.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shell.request_quit.connect(quit_app)
@@ -125,7 +133,7 @@ func _mount_shell() -> void:
 ## Preferred whole-UI scale for the active shell resolved against the usable screen (DIPs).
 func resolve_scale() -> int:
 	var settings := ProgramStore.settings
-	var pref: Variant = settings.get("win95Scale" if current_shell_id() == "win95" else "win31Scale", "auto")
+	var pref: Variant = settings.get(Types.scale_key(current_shell_id()), "auto")
 	var screen := DisplayServer.window_get_current_screen()
 	var usable := DisplayServer.screen_get_usable_rect(screen)
 	var dpr := ShellScale.display_ratio(get_window())

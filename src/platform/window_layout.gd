@@ -12,7 +12,7 @@ const DEFAULT_HEIGHT := 600
 
 ## Scale used for the initial window size: the shell's preference, or the auto scale of the work area.
 static func initial_scale(shell: String, settings: Dictionary, work_w: float, work_h: float) -> int:
-	var key := "win95Scale" if shell == "win95" else "win31Scale"
+	var key := Types.scale_key(shell)
 	var pref: Variant = settings.get(key, "auto")
 	if Types.is_scale_factor(pref):
 		return int(pref)
@@ -22,7 +22,7 @@ static func initial_scale(shell: String, settings: Dictionary, work_w: float, wo
 ## Initial content size in DIPs: min(work area, 640x480 * scale) for both shells (`useContentSize`
 ## for Win95, frameless outer == content for Win31). Unknown shells get 800x600.
 static func initial_size(shell: String, settings: Dictionary, work_w: float, work_h: float) -> Vector2i:
-	if shell != "win31" and shell != "win95":
+	if not Types.SHELLS.has(shell):
 		return Vector2i(DEFAULT_WIDTH, DEFAULT_HEIGHT)
 	var scale := initial_scale(shell, settings, work_w, work_h)
 	return Vector2i(
@@ -30,13 +30,27 @@ static func initial_size(shell: String, settings: Dictionary, work_w: float, wor
 		int(minf(work_h, float(ShellScale.REFERENCE_HEIGHT * scale))))
 
 
-## Desktop colour behind the shell (BrowserWindow.backgroundColor): #c0c0c0 for Win31, #008080 else.
+## Desktop colour behind the shell (BrowserWindow.backgroundColor): #c0c0c0 Win31, #6c6ca8 Mac, #336698 Be, #008080 Win95.
 static func background_color(shell: String) -> Color:
-	return Color8(0xc0, 0xc0, 0xc0) if shell == "win31" else Color8(0x00, 0x80, 0x80)
+	match shell:
+		"win31":
+			return Color8(0xc0, 0xc0, 0xc0)
+		"mac":
+			return Color8(0x6c, 0x6c, 0xa8)
+		"be":
+			return Color8(0x33, 0x66, 0x98)
+	return Color8(0x00, 0x80, 0x80)
 
 
 static func window_title(shell: String) -> String:
-	return "Gosh 95" if shell == "win95" else "Program Manager"
+	match shell:
+		"win95":
+			return "Gosh 95"
+		"mac":
+			return "Gosh Mac"
+		"be":
+			return "Gosh Be"
+	return "Program Manager"
 
 
 ## Port of isHostWindowBounds: finite numbers and at least the minimum size.

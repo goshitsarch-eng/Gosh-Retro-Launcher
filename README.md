@@ -6,9 +6,9 @@ Version 2.0.0 is a ground-up rewrite in **Godot 4** (GDScript). It reads the sam
 
 ## What It Does
 
-1. Switch between an isolated WfW 3.11 Program Manager and a Windows 95 RTM-style launcher desktop.
+1. Switch between an isolated WfW 3.11 Program Manager, a Windows 95 RTM-style launcher desktop, a Classic Mac OS-style desktop and a BeOS-style desktop with Deskbar.
 2. Launch through the canonical Windows 95 path: **Start → Programs → group → app**, or open groups from My Computer.
-3. Scale either shell crisply at independent Auto/1×/2×/3×/4× integer factors on modern displays.
+3. Scale any shell crisply at independent Auto/1×/2×/3×/4× integer factors on modern displays.
 4. Create program groups and fill them with apps, links, scripts, or files.
 5. Drag files into a group window to add them quickly.
 6. Launch items from the desktop, Find, Run, or the system tray.
@@ -64,6 +64,8 @@ python3 tests/visual/compare.py artifacts/win95-start.png tests/visual/baselines
 | `src/toolkit` | Pixel-exact drawing: bitmap text, bevels, palette, scaling, icon registry |
 | `src/shells/win31` | Windows for Workgroups shell, MDI windows, dialogs, Quick Search, Launcher Tools |
 | `src/shells/win95` | Windows 95 shell: desktop, taskbar, Start, windows, folder views, Find, dialogs |
+| `src/shells/mac` | Classic Mac OS shell: menu bar, Launcher HD and folder windows, Get Info, Trash, Find (see `docs/MAC_SHELL.md`) |
+| `src/shells/be` | BeOS shell: tabbed windows, Deskbar, Get Info, Find (see `docs/BE_SHELL.md`) |
 | `src/platform`, `src/app` | Tray, single instance, native dialogs, icon extraction, sounds, window management (autoload `Platform`) |
 | `tests` | Unit tests and the visual regression harness |
 

@@ -145,6 +145,8 @@ static func migrate_store_data(value: Variant) -> Dictionary:
 		settings[k] = Jsonx.clone(raw[k])
 	settings["win31Scale"] = raw.win31Scale if Types.is_scale_preference(raw.get("win31Scale")) else "auto"
 	settings["win95Scale"] = raw.win95Scale if Types.is_scale_preference(raw.get("win95Scale")) else "auto"
+	settings["macScale"] = raw.macScale if Types.is_scale_preference(raw.get("macScale")) else "auto"
+	settings["beScale"] = raw.beScale if Types.is_scale_preference(raw.get("beScale")) else "auto"
 	settings["win95DesktopIconPositions"] = _normalize_position_map(raw.get("win95DesktopIconPositions"))
 	settings["win31DesktopMode"] = raw.win31DesktopMode if Jsonx.is_bool(raw.get("win31DesktopMode")) else false
 	var b: Dictionary = raw.get("win31ProgramManagerBounds") if Jsonx.is_obj(raw.get("win31ProgramManagerBounds")) else {}

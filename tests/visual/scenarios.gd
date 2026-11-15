@@ -13,6 +13,10 @@ static func run(view: String, a: Automation, host: Node) -> void:
 	_shell = host.get("shell") if host != null else null
 	if view.begins_with("win95"):
 		await _win95(view, a, host)
+	elif view == "mac" or view.begins_with("mac-"):
+		await MacScenarios.run(view, a, host)
+	elif view == "be" or view.begins_with("be-"):
+		await BeScenarios.run(view, a, host)
 	else:
 		await _wfw(view, a)
 

@@ -55,7 +55,7 @@ func _build(cw: int) -> void:
 	_cb(8, 186, "Wrap item labels (show full names)", "labelDisplay")
 	_cb(8, 207, "Sound Effects", "soundEnabled")
 	var shell_combo := W31Combo.new()
-	shell_combo.set_items(["Windows 3.1", "Windows 95"], ["win31", "win95"])
+	shell_combo.set_items(["Windows 3.1", "Windows 95", "Classic Mac OS", "BeOS"], Types.SHELLS)
 	shell_combo.select_value(form.shell)
 	shell_combo.selection_changed.connect(func(_i):
 		form.shell = shell_combo.value()
@@ -69,9 +69,9 @@ func _build(cw: int) -> void:
 	preview.theme_name = form.theme
 	preview.group_chrome_scale = float(form.groupChromeScale)
 	add_widget(preview, 8, 255, Vector2(inner_w, 88))
-	var scale_label := "Program Manager Scale:" if form.shell == "win31" else "Windows 95 Scale:"
+	var scale_label: String = "Program Manager Scale:" if form.shell == "win31" else String(W31DialogLogic.SHELL_NAMES.get(form.shell, "Windows 95")) + " Scale:"
 	var lw := maxi(106, W31.text_w(scale_label, 11))
-	var scale_key := "win31Scale" if form.shell == "win31" else "win95Scale"
+	var scale_key := Types.scale_key(String(form.shell))
 	var scale_combo := _scale_combo(scale_key)
 	add_label(8, 351 + 3, scale_label, lw)
 	add_widget(scale_combo, 8 + lw + 5, 351, Vector2(inner_w - lw - 5, 19))

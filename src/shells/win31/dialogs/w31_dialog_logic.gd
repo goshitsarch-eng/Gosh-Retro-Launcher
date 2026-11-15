@@ -8,7 +8,7 @@ extends RefCounted
 const LAUNCH_GROUP_OPTIONS := [0, 1, 2, 3, 4, 5, 6, 7, 8]
 const MAX_QUICK_SEARCH_RESULTS := 10
 const RUN_MODE_LABELS := {"normal": "Normal Window", "minimized": "Minimized", "maximized": "Maximized"}
-const SHELL_NAMES := {"win31": "Windows 3.1", "win95": "Windows 95"}
+const SHELL_NAMES := {"win31": "Windows 3.1", "win95": "Windows 95", "mac": "Classic Mac OS", "be": "BeOS"}
 const HELP_TOPICS := [
 	"Creating program groups", "Creating program items", "Moving and copying items",
 	"Arranging group windows", "Changing program icons", "Running a program", "Keyboard commands",
@@ -360,6 +360,8 @@ static func settings_form(settings: Dictionary) -> Dictionary:
 		"groupChromeScale": settings.get("groupChromeScale", 1),
 		"win31Scale": settings.get("win31Scale", "auto"),
 		"win95Scale": settings.get("win95Scale", "auto"),
+		"macScale": settings.get("macScale", "auto"),
+		"beScale": settings.get("beScale", "auto"),
 		"theme": settings.get("theme", "light"),
 		"labelDisplay": settings.get("labelDisplay", "wrap") if settings.get("labelDisplay", "") != "" else "wrap",
 		"shell": settings.get("shell", "win31") if settings.get("shell", "") != "" else "win31",

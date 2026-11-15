@@ -39,6 +39,12 @@ drives, printers, primary-window/task symbols, Run, Find, Shut Down,
 information/question/warning/critical messages, properties/new-shortcut flows,
 URL items, and a generic launcher-application fallback.
 
+## Design-imported icons
+
+The 32px/16px sources in this directory were later replaced by the icon set supplied with the project's Claude
+Design prototype (`icons95/`), imported with `tools/import_design_icons.py` (see `README.md`). Those files are no
+longer reproduced by `tools/generate_win95_assets.cjs`; the clean-room statement above describes the original catalog.
+
 ## User-content exception
 
 Icons extracted by the host from user-selected applications are user content,

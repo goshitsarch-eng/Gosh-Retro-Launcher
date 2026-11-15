@@ -7,10 +7,18 @@ const CURRENT_SCHEMA_VERSION := 5
 const SCALE_FACTORS := [1, 2, 3, 4]
 const SHELL_WIN31 := "win31"
 const SHELL_WIN95 := "win95"
+const SHELL_MAC := "mac"
+const SHELL_BE := "be"
 const RUN_MODES := ["normal", "minimized", "maximized"]
 const THEMES := ["light", "dark"]
 const LABEL_DISPLAYS := ["wrap", "ellipsis"]
-const SHELLS := ["win31", "win95"]
+const SHELLS := ["win31", "win95", "mac", "be"]
+
+
+## Settings key holding the whole-UI scale preference of a shell ("win31Scale", "win95Scale", "macScale", "beScale").
+static func scale_key(shell: String) -> String:
+	return shell + "Scale" if SHELLS.has(shell) else "win31Scale"
+
 
 static func default_settings() -> Dictionary:
 	return {
@@ -22,6 +30,8 @@ static func default_settings() -> Dictionary:
 		"groupChromeScale": 1,
 		"win31Scale": "auto",
 		"win95Scale": "auto",
+		"macScale": "auto",
+		"beScale": "auto",
 		"win95DesktopIconPositions": {},
 		"win31DesktopMode": false,
 		"win31ProgramManagerBounds": {"x": 68, "y": 49, "width": 511, "height": 335},

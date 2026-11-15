@@ -36,6 +36,9 @@ func prepare() -> void:
 		OS.set_environment("PM_FORCE_DPR", "1.25")  # the original harness forced a 125% device scale
 	if OS.get_environment("PM_FORCE_DPR") == "":
 		OS.set_environment("PM_FORCE_DPR", "1")  # baselines are 1x; on a Retina host the min window size would otherwise force 800x600
+	# project.godot runs in low-processor mode (render only on redraw requests); the harness grabs the viewport
+	# after injected input, so keep rendering every frame or the grab can return the previous frame.
+	OS.low_processor_usage_mode = false
 	Engine.set_meta("pm_capture", true)
 	Engine.set_meta("pm_capture_clock", "12:00 PM")
 	_owns_size = true
@@ -50,6 +53,7 @@ func run() -> void:
 	await auto.wait_ms(800)
 	await SCENARIOS.run(view, auto, host)
 	await auto.wait_ms(400)  # let the last injected action finish drawing before the grab
+	RenderingServer.force_draw()
 	var img := host.get_viewport().get_texture().get_image()
 	var out := String(args.get("out", "artifacts/%s.png" % view))
 	DirAccess.make_dir_recursive_absolute(out.get_base_dir())

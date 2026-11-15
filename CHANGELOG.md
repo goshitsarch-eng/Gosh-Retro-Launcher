@@ -5,6 +5,18 @@ All notable changes to Gosh Retro Launcher are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Classic Mac OS and BeOS shells** (`src/shells/mac`, `src/shells/be`), selectable from Launcher Tools and the WfW Settings dialog, with independent `macScale` / `beScale` scale settings, light and dark themes, Find / Quick Search, Get Info, rename, Move to Trash, New Folder and the shared launch feedback. Window and icon positions are session-only. See `docs/MAC_SHELL.md` and `docs/BE_SHELL.md`.
+- Capture views `mac-*` and `be-*` with automation ids (`tests/visual/MAC_AUTOMATION_IDS.md`, `BE_AUTOMATION_IDS.md`) and a shell-registry unit test.
+
+### Changed
+
+- Windows 95 icons replaced by the Claude Design `icons95` set (`tools/import_design_icons.py`); the Win95 shell shows Windows for Workgroups artwork for WfW application ids; new `launcher-logo` icon.
+- Visual harness: `click_id` waits for the element, and captures render every frame (`low_processor_mode` is off during captures) with a forced draw before the grab, which removes stale-frame captures.
+
 ## [2.0.0] - Godot rewrite
 
 ### Changed

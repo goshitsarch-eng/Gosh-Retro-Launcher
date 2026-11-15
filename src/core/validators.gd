@@ -119,6 +119,10 @@ static func is_valid_settings(settings: Variant) -> bool:
 		return false
 	if o.has("win95Scale") and not Types.is_scale_preference(o.win95Scale):
 		return false
+	if o.has("macScale") and not Types.is_scale_preference(o.macScale):
+		return false
+	if o.has("beScale") and not Types.is_scale_preference(o.beScale):
+		return false
 	if o.has("win95DesktopIconPositions") and not is_position_map(o.win95DesktopIconPositions):
 		return false
 	if o.has("win31DesktopMode") and not Jsonx.is_bool(o.win31DesktopMode):
@@ -142,9 +146,9 @@ static func is_valid_settings(settings: Variant) -> bool:
 
 
 static func is_valid_shell_frame_request(value: Variant) -> bool:
-	return Jsonx.is_str(value) and (value == "win31" or value == "win95")
+	return Jsonx.is_str(value) and Types.SHELLS.has(value)
 
 
-## win31 uses a custom-drawn frame; win95 a native OS frame.
+## win31 uses a custom-drawn frame; win95, mac and be a native OS frame.
 static func uses_native_window_frame(shell: String) -> bool:
 	return shell != "win31"

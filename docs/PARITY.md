@@ -40,6 +40,7 @@ environment* (code written and reviewed, parts unit-tested) · **GAP** known dif
 | WfW chrome, menus/accelerators, MDI groups, minimized icons, cascade/tile/arrange, desktop mode | V (`desktop-minimized` 0.14 %) + S + T |
 | WfW dialogs (properties, new, move/copy, run, exit, help, about, welcome, confirm, settings, icon picker) | S + E (22-check interaction run) + T |
 | WfW Quick Search, launch feedback | S + E + T |
+| Classic Mac OS and BeOS shells (design-driven, no Electron predecessor) | T (state, menus, icon catalogs, dialog logic) + S (`mac-*`, `be-*` capture views); no pixel baselines |
 | Launcher Tools window (all sections) | T (logic) + S |
 | Shell switch at runtime (persist-first, rollback), per-shell geometry | T + V (switch result identical to a cold start) + E round trip |
 | Win31 `.GRP` import/export (checksummed PMCC) | T |

@@ -63,7 +63,15 @@ const ALIASES := {
 	"clock": "application",
 }
 
+## Windows for Workgroups application ids. Win95 shows them with their own WfW artwork (large: the WfW
+## 32px icon, small: assets/win95/small/wfw-<id>-16.png) instead of the generic application icon.
+const WFW_APPS := [
+	"file-manager", "control-panel", "print-manager", "clipbook", "dos", "setup", "pif", "readme",
+	"terminal", "calculator", "clock", "paint", "cardfile",
+]
+
 const ROOT := "res://assets/win95"
+const WFW_ROOT := "res://assets/wfw"
 const LOCAL_ROOT := "res://assets/win95-rtm-local"
 
 
@@ -105,6 +113,15 @@ static func _external_texture(icon: String) -> Texture2D:
 	return Assets.tex(path)
 
 
+## WfW application artwork for the ids in WFW_APPS, or null when the icon is not one of them.
+static func _wfw_texture(icon: String, size: String) -> Texture2D:
+	if not WFW_APPS.has(icon):
+		return null
+	if size == "large":
+		return Assets.tex("%s/%s-32.png" % [WFW_ROOT, icon])
+	return Assets.tex("%s/small/wfw-%s-16.png" % [ROOT, icon])
+
+
 ## Texture for an icon string at the given native size family ("small" 16px | "large" 32px).
 static func texture(icon: String, size: String = "large") -> Texture2D:
 	if is_external(icon):
@@ -112,6 +129,9 @@ static func texture(icon: String, size: String = "large") -> Texture2D:
 		if ext != null:
 			return ext
 		return Assets.tex(path_for("application", size))
+	var wfw := _wfw_texture(icon, size)
+	if wfw != null:
+		return wfw
 	var id := get_icon_id(icon)
 	# Optional gitignored pack extracted from the user's own licensed RTM media; the
 	# distributable build falls back to the clean-room set.

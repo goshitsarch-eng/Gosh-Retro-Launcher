@@ -322,19 +322,20 @@ func _build_appearance() -> void:
 	grid.add_theme_constant_override("separation", 9)
 	s.add_child(grid)
 	shell_option = OptionButton.new()
-	shell_option.add_item(LauncherToolsLogic.shell_label("win31"))
-	shell_option.add_item(LauncherToolsLogic.shell_label("win95"))
-	shell_option.select(0 if _form.shell == "win31" else 1)
+	for sh in Types.SHELLS:
+		shell_option.add_item(LauncherToolsLogic.shell_label(sh))
+	shell_option.select(maxi(0, Types.SHELLS.find(_form.shell)))
 	shell_option.set_meta("auto_id", "tools.shell")
 	shell_option.item_selected.connect(func(i: int):
-		_form.shell = "win31" if i == 0 else "win95"
+		_form.shell = Types.SHELLS[i]
 		_rebuild())
 	_labeled(grid, "Shell", shell_option)
 	var is31: bool = _form.shell == "win31"
-	scale_option = _scale_option(_form["win31Scale" if is31 else "win95Scale"], func(v: Variant):
-		_form["win31Scale" if is31 else "win95Scale"] = v)
+	var skey := Types.scale_key(String(_form.shell))
+	scale_option = _scale_option(_form[skey], func(v: Variant):
+		_form[skey] = v)
 	scale_option.set_meta("auto_id", "tools.scale")
-	_labeled(grid, "WfW scale" if is31 else "Windows 95 scale", scale_option)
+	_labeled(grid, "WfW scale" if is31 else LauncherToolsLogic.shell_label(String(_form.shell)) + " scale", scale_option)
 	var checks := HBoxContainer.new()
 	checks.add_theme_constant_override("separation", 12)
 	s.add_child(checks)

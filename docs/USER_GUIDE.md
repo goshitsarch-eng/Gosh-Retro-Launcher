@@ -48,7 +48,7 @@ The application starts with an empty user workspace; historical reference groups
 
 ## Desktop Shells
 
-Program Manager includes two visual shells that change the look and feel of the entire interface. You can switch between them at any time in Settings.
+Program Manager includes four visual shells that change the look and feel of the entire interface. You can switch between them at any time in Settings.
 
 ### Windows 3.1 Shell (Default)
 
@@ -81,6 +81,14 @@ Network Neighborhood, Recycle Bin storage, Control Panel, Printers, file dates, 
 4. Click **Apply**.
 
 The complete settings payload is saved before the window frame is switched (WfW draws its own frame; Windows 95 uses the operating system frame). The window's bounds are retained, program data stays shared, and each shell keeps independent group-window geometry.
+
+### Classic Mac OS Shell
+
+A System 7-style desktop: a menu bar (logo menu, File, Edit, View, Special, Help, clock), a **Launcher HD** window that lists your groups as folders, folder windows with close/zoom/collapse boxes, a Trash, Get Info for item settings and a Find window. Choose it in Launcher Tools or Settings. Window positions are not remembered between runs. Details: [MAC_SHELL.md](MAC_SHELL.md).
+
+### BeOS Shell
+
+A BeOS-style desktop with yellow tabbed windows and a **Deskbar** on the right edge (logo menu, Launcher Tools button, clock, running windows). Folder windows offer Icon, Mini Icon and List views, plus Get Info, Edit Name, Move to Trash and Find. Window positions are not remembered between runs. Details: [BE_SHELL.md](BE_SHELL.md).
 
 ## Managing Groups
 

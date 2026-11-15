@@ -7,12 +7,23 @@ static func is_win95_view(view: String) -> bool:
 	return view == "win95" or view.begins_with("win95-")
 
 
+## Shell shown by a capture view: "mac-*" / "be-*" / "win95-*" views start in that shell, everything else in WfW.
+static func shell_for_view(view: String) -> String:
+	if is_win95_view(view):
+		return "win95"
+	if view == "mac" or view.begins_with("mac-"):
+		return "mac"
+	if view == "be" or view.begins_with("be-"):
+		return "be"
+	return "win31"
+
+
 static func fixture_scale(view: String) -> int:
-	if view == "scale2":
+	if view == "scale2" or view == "mac-scale2":
 		return 2
 	if ["win95-scale2", "win95-remainder", "win95-dpi125"].has(view):
 		return 2
-	if view == "scale3" or view == "win95-scale3":
+	if view == "scale3" or view.ends_with("-scale3"):
 		return 3
 	if view == "scale4" or view == "win95-scale4":
 		return 4
@@ -59,8 +70,9 @@ static func data_for(view: String) -> Dictionary:
 		"schemaVersion": 2,
 		"groups": groups,
 		"settings": {
-			"shell": "win95" if is_win95_view(view) else "win31",
-			"win31Scale": s, "win95Scale": s, "trayOnClose": false, "soundEnabled": false,
+			"shell": shell_for_view(view),
+			"win31Scale": s, "win95Scale": s, "macScale": s, "beScale": s, "trayOnClose": false, "soundEnabled": false,
+			"theme": "dark" if view.begins_with("mac-dark") else "light",
 			"win31DesktopMode": view == "desktop" or view == "desktop-minimized",
 			"win31ProgramManagerMinimized": view == "desktop-minimized",
 		},

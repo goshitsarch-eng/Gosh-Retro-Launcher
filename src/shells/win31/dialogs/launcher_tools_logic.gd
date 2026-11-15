@@ -4,7 +4,7 @@ extends RefCounted
 ## components/LauncherTools/LauncherTools.tsx). Every action takes the store node (the
 ## ProgramStore autoload, or a scratch instance in tests) and returns a status line.
 
-const SHELL_LABELS := {"win31": "Windows for Workgroups 3.11", "win95": "Windows 95"}
+const SHELL_LABELS := {"win31": "Windows for Workgroups 3.11", "win95": "Windows 95", "mac": "Classic Mac OS", "be": "BeOS"}
 
 
 static func shell_label(shell: String) -> String:
@@ -14,7 +14,8 @@ static func shell_label(shell: String) -> String:
 static func appearance_form(settings: Dictionary) -> Dictionary:
 	return {
 		"shell": settings.get("shell", "win31"), "win31Scale": settings.get("win31Scale", "auto"),
-		"win95Scale": settings.get("win95Scale", "auto"), "win31DesktopMode": settings.get("win31DesktopMode", false),
+		"win95Scale": settings.get("win95Scale", "auto"), "macScale": settings.get("macScale", "auto"),
+		"beScale": settings.get("beScale", "auto"), "win31DesktopMode": settings.get("win31DesktopMode", false),
 		"soundEnabled": settings.get("soundEnabled", true), "trayOnClose": settings.get("trayOnClose", true),
 	}
 
@@ -24,7 +25,7 @@ static func appearance_form(settings: Dictionary) -> Dictionary:
 static func apply_appearance(store: Node, form: Dictionary) -> Dictionary:
 	var previous: Dictionary = store.settings.duplicate(true)
 	var next: Dictionary = previous.duplicate(true)
-	for k in ["shell", "win31Scale", "win95Scale", "win31DesktopMode", "soundEnabled", "trayOnClose"]:
+	for k in ["shell", "win31Scale", "win95Scale", "macScale", "beScale", "win31DesktopMode", "soundEnabled", "trayOnClose"]:
 		next[k] = form[k]
 	var result: Dictionary = store.apply_settings_transaction(next)
 	if result.get("success", false):
