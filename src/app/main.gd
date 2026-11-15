@@ -14,7 +14,7 @@ var desktop: DesktopBridge
 
 var _applied_shell := ""
 var _frame_shell := ""
-var _shown_save_failures := {}  ## groups/settings failures already shown (they re-fire on every retry); cleared by save_recovered
+var _shown_save_failures := {}  ## groups/settings/profiles failures already shown (they re-fire on every retry); cleared by save_recovered
 
 
 func _ready() -> void:
@@ -268,7 +268,7 @@ const NORMALIZED_PLACES := {"load": "While loading your data", "import": "While 
 ## Notice for ProgramStore.save_failed: an alert the user acknowledges. {title, text, alert}.
 static func save_failed_notice(kind: String, message: String) -> Dictionary:
 	var text := message if message != "" else "Program Manager could not save your data."
-	if kind == "groups" or kind == "settings":
+	if kind == "groups" or kind == "settings" or kind == "profiles":
 		text += " The change is kept while Program Manager is running, and saving is tried again."
 	return {"title": NOTICE_TITLE, "text": text, "alert": true}
 
@@ -284,7 +284,7 @@ static func data_normalized_notice(source: String, report: Dictionary) -> Dictio
 
 func _on_save_failed(kind: String, message: String) -> void:
 	var n := save_failed_notice(kind, message)
-	if kind == "groups" or kind == "settings":
+	if kind == "groups" or kind == "settings" or kind == "profiles":
 		var key := "%s|%s" % [kind, message]
 		if _shown_save_failures.has(key):
 			return

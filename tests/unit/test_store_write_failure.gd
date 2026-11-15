@@ -157,3 +157,86 @@ func test_host_shows_a_failure_again_after_recovery() -> void:
 	host._on_save_failed("groups", "m")
 	expect_eq(host._shown_save_failures.size(), 2, "the new groups failure is shown and remembered again")
 	host.free()
+
+
+func test_read_only_folder_reports_a_failed_profile_save_and_keeps_it_pending() -> void:
+	var dir := _tmp()
+	var s := _open(dir)
+	s.add_group("Base")
+	s.flush()
+	var failed := []
+	s.save_failed.connect(func(kind: String, msg: String) -> void: failed.append([kind, msg]))
+	if not _make_read_only(dir):
+		print("  (skipped: a read-only folder is still writable here)")
+		s.free()
+		_rm(dir)
+		return
+	var id: String = s.save_workspace_profile("Office")
+	s.rename_workspace_profile(id, "Office 2")  # a second change while the first is pending
+	_chmod(dir, "755")  # writable again before any assertion
+	var kinds := failed.map(func(f): return f[0])
+	expect_eq(kinds, ["profiles", "profiles"], "each failed profile write reported")
+	if failed.size() > 0:
+		expect(String(failed[0][1]).contains("could not be written"), "message names the cause: " + String(failed[0][1]))
+	expect_eq(s._profiles_dirty, true, "profiles stay pending")
+	expect_eq(s.workspace_profiles.map(func(p): return p.name), ["Office 2"], "profiles kept in memory")
+	expect(not _store_text(dir).contains("Office"), "nothing reached the disk")
+	s.free()
+	_rm(dir)
+
+
+func test_pending_profile_save_is_written_by_the_next_flush_and_recovers() -> void:
+	var dir := _tmp()
+	var s := _open(dir)
+	s.add_group("Base")
+	s.flush()
+	var recovered := []
+	s.save_recovered.connect(func(kind: String) -> void: recovered.append(kind))
+	if not _make_read_only(dir):
+		print("  (skipped: a read-only folder is still writable here)")
+		s.free()
+		_rm(dir)
+		return
+	s.save_workspace_profile("Office")
+	s.flush()  # the retry fails again
+	_chmod(dir, "755")
+	expect_eq(s._profiles_dirty, true, "still pending while the folder is read-only")
+	expect_eq(recovered, [], "no recovery while failing")
+	# Writable again: a groups flush writes the pending profiles first.
+	s.add_group("After")
+	s.flush()
+	expect_eq(s._profiles_dirty, false)
+	expect_eq(recovered, ["profiles"], "the first successful profile save after the failure")
+	s.free()
+	var b := _open(dir)
+	expect_eq(b.workspace_profiles.map(func(p): return p.name), ["Office"], "the retried profiles were saved")
+	expect_eq(b.groups.map(func(g): return g.name), ["Base", "After"])
+	b.free()
+	_rm(dir)
+
+
+func test_exit_flush_retries_a_pending_profile_save() -> void:
+	var dir := _tmp()
+	var s := _open(dir)
+	s.flush()
+	if not _make_read_only(dir):
+		print("  (skipped: a read-only folder is still writable here)")
+		s.free()
+		_rm(dir)
+		return
+	s.save_workspace_profile("Home")
+	_chmod(dir, "755")
+	expect_eq(s._groups_dirty or s._settings_dirty, false, "only profiles are pending")
+	s.flush()  # what _exit_tree runs
+	expect_eq(s._profiles_dirty, false)
+	s.free()
+	var b := _open(dir)
+	expect_eq(b.workspace_profiles.map(func(p): return p.name), ["Home"], "saved by the profile-only flush")
+	b.free()
+	_rm(dir)
+
+
+func test_host_notice_for_a_profile_failure_says_the_change_is_kept() -> void:
+	var n: Dictionary = preload("res://src/app/main.gd").save_failed_notice("profiles", "p")
+	expect(String(n.text).contains("saving is tried again"), String(n.text))
+	expect_eq(n.alert, true)

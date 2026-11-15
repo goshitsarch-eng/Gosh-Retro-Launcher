@@ -13,10 +13,11 @@ signal data_reloaded  ## emitted after import/restore replaced everything
 ## Hosts can show it to the user. (Load runs before anything connects, so `load_report` keeps it too.)
 signal data_normalized(source: String, report: Dictionary)
 ## A write was refused (invalid data), the store file could not be written (read-only or full disk),
-## or a safety backup could not be made. `kind` is "groups", "settings" or "backup". For groups and
-## settings the change stays in memory and marked dirty, so the next flush retries it.
+## or a safety backup could not be made. `kind` is "groups", "settings", "profiles" or "backup". For
+## groups, settings and profiles the change stays in memory and marked dirty, so the next flush of any
+## kind (and the one on exit) retries it.
 signal save_failed(kind: String, message: String)
-## The first successful save of `kind` ("groups" or "settings") after save_failed reported it.
+## The first successful save of `kind` ("groups", "settings" or "profiles") after save_failed reported it.
 signal save_recovered(kind: String)
 
 const SAVE_DEBOUNCE := 0.3
@@ -33,10 +34,12 @@ var _groups_timer: Timer
 var _settings_timer: Timer
 var _groups_dirty := false
 var _settings_dirty := false
-## Kinds ("groups", "settings") whose last flush failed.
+var _profiles_dirty := false
+## Kinds ("groups", "settings", "profiles") whose last flush failed.
 var _failing := {}
 
 const WRITE_FAILED_GROUPS := "Your program groups could not be saved because the data folder could not be written (it may be read-only or full)."
+const WRITE_FAILED_PROFILES := "Your workspace profiles could not be saved because the data folder could not be written (it may be read-only or full)."
 const WRITE_FAILED_SETTINGS := "Your settings could not be saved because the data folder could not be written (it may be read-only or full)."
 
 
@@ -60,6 +63,8 @@ func _exit_tree() -> void:
 
 ## Writes anything still pending to disk immediately.
 func flush() -> void:
+	if not _groups_dirty and not _settings_dirty:
+		_retry_profiles()  # otherwise the group/settings flush below retries them first
 	if _groups_dirty:
 		_flush_groups()
 	if _settings_dirty:
@@ -102,6 +107,7 @@ func _flush_groups() -> void:
 	_groups_timer.stop()
 	if not persistence:
 		return
+	_retry_profiles()
 	if not _groups_valid(groups):
 		var ctx := {"normalized": 0}
 		groups = Migration.normalize_groups(groups, ctx)
@@ -123,6 +129,7 @@ func _flush_settings() -> void:
 	_settings_timer.stop()
 	if not persistence:
 		return
+	_retry_profiles()
 	if not Validators.is_valid_settings(settings):
 		var ctx := {"normalized": 0}
 		settings = Migration.normalize_settings(settings, ctx)
@@ -141,10 +148,13 @@ func _flush_settings() -> void:
 
 ## Keeps `kind` pending (dirty) for the next flush, logs `log_text` and tells the host.
 func _save_failed(kind: String, log_text: String, message: String) -> void:
-	if kind == "groups":
-		_groups_dirty = true
-	else:
-		_settings_dirty = true
+	match kind:
+		"groups":
+			_groups_dirty = true
+		"settings":
+			_settings_dirty = true
+		"profiles":
+			_profiles_dirty = true
 	_failing[kind] = true
 	push_error("Program Manager: " + log_text)
 	save_failed.emit(kind, message)
@@ -170,9 +180,22 @@ func save_settings_now() -> void:
 	_flush_settings()
 
 
+## Writes the whole in-memory profile list, so a change made while an earlier write is still pending
+## is included. On failure persistence rolls its data back; the profiles stay dirty and are written
+## again (before the groups/settings write) by the next flush of any kind.
 func _save_profiles() -> void:
-	if persistence:
-		persistence.set_workspace_profiles(workspace_profiles)
+	_profiles_dirty = false
+	if not persistence:
+		return
+	if not persistence.set_workspace_profiles(workspace_profiles):
+		_save_failed("profiles", "workspace profiles could not be written to %s." % persistence.store_path(), WRITE_FAILED_PROFILES)
+		return
+	_save_succeeded("profiles")
+
+
+func _retry_profiles() -> void:
+	if _profiles_dirty:
+		_save_profiles()
 
 
 func _dirty_groups() -> void:
@@ -597,6 +620,7 @@ func restore_backup(id: String) -> Dictionary:
 func _cancel_pending() -> void:
 	_groups_dirty = false
 	_settings_dirty = false
+	_profiles_dirty = false
 	if _groups_timer:
 		_groups_timer.stop()
 	if _settings_timer:
