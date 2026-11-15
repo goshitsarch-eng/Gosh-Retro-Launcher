@@ -37,9 +37,11 @@ func test_folder_background_menu_depends_on_window_kind_and_view() -> void:
 	expect_eq(c[9].action, "about.open")
 	var g := BeMenuModel.folder_background_menu("g:x", false, "details")
 	expect_eq(g[0].label, "Add Program…")
-	expect(g[4].dot)
-	expect_eq(g[9].action, "group.info")
-	expect_eq(g[9].args.gid, "x")
+	expect_eq(g[1].label, "Add Website…")
+	expect_eq(g[1].action, "website.new")
+	expect(g[5].dot)
+	expect_eq(g[10].action, "group.info")
+	expect_eq(g[10].args.gid, "x")
 
 
 func test_menu_bar_enables_selection_commands_only_with_a_selection() -> void:

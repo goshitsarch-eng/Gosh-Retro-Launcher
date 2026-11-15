@@ -170,6 +170,30 @@ static func new_program(shell: Control, group_id: String) -> MacDialog:
 	return d
 
 
+static func new_website(shell: Control, group_id: String) -> MacDialog:
+	var d := _titled(shell, "New Website", 440, 218)
+	d.add(MacLabel.make("Type the web address of the site you want to add. The name is optional.", {"wrap": 400}), Vector2(14, 12))
+	var url := MacTextField.new("mac.dialog.field:Web address")
+	var name_f := MacTextField.new("mac.dialog.field:Name")
+	var group_sel := MacSelect.new("mac.dialog.select:Group")
+	group_sel.host = shell.select_layer
+	for g in ProgramStore.groups:
+		group_sel.options.append({"id": String(g.id), "label": String(g.name)})
+	group_sel.select_id(group_id)
+	_field_row(d, "Web address:", 44, url)
+	_field_row(d, "Name:", 44 + 28, name_f)
+	_field_row(d, "Group:", 44 + 56, group_sel)
+	var b := _buttons(d, "OK", [])
+	b[0].pressed.connect(func():
+		var gid := group_sel.current_id()
+		var id := Launcher.add_website(ProgramStore, gid, name_f.text, url.text)
+		d.close()
+		if id != "":
+			shell.open_group_window(gid))
+	url.focus_edit()
+	return d
+
+
 static func run(shell: Control) -> MacDialog:
 	var d := _titled(shell, "Run", 420, 152)
 	d.add(MacLabel.make("Type the name of a program in your launcher groups, or a command to run.", {"wrap": 380}), Vector2(14, 12))

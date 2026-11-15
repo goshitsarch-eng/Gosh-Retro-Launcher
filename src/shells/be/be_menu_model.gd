@@ -50,7 +50,10 @@ static func desktop_icon_menu(id: String) -> Array:
 
 ## Right-click on the white area of a folder window.
 static func folder_background_menu(key: String, is_computer: bool, view: String) -> Array:
-	var out := [row("New Folder" if is_computer else "Add Program…", "folder.new" if is_computer else "program.new", {"key": key}), SEP]
+	var out := [row("New Folder" if is_computer else "Add Program…", "folder.new" if is_computer else "program.new", {"key": key})]
+	if not is_computer:
+		out.append(row("Add Website…", "website.new", {"key": key}))
+	out.append(SEP)
 	for v in VIEWS:
 		out.append(row(v[1], "window.view", {"key": key, "view": v[0]}, {"dot": view == v[0]}))
 	out.append_array([SEP, row("Clean Up", "window.cleanup", {"key": key}), row("Select All", "none", {}, {"disabled": true}), SEP,
