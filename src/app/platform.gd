@@ -109,8 +109,8 @@ func launch_batch(items: Array, delay_ms: Variant) -> Array:
 # --------------------------------------------------------------- native dialogs
 
 ## (await) Opens a file chooser. Returns the chosen path or "" when canceled.
-func pick_open_file(title: String, filters: Array) -> String:
-	var paths := await _pick({"title": title, "mode": "open", "filters": filters, "default_name": ""})
+func pick_open_file(title: String, filters: Array, mode := "open", start_dir := "") -> String:
+	var paths := await _pick({"title": title, "mode": mode, "filters": filters, "default_name": "", "start_dir": start_dir})
 	return paths[0] if paths.size() > 0 else ""
 
 
@@ -128,6 +128,10 @@ func pick_save_file(title: String, default_name: String, filters: Array) -> Stri
 
 ## (await) -> String path or "" when canceled
 func select_executable() -> String:
+	if os_name() == "darwin":
+		# .app bundles are folders: "open_any" lets the chooser return a bundle, which a plain file
+		# chooser greys out. Start in /Applications.
+		return await pick_open_file("Select Program", PlatformFilters.executable_filters("darwin"), "open_any", "/Applications")
 	return await pick_open_file("Select Program", PlatformFilters.executable_filters(os_name()))
 
 
@@ -221,13 +225,16 @@ func _pick(request: Dictionary) -> PackedStringArray:
 	if DisplayServer.get_name() == "headless":
 		return PackedStringArray()
 	var save: bool = request.mode == "save"
-	var start_dir := _last_dir if _last_dir != "" else OS.get_environment("USERPROFILE" if os_name() == "win32" else "HOME")
+	var any: bool = request.mode == "open_any"
+	var start_dir := String(request.get("start_dir", ""))
+	if start_dir == "" or not DirAccess.dir_exists_absolute(start_dir):
+		start_dir = _last_dir if _last_dir != "" else OS.get_environment("USERPROFILE" if os_name() == "win32" else "HOME")
 	var result := PackedStringArray()
 	var done := false
 	if DisplayServer.has_feature(DisplayServer.FEATURE_NATIVE_DIALOG_FILE):
 		var waiter := _Waiter.new()
 		var err := DisplayServer.file_dialog_show(String(request.title), start_dir, String(request.default_name), false,
-				DisplayServer.FILE_DIALOG_MODE_SAVE_FILE if save else DisplayServer.FILE_DIALOG_MODE_OPEN_FILE,
+				DisplayServer.FILE_DIALOG_MODE_SAVE_FILE if save else (DisplayServer.FILE_DIALOG_MODE_OPEN_ANY if any else DisplayServer.FILE_DIALOG_MODE_OPEN_FILE),
 				PlatformFilters.to_godot(request.filters, os_name()), waiter.native, 0)
 		if err == OK:
 			result = await waiter.done
@@ -244,7 +251,7 @@ func _pick_with_godot_dialog(request: Dictionary, start_dir: String) -> PackedSt
 	var dlg := FileDialog.new()
 	dlg.use_native_dialog = false
 	dlg.access = FileDialog.ACCESS_FILESYSTEM
-	dlg.file_mode = FileDialog.FILE_MODE_SAVE_FILE if save else FileDialog.FILE_MODE_OPEN_FILE
+	dlg.file_mode = FileDialog.FILE_MODE_SAVE_FILE if save else (FileDialog.FILE_MODE_OPEN_ANY if request.mode == "open_any" else FileDialog.FILE_MODE_OPEN_FILE)
 	dlg.title = String(request.title)
 	for f in request.filters:
 		var patterns := PackedStringArray()

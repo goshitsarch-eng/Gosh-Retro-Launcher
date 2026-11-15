@@ -149,7 +149,7 @@ func test_select_dialogs_use_the_right_filters() -> void:
 	Platform.dialog_provider = _provider(PackedStringArray(["/x/app.exe"]))
 	expect_eq(await Platform.select_executable(), "/x/app.exe")
 	expect_eq(_calls[0].title, "Select Program")
-	expect_eq(_calls[0].mode, "open")
+	expect_eq(_calls[0].mode, "open_any" if Platform.os_name() == "darwin" else "open", ".app bundles are folders on macOS")
 	expect_eq(_calls[0].filters, PlatformFilters.executable_filters(Platform.os_name()))
 	expect_eq(await Platform.select_icon(), "/x/app.exe")
 	expect_eq(_calls[1].title, "Select Icon")

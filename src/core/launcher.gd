@@ -4,6 +4,22 @@ extends RefCounted
 ## All entry points return {"success": bool, "error": String (optional)}.
 
 
+## Default item name for a path or web address: the host of an http(s) URL without "www."
+## ("https://www.github.com/x" -> "github.com"), else the last path segment without a ".app" suffix.
+static func suggested_name(path: String) -> String:
+	var p := path.strip_edges()
+	if is_valid_launch_url(p):
+		var host := p.get_slice("://", 1).split("/")[0].split("?")[0].split("#")[0].split("@")[-1].split(":")[0]
+		return host.trim_prefix("www.") if host != "" else p
+	p = p.replace("\\", "/")
+	while p.ends_with("/"):
+		p = p.substr(0, p.length() - 1)
+	var n := p.get_file()
+	if n.to_lower().ends_with(".app"):
+		n = n.substr(0, n.length() - 4)
+	return n if n != "" else p
+
+
 static func is_valid_launch_url(url: String) -> bool:
 	var re := RegEx.new()
 	re.compile("(?i)^https?://[^\\s/?#]+")

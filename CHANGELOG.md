@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- macOS: Browse… for a program can now pick `.app` bundles (the chooser runs in "open any" mode starting in /Applications; bundles are folders and a plain file chooser greyed them out).
+- Adding a website: a pasted web address now gets a sensible default name (its host, e.g. `github.com`) in the Mac and BeOS New Program dialogs, and `.app` names drop the suffix.
+
 ### Added
 
 - **macOS menu bar:** the application menu gains **Settings…** (⌘,) opening Launcher Tools, and the Dock menu gains Launcher Tools… and Quick Search (`src/platform/mac_app_menu.gd`). The menu-bar app name and the standard About panel icon come from the exported bundle.
