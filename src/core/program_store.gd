@@ -536,15 +536,26 @@ func create_backup(reason: String = "manual") -> Dictionary:
 	return persistence.create_backup(persistence.get_all_data(), reason, true)
 
 
+## Replaces all data with the backup. Like apply_workspace_profile, a forced "store-replaced" backup
+## of the current data is written first (create_backup flushes pending edits, so it holds the latest
+## data); if it cannot be written, nothing is restored. The backup to restore is read before that, so
+## pruning cannot remove it. (Persistence.set_all_data then writes its own store-replaced backup of
+## the same data.) Returns {"success", "backup"?, "error"?}.
 func restore_backup(id: String) -> Dictionary:
 	var d := persistence.read_backup(id)
 	if d.is_empty():
 		return {"success": false, "error": "Invalid backup identifier"}
+	var backup := create_backup("store-replaced")
+	if backup.is_empty():
+		var msg := "Could not back up your current data before restoring, so the backup was not restored."
+		push_error("Program Manager: " + msg)
+		save_failed.emit("backup", msg)
+		return {"success": false, "error": msg}
 	_cancel_pending()
 	persistence.set_all_data(d)
 	load_data()
 	data_reloaded.emit()
-	return {"success": true}
+	return {"success": true, "backup": backup}
 
 
 func _cancel_pending() -> void:
