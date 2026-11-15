@@ -388,6 +388,8 @@ func run_command(command: String) -> void:
 			ProgramStore.update_settings({"minimizeOnUse": not settings.get("minimizeOnUse", false)})
 		"save-settings":
 			ProgramStore.update_settings({"saveSettingsOnExit": not settings.get("saveSettingsOnExit", true)})
+		"settings":
+			UIState.open_dialog("settings")
 		"cascade":
 			MdiState.cascade_windows()
 		"tile":

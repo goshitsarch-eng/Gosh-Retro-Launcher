@@ -26,6 +26,9 @@ var _backups: Array = []
 var _building := false
 var _ready_done := false
 var _ui_scale := 1.0  # content scale applied to this native window (HiDPI)
+var _pending_profile := ""  # profile id waiting for the Apply confirmation
+var profile_confirm: ConfirmationDialog
+var profile_store: Node  # store the profile Apply acts on; null means ProgramStore (tests pass a scratch store)
 
 # widgets that tests/automation reach
 var shell_option: OptionButton
@@ -115,6 +118,7 @@ func _ready() -> void:
 	if ProgramStore.workspace_profiles.size() > 0:
 		_selected_profile = ProgramStore.workspace_profiles[0].id
 		_rename_profile = ProgramStore.workspace_profiles[0].name
+	_ensure_profile_confirm()
 	ProgramStore.settings_changed.connect(_on_settings)
 	ProgramStore.groups_changed.connect(_rebuild)
 	ProgramStore.profiles_changed.connect(_rebuild)
@@ -185,6 +189,10 @@ static func _make_theme() -> Theme:
 	t.set_stylebox("panel", "PanelContainer", _box(Color("#ece9d8"), Color("#777777")))
 	t.set_stylebox("panel", "PopupMenu", _box(Color.WHITE, Color("#666666")))
 	t.set_color("font_color", "PopupMenu", ink)
+	var dlg_panel := StyleBoxFlat.new()  # the Apply-profile confirmation (ConfirmationDialog)
+	dlg_panel.bg_color = Color("#d4d0c8")
+	dlg_panel.set_content_margin_all(8)
+	t.set_stylebox("panel", "AcceptDialog", dlg_panel)
 	return t
 
 
@@ -604,7 +612,7 @@ func _build_workspaces() -> void:
 	sel.set_meta("auto_id", "tools.profile-select")
 	r2.add_child(sel)
 	var none := _selected_profile == ""
-	_button(r2, "Apply", func(): set_status(LauncherToolsLogic.apply_profile(ProgramStore, _selected_profile)), none, "apply-profile")
+	_button(r2, "Apply", _request_apply_profile, none, "apply-profile")
 	var ren_edit := _line(_rename_profile, "", func(t: String): _rename_profile = t)
 	ren_edit.editable = not none
 	ren_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -622,6 +630,46 @@ func _build_workspaces() -> void:
 			small.text = LauncherToolsLogic.profile_summary(p)
 			small.add_theme_font_size_override("font_size", 11)
 			s.add_child(small)
+
+
+## Apply replaces every group and item, so it asks first; only OK applies.
+func _request_apply_profile() -> void:
+	var c := LauncherToolsLogic.apply_profile_confirmation(_profile_store().workspace_profiles, _selected_profile)
+	if not c.required:
+		return
+	_ensure_profile_confirm()
+	_pending_profile = _selected_profile
+	profile_confirm.dialog_text = c.message
+	if profile_confirm.is_inside_tree():
+		# A native child window: give it this window's HiDPI scale so it is not drawn at 1x.
+		profile_confirm.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+		profile_confirm.content_scale_factor = _ui_scale
+		profile_confirm.reset_size()
+		profile_confirm.popup_centered()
+
+
+## Modal OK/Cancel box owned by this window (created once; _rebuild never frees it).
+func _ensure_profile_confirm() -> void:
+	if profile_confirm != null:
+		return
+	profile_confirm = ConfirmationDialog.new()
+	profile_confirm.title = "Apply Workspace Profile"
+	profile_confirm.ok_button_text = "OK"
+	profile_confirm.cancel_button_text = "Cancel"
+	profile_confirm.confirmed.connect(_confirm_apply_profile)
+	profile_confirm.canceled.connect(func(): _pending_profile = "")
+	add_child(profile_confirm)
+
+
+func _confirm_apply_profile() -> void:
+	var id := _pending_profile
+	_pending_profile = ""
+	if id != "":
+		set_status(LauncherToolsLogic.apply_profile(_profile_store(), id))
+
+
+func _profile_store() -> Node:
+	return profile_store if profile_store != null else ProgramStore
 
 
 func _refresh_backups() -> void:

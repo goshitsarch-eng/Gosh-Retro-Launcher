@@ -52,7 +52,7 @@ func _build(cw: int) -> void:
 	# ---- Appearance
 	var g2 := W31GroupBox.new("Appearance")
 	add_widget(g2, 0, 151, Vector2(cw, 232))
-	_cb(8, 163, "Dark Mode", "theme")
+	_cb(8, 163, "Dark Mode (Mac OS and BeOS shells only)", "theme")  # WfW and Win95 do not read settings.theme
 	_cb(8, 186, "Wrap item labels (show full names)", "labelDisplay")
 	_cb(8, 207, "Sound Effects", "soundEnabled")
 	var shell_combo := W31Combo.new()
@@ -101,8 +101,11 @@ func _build(cw: int) -> void:
 
 
 func _submit() -> void:
-	var result := W31DialogLogic.apply_settings(ProgramStore, form)
+	# Close first: a Desktop Shell change remounts the shell synchronously inside apply_settings, and
+	# the new shell must not mount with this dialog still marked active.
+	var submitted := form.duplicate(true)
 	UIState.close_dialog()
+	var result := W31DialogLogic.apply_settings(ProgramStore, submitted)
 	if not result.get("success", true):
 		push_error("Failed to apply shell settings: %s" % result.get("error", "unknown"))
 

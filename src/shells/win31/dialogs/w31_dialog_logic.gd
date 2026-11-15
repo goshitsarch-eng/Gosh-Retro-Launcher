@@ -393,21 +393,19 @@ static func scale_to_index(value: Variant) -> int:
 	return 0 if str(value) == "auto" else clampi(int(value), 1, 4)
 
 
-## SettingsDialog submit. Persists through ProgramStore. A shell change goes through the
-## persist-first transaction (the host remounts the shell on settings_changed).
+## SettingsDialog submit. Every change goes through ProgramStore's validated, persist-first
+## settings transaction, like Launcher Tools' Apply (the host remounts the shell on
+## settings_changed when the shell changed). Invalid settings leave the store untouched.
 ## Returns {success, shellChanged, error?}.
 static func apply_settings(store: Node, form: Dictionary) -> Dictionary:
 	var updates := settings_updates(form)
 	var shell_changed: bool = updates.shell != store.settings.get("shell", "win31")
-	if shell_changed:
-		var next: Dictionary = store.settings.duplicate(true)
-		for k in updates:
-			next[k] = updates[k]
-		var result: Dictionary = store.apply_settings_transaction(next)
-		result["shellChanged"] = true
-		return result
-	store.update_settings(updates)
-	return {"success": true, "shellChanged": false}
+	var next: Dictionary = store.settings.duplicate(true)
+	for k in updates:
+		next[k] = updates[k]
+	var result: Dictionary = store.apply_settings_transaction(next)
+	result["shellChanged"] = shell_changed
+	return result
 
 
 # ---------------------------------------------------------- Quick Search

@@ -39,6 +39,9 @@ Ids correspond to the DOM selectors the original Electron capture script used.
 | `wfw.child-window:button:<Label>` | child caption button (`Maximize`, `Minimize`, `Restore`) |
 | `wfw.dialog.radio:<Label>` / `wfw.dialog.button:<Label>` | controls in the open dialog |
 
+The `wfw-settings` scenario opens Options > Settings... with `wfw.menu:1` and `wfw.popup-item:Settings...`
+(keep the ellipsis: the match is a substring, and `Settings` alone also matches "Save Settings on Exit").
+
 ### Windows 3.1 / WfW (additional ids published by the Win31 shell)
 
 | id | element |
