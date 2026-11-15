@@ -88,7 +88,9 @@ func test_apply_normalises_profile_groups() -> void:
 			"shortcutKey": "F2"}]}]}]
 	var r: Dictionary = s.apply_workspace_profile("p")
 	expect_eq(r.success, true)
-	expect_eq(r.normalized, 1)
+	# launchGroup -3, plus the required values the profile group lacks: the group icon, any window
+	# state, and the item icon.
+	expect_eq(r.normalized, 4)
 	expect(Validators.is_valid_group(s.groups[0]))
 	expect_eq(s.groups[0].items[0].launchGroup, 0)
 	expect_eq(s.groups[0].items[0].shortcutKey, "F2", "applying a stored profile keeps its shortcut keys")

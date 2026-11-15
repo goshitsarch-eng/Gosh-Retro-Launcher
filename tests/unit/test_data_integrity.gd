@@ -203,3 +203,63 @@ func test_hand_written_electron_layout_is_kept() -> void:
 	expect_eq(disk.settings.groupChromeScale, 1.5)
 	expect_eq(disk.settings.launchDelay, 0)
 	expect_eq(disk.groups[0].items[0].launchGroup, 2)
+
+
+const ICON_AND_STATE_STORE := '{"schemaVersion": 5, "groups": [
+	{"id": "g1", "name": "NumIcon", "icon": 5,
+		"windowState": {"x": 1, "y": 2, "width": 300, "height": 200, "minimized": false, "maximized": false}, "items": []},
+	{"id": "g2", "name": "BadState", "icon": "group", "windowState": "tall", "items": []}],
+	"settings": {}}'
+
+
+func test_load_counts_a_non_string_icon_and_an_invalid_window_state() -> void:
+	var dir := _tmp()
+	_write(dir.path_join(Persistence.STORE_FILE), ICON_AND_STATE_STORE)
+	var a := _open(dir)
+	expect_eq(a.load_report.normalized, 2, "the icon and the windowState are counted")
+	a.free()
+	var disk := _stored(dir)
+	expect_eq(disk.groups[0].icon, "folder", "non-string icon replaced")
+	expect(Validators.is_window_state(disk.groups[1].windowState), "windowState valid on disk")
+	expect(Validators.is_valid_group(disk.groups[0]) and Validators.is_valid_group(disk.groups[1]))
+	# Each repair on its own is counted too.
+	for g in Jsonx.parse(ICON_AND_STATE_STORE).groups:
+		var ctx := {"normalized": 0}
+		Migration.normalize_group(g, ctx)
+		expect(int(ctx.normalized) > 0, "counted for %s" % g.name)
+
+
+func test_save_repair_counts_a_non_string_icon_and_an_invalid_window_state() -> void:
+	var dir := _tmp()
+	var a := _open(dir)
+	var g1: String = a.add_group("Icon")
+	var g2: String = a.add_group("State")
+	a.flush()
+	var seen := []
+	a.data_normalized.connect(func(src: String, rep: Dictionary) -> void: seen.append([src, rep.normalized]))
+	a.update_group(g1, {"icon": 7})
+	a.flush()
+	expect_eq(seen, [["save", 1]], "icon repair counted, so the notice is shown")
+	seen.clear()
+	# Without a valid shellWindowState the invalid windowState is what the save guard sees.
+	a.update_group(g2, {"windowState": "tall", "shellWindowState": null})
+	a.flush()
+	expect_eq(seen.size(), 1)
+	if seen.size() == 1:
+		expect(int(seen[0][1]) > 0, "windowState repair counted")
+	a.free()
+	var disk := _stored(dir)
+	expect_eq(disk.groups[0].icon, "folder", "saved icon is a string")
+	expect(Validators.is_window_state(disk.groups[1].windowState), "saved windowState is valid")
+	expect(Validators.is_valid_group(disk.groups[0]) and Validators.is_valid_group(disk.groups[1]))
+
+
+func test_item_value_repairs_are_counted() -> void:
+	var ctx := {"normalized": 0}
+	var it: Variant = Migration._normalize_item({"id": "i", "name": "n", "path": "/p", "icon": 3, "workingDir": 1,
+		"arguments": [], "runMinimized": "yes", "win31Position": {"x": "a"}}, ctx)
+	expect_eq(ctx.normalized, 5)
+	expect(Validators.is_valid_item(it))
+	var clean := {"normalized": 0}
+	Migration._normalize_item({"id": "i", "name": "n", "path": "/p", "icon": "dos"}, clean)
+	expect_eq(clean.normalized, 0, "a missing optional workingDir is filled in, not counted")
