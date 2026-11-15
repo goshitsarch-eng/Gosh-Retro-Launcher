@@ -48,6 +48,8 @@ func _ready() -> void:
 	ProgramStore.settings_changed.connect(_on_settings_changed)
 	ProgramStore.save_failed.connect(_on_save_failed)
 	ProgramStore.data_normalized.connect(_on_data_normalized)
+	if is_capture and capture_notices_enabled(OS.get_environment("PM_CAPTURE_NOTICE")):
+		_post_capture_notice.call_deferred()
 	if not is_capture:
 		_show_load_notice.call_deferred()
 		_setup_tray()
@@ -300,13 +302,25 @@ func _show_load_notice() -> void:
 	show_notice(data_normalized_notice("load", ProgramStore.load_report))
 
 
+## PM_CAPTURE_NOTICE=1 (capture runs only) shows notices and posts one long save_failed notice, so
+## the shells' message boxes can be checked in a capture (e.g. --capture=win95-notice).
+static func capture_notices_enabled(env_value: String) -> bool:
+	return env_value == "1"
+
+
+func _post_capture_notice() -> void:
+	_on_save_failed("groups", "Your program groups could not be saved because they contain invalid data.")
+
+
 ## Shows a store notice with the active shell's own OK message box (never an OS alert, which would
 ## block). Logged too. Suppressed during visual captures so renders stay deterministic.
 func show_notice(n: Dictionary) -> void:
 	if n.is_empty():
 		return
 	push_warning("Program Manager: " + String(n.text))
-	if capture != null or not is_instance_valid(shell) or not shell.is_inside_tree() or shell.is_queued_for_deletion():
+	if capture != null and not capture_notices_enabled(OS.get_environment("PM_CAPTURE_NOTICE")):
+		return
+	if not is_instance_valid(shell) or not shell.is_inside_tree() or shell.is_queued_for_deletion():
 		return
 	var alert: bool = n.get("alert", false)
 	if shell is Win95Shell:
