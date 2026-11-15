@@ -145,6 +145,58 @@ static func is_valid_settings(settings: Variant) -> bool:
 	return true
 
 
+## Per-key check used by Migration.normalize_settings. Same rules as is_valid_settings (numbers may
+## be int or float, since Godot's JSON parser returns every number as a float). Unknown keys pass.
+static func is_valid_setting_value(key: String, value: Variant) -> bool:
+	match key:
+		"autoArrange", "minimizeOnUse", "saveSettingsOnExit", "trayOnClose", "win31DesktopMode", \
+				"win31ProgramManagerMinimized", "soundEnabled":
+			return Jsonx.is_bool(value)
+		"launchDelay":
+			return Jsonx.is_num(value) and value >= 0
+		"groupChromeScale":
+			return Jsonx.is_num(value) and value > 0
+		"win31Scale", "win95Scale", "macScale", "beScale":
+			return Types.is_scale_preference(value)
+		"win95DesktopIconPositions":
+			return is_position_map(value)
+		"win31ProgramManagerBounds":
+			return Jsonx.is_obj(value) and is_position(value) and Jsonx.is_num(value.get("width")) and value.width >= 320 \
+				and Jsonx.is_num(value.get("height")) and value.height >= 240
+		"theme":
+			return Jsonx.is_str(value) and Types.THEMES.has(value)
+		"labelDisplay":
+			return Jsonx.is_str(value) and Types.LABEL_DISPLAYS.has(value)
+		"shell":
+			return Jsonx.is_str(value) and Types.SHELLS.has(value)
+	return true
+
+
+## launchGroup as stored: an integer batch number from 0 ("None") to 8.
+static func is_valid_launch_group(value: Variant) -> bool:
+	return Jsonx.is_integer(value) and value >= 0 and value <= 8
+
+
+const SHORTCUT_MODIFIERS := ["ctrl", "alt", "shift", "meta", "win"]
+
+
+## True when an item shortcut is empty or carries at least one modifier before its key, using the
+## tokens Win31Commands.shortcut_matches recognises. "Enter", "F5" or "Cmd+K" (cmd is not a token
+## the matcher knows) would fire on an ordinary key press, so they count as unsafe.
+static func is_safe_shortcut(shortcut: String) -> bool:
+	var parts: Array = []
+	for p in shortcut.to_lower().split("+"):
+		var t := p.strip_edges()
+		if t != "":
+			parts.append(t)
+	if parts.is_empty():
+		return true
+	for i in parts.size() - 1:
+		if SHORTCUT_MODIFIERS.has(parts[i]):
+			return true
+	return false
+
+
 static func is_valid_shell_frame_request(value: Variant) -> bool:
 	return Jsonx.is_str(value) and Types.SHELLS.has(value)
 

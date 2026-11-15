@@ -8,6 +8,13 @@ signal settings_changed
 signal profiles_changed
 signal data_loaded
 signal data_reloaded  ## emitted after import/restore replaced everything
+## Values that had to be repaired to keep the data storable. `source` is "load", "import",
+## "grp-import", "profile-apply" or "save"; `report` is {"normalized": n, "shortcutsCleared": n}.
+## Hosts can show it to the user. (Load runs before anything connects, so `load_report` keeps it too.)
+signal data_normalized(source: String, report: Dictionary)
+## A write was refused or a safety backup could not be made. `kind` is "groups", "settings" or
+## "backup". The change stays in memory and marked dirty, so the next flush retries it.
+signal save_failed(kind: String, message: String)
 
 const SAVE_DEBOUNCE := 0.3
 
@@ -16,6 +23,8 @@ var groups: Array = []
 var settings: Dictionary = Types.default_settings()
 var workspace_profiles: Array = []
 var is_loading := true
+## {"normalized": n} from the last init_store: stored values repaired while loading.
+var load_report: Dictionary = {"normalized": 0}
 
 var _groups_timer: Timer
 var _settings_timer: Timer
@@ -54,7 +63,11 @@ func flush() -> void:
 func init_store(user_data_dir: String = "") -> void:
 	persistence = Persistence.new(user_data_dir)
 	persistence.init_store()
+	load_report = persistence.load_report.duplicate()
 	load_data()
+	if int(load_report.get("normalized", 0)) > 0:
+		push_warning("Program Manager repaired %d invalid stored value(s) while loading." % load_report.normalized)
+		data_normalized.emit("load", {"normalized": load_report.normalized, "shortcutsCleared": 0})
 
 
 func load_data() -> void:
@@ -69,18 +82,47 @@ func load_data() -> void:
 	data_loaded.emit()
 
 
+## Save guard. A write is never skipped silently: data the validator refuses is first repaired with
+## the same normaliser used on load (the repair is applied in memory too, logged with push_error and
+## announced through data_normalized), then written. Only if it is still invalid after that is the
+## write skipped; then push_error + save_failed fire and the dirty flag stays set, so the change is
+## kept in memory and retried on the next flush (including the one on exit).
 func _flush_groups() -> void:
 	_groups_dirty = false
 	_groups_timer.stop()
-	if persistence and _groups_valid(groups):
-		persistence.set_groups(groups)
+	if not persistence:
+		return
+	if not _groups_valid(groups):
+		var ctx := {"normalized": 0}
+		groups = Migration.normalize_groups(groups, ctx)
+		push_error("Program Manager: repaired %d invalid group/item value(s) before saving." % ctx.normalized)
+		data_normalized.emit("save", {"normalized": ctx.normalized, "shortcutsCleared": 0})
+		groups_changed.emit()
+		if not _groups_valid(groups):
+			_groups_dirty = true
+			push_error("Program Manager: groups could not be saved because they are invalid.")
+			save_failed.emit("groups", "Your program groups could not be saved because they contain invalid data.")
+			return
+	persistence.set_groups(groups)
 
 
 func _flush_settings() -> void:
 	_settings_dirty = false
 	_settings_timer.stop()
-	if persistence and Validators.is_valid_settings(settings):
-		persistence.set_settings(settings)
+	if not persistence:
+		return
+	if not Validators.is_valid_settings(settings):
+		var ctx := {"normalized": 0}
+		settings = Migration.normalize_settings(settings, ctx)
+		push_error("Program Manager: reset %d invalid setting(s) to their defaults before saving." % ctx.normalized)
+		data_normalized.emit("save", {"normalized": ctx.normalized, "shortcutsCleared": 0})
+		settings_changed.emit()
+		if not Validators.is_valid_settings(settings):
+			_settings_dirty = true
+			push_error("Program Manager: settings could not be saved because they are invalid.")
+			save_failed.emit("settings", "Your settings could not be saved because they contain invalid data.")
+			return
+	persistence.set_settings(settings)
 
 
 static func _groups_valid(g: Array) -> bool:
@@ -156,14 +198,23 @@ func add_group(name: String) -> String:
 	return group.id
 
 
-func import_group(group: Dictionary) -> void:
+## Adds an imported (.GRP) group. It is normalised like stored data, and shortcut keys without a
+## modifier are cleared. Returns {"success", "normalized", "shortcutsCleared"} (success is false and
+## nothing is added when the group has no usable id/name).
+func import_group(group: Dictionary) -> Dictionary:
+	var ctx := {"normalized": 0}
+	var normalized: Variant = Migration.normalize_group(group, ctx)
+	if normalized == null:
+		push_error("Program Manager: the imported group is invalid and was not added.")
+		return {"success": false, "error": "Invalid group data", "normalized": 0, "shortcutsCleared": 0}
+	var imported: Dictionary = normalized
+	var cleared := Migration.clear_unsafe_shortcuts([imported])
 	var existing_group_ids := {}
 	var existing_item_ids := {}
 	for g in groups:
 		existing_group_ids[g.id] = true
 		for it in g.items:
 			existing_item_ids[it.id] = true
-	var imported: Dictionary = group.duplicate(true)
 	if existing_group_ids.has(imported.id):
 		imported.id = Types.make_id()
 	for it in imported.items:
@@ -171,6 +222,10 @@ func import_group(group: Dictionary) -> void:
 			it.id = Types.make_id()
 	groups.append(imported)
 	_dirty_groups()
+	var report := {"normalized": int(ctx.normalized), "shortcutsCleared": cleared}
+	if report.normalized > 0 or cleared > 0:
+		data_normalized.emit("grp-import", report)
+	return {"success": true, "normalized": report.normalized, "shortcutsCleared": cleared}
 
 
 func replace_groups(new_groups: Array) -> void:
@@ -334,11 +389,28 @@ func save_workspace_profile(name: String) -> String:
 	return profile.id
 
 
-func apply_workspace_profile(id: String) -> void:
+## Replaces every group with the profile's groups. A forced backup of the current data (pending
+## edits flushed first) is written beforehand under the existing "store-replaced" reason, so the
+## replaced groups can be restored from Backups. If that backup cannot be written, nothing is
+## replaced. Returns {"success", "backup"?, "normalized"?, "error"?}.
+func apply_workspace_profile(id: String) -> Dictionary:
 	for p in workspace_profiles:
-		if p.id == id:
-			replace_groups(p.groups)
-			return
+		if p.id != id:
+			continue
+		var backup := {}
+		if persistence:
+			backup = create_backup("store-replaced")
+			if backup.is_empty():
+				var msg := "Could not create a backup before applying the workspace profile, so it was not applied."
+				push_error("Program Manager: " + msg)
+				save_failed.emit("backup", msg)
+				return {"success": false, "error": msg}
+		var ctx := {"normalized": 0}
+		replace_groups(Migration.normalize_groups(p.groups, ctx))
+		if int(ctx.normalized) > 0:
+			data_normalized.emit("profile-apply", {"normalized": ctx.normalized, "shortcutsCleared": 0})
+		return {"success": true, "backup": backup, "normalized": ctx.normalized}
+	return {"success": false, "error": "Workspace profile not found"}
 
 
 func delete_workspace_profile(id: String) -> void:
@@ -396,7 +468,11 @@ func export_to(path: String) -> bool:
 	return true
 
 
-## Validates before migrating so malformed imports are never silently repaired.
+## Repairable values are fixed first (_repair_import_values), then top-level groups and settings are
+## validated and a structurally malformed file is refused. Everything that passes, and the workspace
+## profiles (which have no strict check), is then normalised like stored data, and item shortcut keys without a modifier are cleared in groups and
+## profiles alike. Returns {"success": true}, plus "normalized" and "shortcutsCleared" counts when
+## anything was changed so the UI can report it, or {"success": false, "error"}.
 func import_from(path: String) -> Dictionary:
 	var f := FileAccess.open(path, FileAccess.READ)
 	if f == null:
@@ -407,16 +483,48 @@ func import_from(path: String) -> Dictionary:
 	if not parsed[0] or not Jsonx.is_obj(parsed[1]):
 		return {"success": false, "error": "Failed to read file"}
 	var d: Dictionary = parsed[1]
+	var ctx := {"normalized": 0}
+	_repair_import_values(d, ctx)
 	if not Jsonx.is_arr(d.get("groups")) or not Validators.is_valid_settings(d.get("settings")):
 		return {"success": false, "error": "Invalid file format"}
 	for g in d.groups:
 		if not Validators.is_valid_group(g):
 			return {"success": false, "error": "Invalid group or item data in file"}
+	var migrated := Migration.migrate_store_data(d, ctx)
+	var cleared := Migration.clear_unsafe_shortcuts(migrated.groups)
+	for p in migrated.workspaceProfiles:
+		cleared += Migration.clear_unsafe_shortcuts(p.groups)
 	_cancel_pending()
-	persistence.set_all_data(Migration.migrate_store_data(d))
+	persistence.set_all_data(migrated)
 	load_data()
 	data_reloaded.emit()
+	var report := {"normalized": int(ctx.normalized), "shortcutsCleared": cleared}
+	if report.normalized > 0 or cleared > 0:
+		data_normalized.emit("import", report)
+		return {"success": true, "normalized": report.normalized, "shortcutsCleared": cleared}
 	return {"success": true}
+
+
+## Value-level repairs made before import_from's strict checks, so a file is refused only for its
+## structure (missing or mistyped records, missing settings keys) and not for a value the store can
+## repair: an out-of-range launchGroup becomes 0 and a known setting with a wrong value takes its
+## default. Missing settings keys are not filled in. Each repair is counted in ctx.
+static func _repair_import_values(d: Dictionary, ctx: Dictionary) -> void:
+	if Jsonx.is_obj(d.get("settings")):
+		var s: Dictionary = d.settings
+		var defaults := Types.default_settings()
+		for k in s.keys():
+			if defaults.has(k) and not Validators.is_valid_setting_value(str(k), s[k]):
+				s[k] = Jsonx.clone(defaults[k])
+				Migration._bump(ctx)
+	if Jsonx.is_arr(d.get("groups")):
+		for g in d.groups:
+			if not Jsonx.is_obj(g) or not Jsonx.is_arr(g.get("items")):
+				continue
+			for it in g.items:
+				if Jsonx.is_obj(it) and it.has("launchGroup") and not Validators.is_valid_launch_group(it.launchGroup):
+					it["launchGroup"] = 0
+					Migration._bump(ctx)
 
 
 func list_backups() -> Array:

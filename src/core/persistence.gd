@@ -12,6 +12,8 @@ const APP_DIR_NAME := "program-manager"
 var user_data_dir: String
 var data: Dictionary = {}
 var _last_auto_backup_ms := 0
+## {"normalized": n}: how many stored values init_store had to repair (0 for valid data).
+var load_report: Dictionary = {"normalized": 0}
 
 
 static func default_user_data_dir() -> String:
@@ -56,7 +58,8 @@ func init_store() -> void:
 		var parsed := Jsonx.parse_checked(FileAccess.get_file_as_string(store_path()))
 		if parsed[0]:
 			raw = parsed[1]
-	data = Migration.migrate_store_data(raw)
+	load_report = {"normalized": 0}
+	data = Migration.migrate_store_data(raw, load_report)
 	_write_store()
 	# Backups written by older builds inherited the umask; tighten them too.
 	if DirAccess.dir_exists_absolute(backup_dir()):
