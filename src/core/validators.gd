@@ -172,9 +172,10 @@ static func is_valid_setting_value(key: String, value: Variant) -> bool:
 	return true
 
 
-## launchGroup as stored: an integer batch number from 0 ("None") to 8.
+## launchGroup as stored: an integer batch number, 0 meaning "None". Same rule as is_valid_item. The
+## editors offer 0-8, but a larger stored or imported number is kept, not discarded.
 static func is_valid_launch_group(value: Variant) -> bool:
-	return Jsonx.is_integer(value) and value >= 0 and value <= 8
+	return Jsonx.is_integer(value) and value >= 0
 
 
 const SHORTCUT_MODIFIERS := ["ctrl", "alt", "shift", "meta", "win"]

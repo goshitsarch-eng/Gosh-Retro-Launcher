@@ -97,10 +97,12 @@ func get_groups() -> Array:
 	return data.get("groups", []).duplicate(true)
 
 
-func set_groups(groups: Array) -> void:
+## The setters below return whether the store file was written. On failure the in-memory `data` is
+## put back as it was, so it keeps matching the file and a later write of another key cannot put the
+## refused change on disk behind the caller's back (ProgramStore keeps it pending and retries).
+func set_groups(groups: Array) -> bool:
 	_auto_backup("groups-changed")
-	data["groups"] = Jsonx.clone(groups)
-	_write_store()
+	return _replace_key("groups", Jsonx.clone(groups))
 
 
 func get_settings() -> Dictionary:
@@ -111,23 +113,34 @@ func get_settings() -> Dictionary:
 	return s
 
 
-func set_settings(settings: Dictionary) -> void:
+func set_settings(settings: Dictionary) -> bool:
 	_auto_backup("settings-changed")
 	var merged := Types.default_settings()
 	for k in settings:
 		merged[k] = Jsonx.clone(settings[k])
-	data["settings"] = merged
-	_write_store()
+	return _replace_key("settings", merged)
 
 
 func get_workspace_profiles() -> Array:
 	return data.get("workspaceProfiles", []).duplicate(true)
 
 
-func set_workspace_profiles(profiles: Array) -> void:
+func set_workspace_profiles(profiles: Array) -> bool:
 	_auto_backup("profiles-changed")
-	data["workspaceProfiles"] = Jsonx.clone(profiles)
-	_write_store()
+	return _replace_key("workspaceProfiles", Jsonx.clone(profiles))
+
+
+func _replace_key(key: String, value: Variant) -> bool:
+	var had := data.has(key)
+	var previous: Variant = data.get(key)
+	data[key] = value
+	if _write_store():
+		return true
+	if had:
+		data[key] = previous
+	else:
+		data.erase(key)
+	return false
 
 
 func get_all_data() -> Dictionary:
@@ -139,11 +152,19 @@ func get_all_data() -> Dictionary:
 	})
 
 
-func set_all_data(value: Dictionary) -> void:
+## Replaces everything. Returns whether the store file was written (on failure `data` is unchanged).
+## A forced "store-replaced" backup of the current data is written first unless `write_backup` is
+## false (ProgramStore.restore_backup has already written that backup itself).
+func set_all_data(value: Dictionary, write_backup: bool = true) -> bool:
 	var normalized := Migration.migrate_store_data(value)
-	create_backup(get_all_data(), "store-replaced", true)
+	if write_backup:
+		create_backup(get_all_data(), "store-replaced", true)
+	var previous := data
 	data = normalized
-	_write_store()
+	if _write_store():
+		return true
+	data = previous
+	return false
 
 
 func clear_store() -> void:

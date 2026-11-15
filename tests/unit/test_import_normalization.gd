@@ -68,16 +68,16 @@ func test_json_import_normalises_profiles_and_clears_bare_shortcuts() -> void:
 	s.data_normalized.connect(func(src: String, rep: Dictionary) -> void: seen.append([src, rep]))
 	var r: Dictionary = s.import_from(_import_file(dir))
 	expect_eq(r.success, true)
-	# launchGroup 12, -1, 2.5, runMode "bogus" and the item without name/path.
-	expect_eq(r.normalized, 5, "values changed")
+	# launchGroup -1, 2.5, runMode "bogus" and the item without name/path (12 is kept).
+	expect_eq(r.normalized, 4, "values changed")
 	expect_eq(r.shortcutsCleared, 3, "F5, enter and Cmd+K cleared")
 	expect_eq(seen.size(), 1)
 	expect_eq(seen[0][0], "import")
-	expect_eq(seen[0][1], {"normalized": 5, "shortcutsCleared": 3})
+	expect_eq(seen[0][1], {"normalized": 4, "shortcutsCleared": 3})
 	var top: Array = s.groups[0].items
 	expect_eq(top[0].shortcutKey, "", "bare F5 cleared")
 	expect_eq(top[1].shortcutKey, "Ctrl+Alt+T", "modifier shortcut kept")
-	expect_eq(top[1].launchGroup, 0, "12 is out of range")
+	expect_eq(top[1].launchGroup, 12, "an integer above 8 is kept")
 	var prof: Dictionary = s.workspace_profiles[0]
 	expect(Validators.is_valid_workspace_profile(prof), "imported profile is valid")
 	var pitems: Array = prof.groups[0].items
@@ -138,10 +138,10 @@ func test_grp_import_clears_bare_shortcuts_and_normalises() -> void:
 		_item("a", {"shortcutKey": "space"}),
 		_item("b", {"shortcutKey": "Ctrl+Alt+B", "launchGroup": 9}),
 	]))
-	expect_eq(r, {"success": true, "normalized": 1, "shortcutsCleared": 1})
+	expect_eq(r, {"success": true, "normalized": 0, "shortcutsCleared": 1})
 	expect_eq(s.groups[0].items[0].shortcutKey, "")
 	expect_eq(s.groups[0].items[1].shortcutKey, "Ctrl+Alt+B")
-	expect_eq(s.groups[0].items[1].launchGroup, 0)
+	expect_eq(s.groups[0].items[1].launchGroup, 9, "9 is kept")
 	expect(Validators.is_valid_group(s.groups[0]))
 	expect_eq(s.import_group({"name": "no id"}).success, false, "unusable group refused")
 	expect_eq(s.groups.size(), 1)

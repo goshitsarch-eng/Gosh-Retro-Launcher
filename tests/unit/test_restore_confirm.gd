@@ -34,8 +34,7 @@ func _replaced(s: Node) -> Array:
 
 
 func test_restore_writes_a_backup_of_the_current_data_first() -> void:
-	# ProgramStore.restore_backup writes a forced "store-replaced" backup first (and
-	# Persistence.set_all_data writes one more of the same data, which may share its file name).
+	# ProgramStore.restore_backup writes a forced "store-replaced" backup first.
 	var dir := _tmp()
 	var s := _open(dir)
 	s.add_group("Old")
@@ -51,6 +50,36 @@ func test_restore_writes_a_backup_of_the_current_data_first() -> void:
 	expect_eq(s.groups.map(func(g): return g.name), ["Old"], "backup restored")
 	s.free()
 	_rm(dir)
+
+
+func test_restore_writes_exactly_one_safety_backup() -> void:
+	var dir := _tmp()
+	var s := _open(dir)
+	s.add_group("Old")
+	var point: Dictionary = s.create_backup("manual")
+	s.add_group("Current")
+	s.flush()
+	# Count the backups actually written: two in the same millisecond would share a file name, so the
+	# listing alone could hide a second one.
+	var counting := CountingPersistence.new(dir)
+	counting.init_store()
+	s.persistence = counting
+	var listed_before: int = s.list_backups().size()
+	expect_eq(s.restore_backup(point.id).success, true)
+	expect_eq(counting.written, ["store-replaced"], "one safety backup, no second copy from set_all_data")
+	expect_eq(s.list_backups().size(), listed_before + 1, "the backup count grows by exactly one")
+	expect_eq(s.groups.map(func(g): return g.name), ["Old"], "backup restored")
+	s.free()
+	_rm(dir)
+
+
+func test_import_still_writes_its_safety_backup() -> void:
+	var p := Persistence.new(_tmp())
+	p.init_store()
+	expect_eq(p.set_all_data({"groups": []}), true)
+	expect_eq(p.list_backups().filter(func(b): return b.reason == "store-replaced").size(), 1,
+		"set_all_data backs up by default (import relies on it)")
+	_rm(p.user_data_dir)
 
 
 func test_invalid_id_writes_no_backup() -> void:
@@ -110,3 +139,14 @@ func test_window_cancel_changes_nothing_and_ok_restores() -> void:
 	s.free()
 	_rm(dir)
 
+
+
+## Records every backup written, then writes it as usual.
+class CountingPersistence extends Persistence:
+	var written: Array = []
+
+	func create_backup(payload: Dictionary, reason: String, force: bool = false) -> Dictionary:
+		var info := super.create_backup(payload, reason, force)
+		if not info.is_empty():
+			written.append(info.reason)
+		return info
