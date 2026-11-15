@@ -107,7 +107,7 @@ static func _normalize_item(value: Variant, ctx: Dictionary = {}) -> Variant:
 	elif item.has("runMode"):
 		_bump(ctx)
 	if item.has("launchGroup"):
-		# Only an integer 0-8 is a batch number; -1, 2.5, 12 or a string become 0 ("None").
+		# Any integer >= 0 is a batch number (9 stays 9); -1, 2.5 or a string become 0 ("None").
 		if Validators.is_valid_launch_group(item.launchGroup):
 			out["launchGroup"] = item.launchGroup
 		else:

@@ -151,7 +151,8 @@ func test_normalisation_counts_and_keeps_unknown_keys() -> void:
 	var plain := Migration.normalize_settings({"theme": "blue"})
 	expect_eq(plain.theme, "light")
 	expect(Validators.is_valid_launch_group(8) and Validators.is_valid_launch_group(0.0))
-	expect(not Validators.is_valid_launch_group(9) and not Validators.is_valid_launch_group(-1))
+	expect(Validators.is_valid_launch_group(9) and Validators.is_valid_launch_group(12.0), "above 8 is kept")
+	expect(not Validators.is_valid_launch_group(-1))
 	expect(not Validators.is_valid_launch_group(2.5) and not Validators.is_valid_launch_group("3"))
 
 

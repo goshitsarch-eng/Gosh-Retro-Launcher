@@ -67,3 +67,15 @@ func test_normalizes_invalid_scale_and_malformed_objects() -> void:
 	expect_eq(m.groups[0].items, [])
 	expect(m.groups[0].shellWindowState.win31.width >= 150)
 	expect(m.groups[0].shellWindowState.win31.height >= 92)
+
+
+func test_launch_group_matches_the_validator() -> void:
+	# Any integer >= 0 is kept (9 stays 9); anything else becomes 0 and is counted.
+	var cases := [[-1, 0, 1], [2.5, 0, 1], [9, 9, 0], ["3", 0, 1], [3, 3, 0], [9.0, 9, 0]]
+	for c in cases:
+		var ctx := {"normalized": 0}
+		var it: Variant = Migration._normalize_item({"id": "i", "name": "n", "path": "/p", "icon": "default",
+			"launchGroup": c[0]}, ctx)
+		expect_eq(it.launchGroup, c[1], "launchGroup %s" % str(c[0]))
+		expect_eq(ctx.normalized, c[2], "count for %s" % str(c[0]))
+		expect(Validators.is_valid_item(it), "valid for %s" % str(c[0]))

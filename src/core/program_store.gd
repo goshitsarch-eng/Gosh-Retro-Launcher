@@ -541,7 +541,7 @@ func import_from(path: String) -> Dictionary:
 
 ## Value-level repairs made before import_from's strict checks, so a file is refused only for its
 ## structure (missing or mistyped records, missing settings keys) and not for a value the store can
-## repair: an out-of-range launchGroup becomes 0 and a known setting with a wrong value takes its
+## repair: a launchGroup that is not an integer >= 0 becomes 0 and a known setting with a wrong value takes its
 ## default. Missing settings keys are not filled in. Each repair is counted in ctx.
 static func _repair_import_values(d: Dictionary, ctx: Dictionary) -> void:
 	if Jsonx.is_obj(d.get("settings")):
