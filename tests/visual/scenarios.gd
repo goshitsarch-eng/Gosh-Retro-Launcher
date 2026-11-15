@@ -246,6 +246,9 @@ static func _wfw(view: String, a: Automation) -> void:
 				await a.wait_ms(60)
 				if not a.has("wfw.popup-item:" + label):
 					print("SWEEP_SKIP wfw menu=%d item=%s (not in this menu)" % [menu_index, label])
+					# Close whatever the header click opened or left open, so the next click starts from a closed menu.
+					await a.key(KEY_ESCAPE)
+					await a.wait_ms(60)
 					continue
 				print("SWEEP wfw menu=%d item=%s" % [menu_index, label])
 				await a.click_id("wfw.popup-item:" + label)
