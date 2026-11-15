@@ -189,6 +189,10 @@ static func _make_theme() -> Theme:
 	t.set_stylebox("panel", "PanelContainer", _box(Color("#ece9d8"), Color("#777777")))
 	t.set_stylebox("panel", "PopupMenu", _box(Color.WHITE, Color("#666666")))
 	t.set_color("font_color", "PopupMenu", ink)
+	var dlg_panel := StyleBoxFlat.new()  # the Apply-profile confirmation (ConfirmationDialog)
+	dlg_panel.bg_color = Color("#d4d0c8")
+	dlg_panel.set_content_margin_all(8)
+	t.set_stylebox("panel", "AcceptDialog", dlg_panel)
 	return t
 
 
@@ -637,6 +641,10 @@ func _request_apply_profile() -> void:
 	_pending_profile = _selected_profile
 	profile_confirm.dialog_text = c.message
 	if profile_confirm.is_inside_tree():
+		# A native child window: give it this window's HiDPI scale so it is not drawn at 1x.
+		profile_confirm.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+		profile_confirm.content_scale_factor = _ui_scale
+		profile_confirm.reset_size()
 		profile_confirm.popup_centered()
 
 

@@ -56,3 +56,48 @@ func test_settings_dialog_is_created_and_builds() -> void:
 		expect(form.has(k), "form reads %s from the current settings" % k)
 	expect_eq(form.launchDelay, int(ProgramStore.settings.get("launchDelay", 500)))
 	dlg.free()
+
+
+func _tmp() -> String:
+	var base := OS.get_environment("TMPDIR") if OS.get_environment("TMPDIR") != "" else "/tmp"
+	var d := "%s/pm-test-sm-%d-%d" % [base, OS.get_process_id(), Time.get_ticks_usec()]
+	DirAccess.make_dir_recursive_absolute(d)
+	return d
+
+
+func _rm(path: String) -> void:
+	var dir := DirAccess.open(path)
+	if dir == null:
+		return
+	for f in dir.get_files():
+		DirAccess.remove_absolute(path.path_join(f))
+	for d in dir.get_directories():
+		_rm(path.path_join(d))
+	DirAccess.remove_absolute(path)
+
+
+func test_settings_dialog_changes_use_the_persist_first_transaction() -> void:
+	var dir := _tmp()
+	var s: Node = load("res://src/core/program_store.gd").new()
+	s.init_store(dir)
+	var f := W31DialogLogic.settings_form(s.settings)
+	f.launchDelay = 900
+	f.theme = "dark"
+	f.labelDisplay = "ellipsis"
+	var r := W31DialogLogic.apply_settings(s, f)
+	expect_eq(r.success, true)
+	expect_eq(r.shellChanged, false)
+	var p := Persistence.new(dir)
+	p.init_store()
+	var on_disk: Dictionary = p.get_settings()
+	expect_eq(on_disk.launchDelay, 900, "written to disk at once, not on a debounce timer")
+	expect_eq(on_disk.theme, "dark")
+	expect_eq(on_disk.labelDisplay, "ellipsis")
+	# invalid settings are rejected and change nothing
+	var bad := W31DialogLogic.settings_form(s.settings)
+	bad.theme = "neon"
+	var r2 := W31DialogLogic.apply_settings(s, bad)
+	expect_eq(r2.success, false)
+	expect_eq(s.settings.theme, "dark")
+	s.free()
+	_rm(dir)
