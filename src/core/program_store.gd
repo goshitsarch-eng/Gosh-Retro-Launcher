@@ -468,9 +468,9 @@ func export_to(path: String) -> bool:
 	return true
 
 
-## Top-level groups and settings are validated first and a file that fails is refused (unchanged).
-## Everything that passes, and the workspace profiles (which have no strict check), is then
-## normalised like stored data, and item shortcut keys without a modifier are cleared in groups and
+## Repairable values are fixed first (_repair_import_values), then top-level groups and settings are
+## validated and a structurally malformed file is refused. Everything that passes, and the workspace
+## profiles (which have no strict check), is then normalised like stored data, and item shortcut keys without a modifier are cleared in groups and
 ## profiles alike. Returns {"success": true}, plus "normalized" and "shortcutsCleared" counts when
 ## anything was changed so the UI can report it, or {"success": false, "error"}.
 func import_from(path: String) -> Dictionary:
@@ -483,12 +483,13 @@ func import_from(path: String) -> Dictionary:
 	if not parsed[0] or not Jsonx.is_obj(parsed[1]):
 		return {"success": false, "error": "Failed to read file"}
 	var d: Dictionary = parsed[1]
+	var ctx := {"normalized": 0}
+	_repair_import_values(d, ctx)
 	if not Jsonx.is_arr(d.get("groups")) or not Validators.is_valid_settings(d.get("settings")):
 		return {"success": false, "error": "Invalid file format"}
 	for g in d.groups:
 		if not Validators.is_valid_group(g):
 			return {"success": false, "error": "Invalid group or item data in file"}
-	var ctx := {"normalized": 0}
 	var migrated := Migration.migrate_store_data(d, ctx)
 	var cleared := Migration.clear_unsafe_shortcuts(migrated.groups)
 	for p in migrated.workspaceProfiles:
@@ -502,6 +503,28 @@ func import_from(path: String) -> Dictionary:
 		data_normalized.emit("import", report)
 		return {"success": true, "normalized": report.normalized, "shortcutsCleared": cleared}
 	return {"success": true}
+
+
+## Value-level repairs made before import_from's strict checks, so a file is refused only for its
+## structure (missing or mistyped records, missing settings keys) and not for a value the store can
+## repair: an out-of-range launchGroup becomes 0 and a known setting with a wrong value takes its
+## default. Missing settings keys are not filled in. Each repair is counted in ctx.
+static func _repair_import_values(d: Dictionary, ctx: Dictionary) -> void:
+	if Jsonx.is_obj(d.get("settings")):
+		var s: Dictionary = d.settings
+		var defaults := Types.default_settings()
+		for k in s.keys():
+			if defaults.has(k) and not Validators.is_valid_setting_value(str(k), s[k]):
+				s[k] = Jsonx.clone(defaults[k])
+				Migration._bump(ctx)
+	if Jsonx.is_arr(d.get("groups")):
+		for g in d.groups:
+			if not Jsonx.is_obj(g) or not Jsonx.is_arr(g.get("items")):
+				continue
+			for it in g.items:
+				if Jsonx.is_obj(it) and it.has("launchGroup") and not Validators.is_valid_launch_group(it.launchGroup):
+					it["launchGroup"] = 0
+					Migration._bump(ctx)
 
 
 func list_backups() -> Array:

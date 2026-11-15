@@ -101,6 +101,25 @@ func test_json_import_normalises_profiles_and_clears_bare_shortcuts() -> void:
 	b.free()
 
 
+func test_json_import_repairs_top_level_values_instead_of_refusing() -> void:
+	var dir := _tmp()
+	var s := _open(dir)
+	var settings := Types.default_settings()
+	settings["theme"] = "blue"
+	settings["extra"] = 1
+	var path := _write_json(dir.path_join("vals.json"), {"groups": [_group("g", [_item("a", {"launchGroup": -1})])],
+		"settings": settings})
+	var r: Dictionary = s.import_from(path)
+	expect_eq(r, {"success": true, "normalized": 2, "shortcutsCleared": 0})
+	expect_eq(s.groups[0].items[0].launchGroup, 0)
+	expect_eq(s.settings.theme, "light")
+	expect_eq(s.settings.extra, 1, "unknown key kept")
+	# Structure problems are still refused.
+	expect_eq(s.import_from(_write_json(dir.path_join("s.json"), {"groups": [], "settings": {}})).success, false)
+	expect_eq(s.import_from(_write_json(dir.path_join("n.json"), {"groups": [{"id": "x"}], "settings": Types.default_settings()})).success, false)
+	s.free()
+
+
 func test_clean_import_reports_nothing() -> void:
 	var dir := _tmp()
 	var s := _open(dir)
