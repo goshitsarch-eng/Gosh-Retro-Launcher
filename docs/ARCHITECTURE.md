@@ -1,6 +1,6 @@
 # Architecture
 
-Program Manager is a single-process **Godot 4.6** application written in GDScript. Everything that used to be
+Program Manager is a single-process **Godot 4.7** application written in GDScript. Everything that used to be
 split across Electron's main process, preload bridge and React renderer now lives in one scene tree:
 
 ```
@@ -9,7 +9,7 @@ split across Electron's main process, preload bridge and React renderer now live
                   src/app/main.gd  (host: window, scale, shell mounting, tray, single instance)
                          │
         ┌────────────────┴───────────────┐
-  Win31Shell (WfW 3.11)             Win95Shell (Windows 95 RTM)
+  Win31Shell (WfW 3.11)  Win95Shell (Windows 95)  MacShell (Classic Mac OS)  BeShell (BeOS)
   MDI · menus · dialogs             desktop · taskbar · Start · windows · folder views · Find · dialogs
         └────────────────┬───────────────┘
                  src/toolkit  (RetroFont, Px, Pal, ShellScale, Assets, IconRegistry)
@@ -23,10 +23,10 @@ split across Electron's main process, preload bridge and React renderer now live
 | `types.gd`, `jsonx.gd` | Defaults, constants, JSON-model helpers (whole numbers serialize like JavaScript did) |
 | `migration.gd` | Normalizes any persisted payload to schema v5 (legacy geometry, scales, positions) |
 | `validators.gd` | Strict guards for items, groups, settings, profiles and launch payloads |
-| `persistence.gd` | Reads/writes the same `program-manager-data.json` as 1.x (atomic write), versioned backups, corruption recovery |
+| `persistence.gd` | Reads/writes `program-manager-data.json` (same JSON layout as the 1.x Electron build; not re-verified here). Writes a temporary file, then renames it; the Windows fallback is not atomic (CORE-08). Versioned backups and corruption recovery |
 | `program_store.gd` | Autoload `ProgramStore`: groups, settings, profiles; 300 ms debounced saves (flushed on exit); import/export; backups |
 | `ui_state.gd`, `mdi_state.gd` | Autoloads for dialogs/menus/selection/quick search/launch feedback and Win31 window stacking |
-| `launcher.gd`, `lnk_file.gd` | Tokenizer, `.desktop` / `.lnk` parsing, environment, per-OS launch and run modes |
+| `launcher.gd`, `lnk_file.gd` | Tokenizer, `.desktop` / `.lnk` parsing, environment, launch method by file type and OS. Run modes other than Normal apply only to Windows `.exe` and `.com` files (CORE-09) |
 | `launch_groups.gd`, `program_search.gd`, `grp.gd` | Batch launching, Quick Search/Find ranking, Windows 3.x `.GRP` codec |
 
 Records are plain `Dictionary`/`Array` values with exactly the keys the Electron build persisted, so data written by
@@ -52,14 +52,15 @@ machines (`menu_state`, `window_store`, `selection_state`, `list_view_state`, �
 ### Platform (`src/app`, `src/platform`)
 `Platform` replaces the old IPC surface: launching, native file dialogs, `.GRP`/JSON import/export, app info and icon
 extraction (PE/ICO/ICNS/.app/.desktop), window control, tray, single-instance lock, drag-and-drop routing and sounds.
-Shells call only `Platform`, `Sounds` and `IconRegistry` — never `OS`/`DisplayServer` directly. See
+Shells use `Platform`, `Sounds` and `IconRegistry` for most platform work, but several call `OS`, `DisplayServer` or core helpers directly (for example `launcher_tools_window.gd`, `mac_popup_menu.gd` and `be_shell.gd`). See
 [PLATFORM.md](PLATFORM.md) for behavior notes and the known differences from the Electron build.
 
 ## Startup
-1. `ProgramStore.init_store()` loads and migrates the data file (recovering from a corrupt file via the newest backup).
-2. `main.gd` configures the window for the stored shell (borderless for WfW, OS frame for Windows 95), resolves the
-   integer scale, mounts the shell, starts the tray and single-instance listener.
-3. The shell builds its UI from `ProgramStore.groups`/`settings` and listens for `groups_changed`/`settings_changed`.
+1. `main.gd` takes the single-instance lock unless the run is a capture or the check is disabled. A running copy is shown instead.
+2. `ProgramStore.init_store()` loads and migrates the data file (recovering from a corrupt file via the newest backup).
+3. `main.gd` configures the window for the stored shell (borderless for WfW, OS frame for the other three), resolves the
+   integer scale, mounts the shell and starts the tray.
+4. The shell builds its UI from `ProgramStore.groups`/`settings` and listens for `groups_changed`/`settings_changed`.
 
 ## Shell switching
 Settings are validated and persisted first (`ProgramStore.apply_settings_transaction`), then the host flips the frame,

@@ -4,11 +4,13 @@
 Godot build is measured against:
 
 * `wfw-reference.png` (511x335), `wfw-desktop.png`, `wfw-desktop-minimized.png` - Windows for Workgroups 3.11.
-* `win95-*.png` - 39 deterministic Windows 95 RTM scenarios: desktop states, Start menu cascades, taskbar contexts,
+* `win95-*.png` - 40 Windows 95 PNG baselines (an earlier version of this README said 39): desktop states, Start menu cascades, taskbar contexts,
   folder views, window states, menus, Move/Size outlines, Find, Run, Shut Down, wizard, property sheet, message box,
   and 2x/3x/4x, non-divisible 1281x961, and 125% DPI captures.
 
 ## Running
+
+Set `PM_USER_DATA` to a temporary folder before you run anything here. Without it, the capture harness first loads your real data file (handbook, CORE-14). `compare.py` needs numpy and Pillow. The 2026-11-14 comparison results are in the handbook's coverage chapter: no baseline passed.
 
 ```bash
 # one scenario: renders the real app with a deterministic fixture profile and drives it with injected input

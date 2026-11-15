@@ -3,8 +3,7 @@
 `BeShell` (`src/shells/be/`) is the shell selected by `settings.shell == "be"` (scale key `beScale`). It implements the
 BeOS-flavoured design in `Program Manager.dc.html` (the `isBe` markup and its script logic): a blue desktop of folder
 icons, yellow-tabbed folder windows, a Deskbar on the right edge, popup menus and square-cornered dialogs. Like the other
-shells it is drawn in integer logical pixels (the host applies the integer content scale) and talks to the model only
-through `ProgramStore`, `UIState`, `Platform` and the shared icon helpers.
+shells it is drawn in integer logical pixels (the host applies the integer content scale) and uses `ProgramStore`, `UIState` and `Platform` for most work, and calls `Launcher`, `LaunchGroups`, `Sounds` and a Windows 95 dialog helper directly (`be_dialogs.gd`, `be_shell.gd`).
 
 ## Mapping to the data model
 * **Groups = folders.** Every group is a desktop icon and a folder window; the root window "Program Manager" lists all
@@ -45,8 +44,8 @@ through `ProgramStore`, `UIState`, `Platform` and the shared icon helpers.
 * **Dialogs**: Edit Name, New Folder, folder/item Get Info (+ Change Icon), New Program (Add Program…, native Browse),
   Run, Move to Trash confirm, About, Help topics, Backgrounds (desktop colour + dark mode), Shut Down (Restart resets the
   session; Shut Down emits `request_quit`). Enter = default button, Esc = cancel.
-* **Keyboard**: Ctrl+Alt+T, Esc/arrows/Enter inside menus and dialogs, Enter opens the selected entry. The design
-  defines no other shortcuts.
+* **Keyboard**: Ctrl+Alt+T, Ctrl+Shift+Space (Cmd+Shift+Space on macOS) for Quick Search, Esc/arrows/Enter inside menus and
+  dialogs, Enter opens the selected entry, and Space or Enter activates a focused button.
 * **Dark theme**: `BeTheme` carries the design's `DARK` tables (backgrounds, shadows, text); `BeTheme.dark` follows
   `settings.theme`. A desktop colour picked in Backgrounds is used verbatim (as in the design); the default colour
   darkens with the theme.
@@ -68,3 +67,10 @@ filter only applies to the pixel shells' art); chrome stays crisp.
 ## Tests and captures
 Unit tests: `tests/unit/test_be_*.gd`. Visual drivers: `tests/visual/be_scenarios.gd`
 (`godot --path . -- --capture=be-folder --out=artifacts/be-folder.png`), ids in `tests/visual/BE_AUTOMATION_IDS.md`.
+
+## Known gaps (2026-11-14 audit)
+
+- Find: the Type and Group selectors store their values, but the search does not use them, and the path filter is always empty (BE-06).
+- Launch All: the toast can show the wrong group numbers (BE-01). Failed items do not stop the batch.
+- New Website, New Program, New Folder and Edit Name close without a message when the input is invalid (BE-03).
+- Get Info stores a Shortcut key, but nothing in the BeOS shell starts an item from it (BE-07).

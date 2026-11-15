@@ -9,7 +9,7 @@ Group    { id, name, icon, windowState, shellWindowState:{win31,win95}, win31Ico
 Item     { id, name, path, icon, win31Icon?, workingDir, arguments?, environment?, runMode?,
            launchGroup?, shortcutKey?, runMinimized?, win31Position?, win95Position? }
 Settings { autoArrange, minimizeOnUse, saveSettingsOnExit, launchDelay, trayOnClose, groupChromeScale,
-           win31Scale, win95Scale, win95DesktopIconPositions, win31DesktopMode,
+           win31Scale, win95Scale, macScale, beScale, win95DesktopIconPositions, win31DesktopMode,
            win31ProgramManagerBounds, win31ProgramManagerMinimized, theme, labelDisplay, shell, soundEnabled }
 ```
 `src/core/types.gd` holds the defaults; `src/core/migration.gd` the normalization rules.

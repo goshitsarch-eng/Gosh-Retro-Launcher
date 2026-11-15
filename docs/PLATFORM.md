@@ -1,8 +1,8 @@
 # Platform integration (Godot build)
 
 Everything the Electron main process / preload used to do lives in the `Platform` autoload
-(`src/app/platform.gd`) and its helpers in `src/platform/`. Shells talk only to `Platform`,
-`Sounds` and `IconRegistry`.
+(`src/app/platform.gd`) and its helpers in `src/platform/`. Shells talk mainly to `Platform`,
+`Sounds` and `IconRegistry`; ARCHITECTURE.md lists the direct calls that bypass them.
 
 ## Known gaps versus the Electron build
 
@@ -49,11 +49,12 @@ Everything the Electron main process / preload used to do lives in the `Platform
 ## Packaging
 
 Presets: `export_presets.cfg` (Windows x86_64/arm64, macOS universal, Linux x86_64/arm64; PCK embedded).
-Pinned toolchain: Godot **4.6.3-stable** from
-`https://github.com/godotengine/godot-builds/releases/download/4.6.3-stable/`
-(`Godot_v4.6.3-stable_{linux.x86_64,linux.arm64,win64.exe,macos.universal}.zip`, `Godot_v4.6.3-stable_export_templates.tpz`).
-Templates install to `~/.local/share/godot/export_templates/4.6.3.stable/` (Linux),
-`%APPDATA%\Godot\export_templates\4.6.3.stable\` (Windows), `~/Library/Application Support/Godot/export_templates/4.6.3.stable/` (macOS).
+Pinned toolchain: the latest stable Godot release, **4.7.2-stable** from
+`https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/`
+(`Godot_v4.7.2-stable_{linux.x86_64,linux.arm64,win64.exe,macos.universal}.zip`, `Godot_v4.7.2-stable_export_templates.tpz`).
+Signing: the macOS preset ad-hoc signs the app (codesign mode 1 with an empty identity); notarization is off.
+Templates install to `~/.local/share/godot/export_templates/4.7.2.stable/` (Linux),
+`%APPDATA%\Godot\export_templates\4.7.2.stable\` (Windows), `~/Library/Application Support/Godot/export_templates/4.7.2.stable/` (macOS).
 Windows icon/version resources need `rcedit` (the workflow downloads it and writes the editor setting).
 
 Workflows (`.github/workflows/`): `test.yml`, `build-linux.yml`, `build-windows.yml`, `build-macos.yml`;

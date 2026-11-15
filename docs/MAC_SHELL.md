@@ -23,8 +23,9 @@ design prototype's Mac block. Groups are folders, items are application icons.
   shared `UIState` launch feedback. "Launcher Tools..." emits `request_show_launcher_tools`; Ctrl+Alt+T also does.
 * Shell switch (Shut Down > Switch to Windows 95) uses `apply_settings_transaction` + `Platform.recreate_for_shell`, like
   Win95's Shut Down. Quick Search (`toggle_quick_search`) opens the Find window with the query focused.
-* Keyboard (Cmd on macOS, Ctrl elsewhere): N New Folder, O Open, W Close Window, I Get Info, D Duplicate, T / Backspace
-  Move To Trash, F Find, R Run; arrows move the selection, Return opens, Delete trashes.
+* Keyboard: N New Folder, O Open, W Close Window, I Get Info, D Duplicate, T or Backspace (Move To Trash), F Find, R Run.
+  Ctrl and Cmd are both accepted on every system (`mac_shell.gd`). Arrows move the selection, Return opens, Delete trashes.
+  Move To Trash removes only the launcher's record; no file on disk is touched (MAC-001).
 * The bundled pixel font lacks the ellipsis, curly quotes and em dash; `MacDraw.glyph_safe` substitutes ASCII.
 
 ## Code map

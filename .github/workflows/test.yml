@@ -7,8 +7,8 @@ on:
   pull_request:
 
 env:
-  # Pinned Godot release (https://github.com/godotengine/godot-builds/releases/tag/4.6.3-stable).
-  GODOT_VERSION: "4.6.3"
+  # Pinned to the latest stable Godot release (https://github.com/godotengine/godot-builds/releases/tag/4.7.2-stable).
+  GODOT_VERSION: "4.7.2"
 
 jobs:
   unit-tests:

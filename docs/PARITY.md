@@ -63,7 +63,7 @@ environment* (code written and reviewed, parts unit-tested) · **GAP** known dif
 | Windows/macOS exports, CI workflows, installers | **M** (never executed) |
 
 ## Pixel comparison against the Electron baselines
-All 41 baselines were re-rendered and diffed (rule: ≤ 0.5 % of pixels differing by > 20/channel).
+The 43 PNG baselines (40 Windows 95 and 3 Windows for Workgroups) were compared with captures from the current build in the 2026-11-14 audit (rule: ≤ 0.5 % of pixels differing by > 20/channel). None passed; the Windows 95 views differ by 0.64 to 3.10 percent. The handbook's coverage chapter lists each result.
 Only `desktop-minimized` (0.14 %) meets it; the rest are 0.6–7 %. The residual is accounted for by:
 1. **Icon art.** The baselines were captured with the author's gitignored licensed icon pack
    (`assets/*-rtm-local`); the distributable build uses the clean-room set. Opaque icon pixels differ everywhere.

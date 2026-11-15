@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Screenshots of the four desktops in `docs/screenshots/`, shown in the README.
+- `tools/capture_screenshots.sh`, which regenerates the screenshots from the running app with a temporary data folder.
+- An offline handbook at `docs/handbook/index.html`: user manual, architecture, development, build and release, troubleshooting, audit findings and coverage.
+
+### Changed
+- Godot 4.7.2, the latest stable release, replaces 4.6 in the CI workflows, the export preset header, the project feature tag, the README and the documentation.
+- `docs/USER_GUIDE.md` is now a short guide that points to the handbook.
+- Documentation corrected against the source: menus, settings, data locations, the Windows 95 desktop, the test suite, and the baseline and scenario counts.
+
+### Known issues
+- The macOS export fails with the default project settings, because ETC2 ASTC import is off. The handbook gives the verified fix.
+- The Windows executable icon has one 256 px image, so the export warns about the other sizes.
+- The capture harness loads the real data file unless `PM_USER_DATA` is set (CORE-14).
+
 ### Fixed
 
 - macOS: Browse… for a program can now pick `.app` bundles (the chooser runs in "open any" mode starting in /Applications; bundles are folders and a plain file chooser greyed them out).

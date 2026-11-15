@@ -1,5 +1,7 @@
 # QA audit log
 
+> **Historical record.** This log describes an earlier audit (macOS 27.0.1, Godot 4.7.2 and 4.6.3, 418 unit tests). The 2026-11-14 audit is in the handbook (`docs/handbook/index.html`, Audit findings). Items here are not re-verified, and some have changed since: the unit suite now has 434 tests, CI pins Godot 4.7.2, and the baseline and scenario counts differ.
+
 Hands-on audit of Program Manager (Godot 4, four shells: Windows 3.11, Windows 95, Classic Mac OS, BeOS).
 This file is the live defect log. Each entry records what was observed, how it was reproduced, the root
 cause, the fix, and how the fix was verified. Status values: **fixed**, **open**, **not a defect**, **intentional**.

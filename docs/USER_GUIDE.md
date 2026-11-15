@@ -1,476 +1,103 @@
 # Program Manager User Guide
 
-This guide covers everything you need to know to use Program Manager, a retro styled application launcher for Windows, macOS, and Linux.
+Program Manager is a launcher that looks like four classic desktops: Windows for Workgroups 3.11, Windows 95, Classic Mac OS and BeOS. You organize programs, web links, scripts and folders into groups, and you start them from whichever desktop you choose.
 
-For a visual walkthrough of common workflows, see the [User Flows Diagram](diagrams/user-flows.md).
+This page is the short guide. The full manual, with screenshots, step-by-step instructions, troubleshooting and the audit findings, is the **handbook**:
 
-## Table of Contents
+> Open `docs/handbook/index.html` in any browser. It works offline, with no server or installation.
 
-- [Getting Started](#getting-started)
-- [Desktop Shells](#desktop-shells)
-- [Managing Groups](#managing-groups)
-- [Managing Program Items](#managing-program-items)
-- [Launching Programs](#launching-programs)
-- [Quick Search](#quick-search)
-- [Batch Launch](#batch-launch)
-- [Settings](#settings)
-- [Import and Export](#import-and-export)
-- [System Tray](#system-tray)
-- [Keyboard Shortcuts](#keyboard-shortcuts)
-- [Accessibility](#accessibility)
-- [Data Storage](#data-storage)
-- [Troubleshooting](#troubleshooting)
+The handbook is the reference for every claim in this file. If the two ever disagree, the handbook and the source code are right, and this file should be corrected.
 
-## Getting Started
+Version 2.0.0, revision `edb4155` plus the changes from the 2026-11-14 audit.
 
-### Running from Source
+## Start the program
 
-1. Install [Godot](https://godotengine.org/download) **4.6** (standard build, no .NET needed).
-2. Clone the repository and open it:
-   ```bash
-   git clone https://github.com/goshitsarch-eng/Gosh-Retro-Launcher.git
-   cd Gosh-Retro-Launcher
-   godot --path .
-   ```
-   (The first launch imports the assets; or open `project.godot` in the Godot editor and press F5.)
+1. Install [Godot 4.7](https://godotengine.org/download). Version 4.7.2 was used for every check in the audit. The standard build is enough; .NET is not needed.
+2. From the project folder, run `godot --path .`, or open `project.godot` in the editor and press F5.
 
-### Installing from a Release
+On first start the program has an empty workspace and shows the Windows for Workgroups 3.11 desktop. No starter groups are created.
 
-Release packages are attached to GitHub Releases:
+## Make your first group and program
 
-- **Windows**: NSIS installer and a portable `.zip` (x64 and arm64)
-- **Linux**: `.tar.gz` and `.deb` (x64 and arm64)
-- **macOS**: `.dmg` and `.zip` (universal, ad-hoc signed)
+On the Windows for Workgroups desktop:
 
-### First Launch
+1. Choose **File > New...**, select **Program Group**, and choose **OK**.
+2. Type a name, such as *Utilities*, and choose **OK**. The group window opens.
+3. Select the group, choose **File > New...**, select **Program Item**, and choose **OK**.
+4. Fill in **Description** and **Command Line**, then choose **OK**.
+5. Double-click the new icon, or select it and press **Enter**.
 
-The application starts with an empty user workspace; historical reference groups are never added to your data automatically. In Windows 95, use **Start → Settings → Launcher Tools...** to create/import groups or switch shells. In WfW 3.11, the canonical Program Manager workspace remains unobscured.
+You can also drag a file from your file manager onto an open group window. The program fills in the name and path.
 
-## Desktop Shells
+## Desktops
 
-Program Manager includes four visual shells that change the look and feel of the entire interface. You can switch between them at any time in Settings.
+| Desktop | Where programs are | How to start one |
+|---|---|---|
+| Windows for Workgroups 3.11 | Group windows inside Program Manager | Double-click, or select and press Enter |
+| Windows 95 | Start > Programs, My Computer, group windows | Start menu, double-click, or Enter |
+| Classic Mac OS | Launcher HD window (a folder for each group) | Double-click; Special menu for batch launch |
+| BeOS | Program Manager window; Deskbar menu | Double-click, or Enter |
 
-### Windows 3.1 Shell (Default)
+Switch desktops in **Launcher Tools**, under *Shell and appearance*. Launcher Tools is in the Windows for Workgroups **Launcher** menu, in the Windows 95 Start menu under Settings, in the Mac logo menu, in the BeOS Deskbar, and with **Ctrl+Alt+T** in every desktop. Switching keeps your groups.
 
-The classic Windows 3.1 experience:
-- **Menu bar** at the top (File, Options, Window, Help)
-- **MDI (Multiple Document Interface)** desktop. Each program group opens as a draggable, resizable window on a teal desktop.
-- **Beveled borders** and retro styling throughout
-- Menu shortcuts via Alt+F, Alt+O, Alt+W, Alt+H
-- Window management: Shift+F4 to tile, Shift+F5 to cascade
+## Launching
 
-### Windows 95 Shell
+- Double-click an item, or select it and press **Enter**.
+- Items are started by their file type. A `.exe` runs directly, a `.bat` or `.cmd` runs through the command interpreter, a web address opens in the default browser (only `http` and `https` are accepted), and so on. The handbook lists every case.
+- **Launch groups:** give an item a Launch Group from 1 to 8. **Launch All** starts every group in order. A group's own entry starts only that group. Items start one after another with a pause set in Launcher Tools (default 500 ms). There is no pause between groups, and a batch cannot be cancelled once it starts.
+- **Quick Search:** press **Ctrl+Shift+Space** (**Cmd+Shift+Space** on macOS). On Windows the shortcut also works from the system tray. On macOS and Linux it works only while the program has focus, unless you bind a system shortcut to `--quick-search`.
 
-A clean-room Windows 95 RTM retail launcher presentation:
-- The canonical teal desktop, 28px taskbar, Start button, notification-area clock, and My Computer / Network Neighborhood / Recycle Bin icons
-- **Start → Programs → group → app** as the primary launch hierarchy
-- My Computer as a launcher browser containing your program groups
-- Explorer-style group windows with active/inactive captions, system menus, task buttons, distinct Icon/Small Icon/List/Details views, resizable report columns, and deterministic Win95 scrollbars
-- Ctrl/Shift disjoint and range selection, Ctrl+A, white-space marquee selection, type-to-select, manual icon placement, Line Up, and Auto Arrange
-- One menu/input model for Start, menu bars, cascades, system menus, and context menus, including press-drag-release tracking and per-level keyboard cancellation
-- A single-instance modeless Find primary window, exact-size Run and Shut Down dialogs, tabbed property sheets, and a Create Shortcut wizard
-- Outline move/eight-edge size, explicit restore/maximize/minimize states, task contexts, drag-hover task activation, and independent crisp whole-shell scaling at Auto or 1×–4×
-
-Network Neighborhood, Recycle Bin storage, Control Panel, Printers, file dates, computer restart, MS-DOS mode, and logon are not emulated. Unsupported operations are disabled or display a Windows 95-style availability notice. My Computer and Programs intentionally map to launcher groups/items; Shut Down quits or restarts only the launcher.
-
-### Switching Shells
-
-1. Open **Launcher Tools...** from the native tray, press **Ctrl+Alt+T** in either shell, or choose **Start → Settings → Launcher Tools...** in Windows 95.
-2. Under **Shell and appearance**, choose Windows for Workgroups 3.11 or Windows 95.
-3. Choose the selected shell's Auto/1×/2×/3×/4× scale. **Auto** (default) adapts to HiDPI/Retina/4K displays and the window size automatically, re-evaluating when you move the window to another monitor; the Launcher Tools window itself also scales with the display.
-4. Click **Apply**.
-
-The complete settings payload is saved before the window frame is switched (WfW draws its own frame; Windows 95 uses the operating system frame). The window's bounds are retained, program data stays shared, and each shell keeps independent group-window geometry.
-
-### Classic Mac OS Shell
-
-A System 7-style desktop: a menu bar (logo menu, File, Edit, View, Special, Help, clock), a **Launcher HD** window that lists your groups as folders, folder windows with close/zoom/collapse boxes, a Trash, Get Info for item settings and a Find window. Choose it in Launcher Tools or Settings. Window positions are not remembered between runs. Details: [MAC_SHELL.md](MAC_SHELL.md).
-
-### BeOS Shell
-
-A BeOS-style desktop with yellow tabbed windows and a **Deskbar** on the right edge (logo menu, Launcher Tools button, clock, running windows). Folder windows offer Icon, Mini Icon and List views, plus Get Info, Edit Name, Move to Trash and Find. Window positions are not remembered between runs. Details: [BE_SHELL.md](BE_SHELL.md).
-
-## Managing Groups
-
-Groups are containers for your program items. Each group appears as a window on the desktop.
-
-### Creating a Group
-
-1. Go to **File > New > Program Group...**
-2. Enter a name for the group
-3. Click **OK**
-
-The new group appears as a window on the desktop with the default folder icon.
-
-### Renaming a Group
-
-1. Right-click on the group's title bar or background
-2. Select **Rename** (or open group properties)
-3. Enter the new name and click **OK**
-
-### Deleting a Group
-
-1. Right-click on the group's title bar or background
-2. Select **Delete**
-3. Confirm the deletion in the dialog that appears
-
-**Warning**: Deleting a group removes all items inside it.
-
-### Window Operations (Win31 Shell)
-
-The Window menu provides standard MDI window management:
-
-| Action | Menu | Shortcut |
-|--------|------|----------|
-| Cascade windows | Window > Cascade | Shift+F5 |
-| Tile windows | Window > Tile | Shift+F4 |
-| Arrange icons | Window > Arrange Icons | None |
-| Focus a specific group | Window > (group name) | None |
-
-You can also drag group windows by their title bar and resize them from any edge or corner.
-
-### Group Properties
-
-Each group has:
-- **Name**: The display name shown in the title bar
-- **Icon**: Choose from 80+ built-in icons or use a custom icon path
-
-## Managing Program Items
-
-Program items are the applications, scripts, or URLs that you want to launch.
-
-### Adding Items
-
-There are several ways to add items:
-
-**Drag and drop**: Drag a file from your system file manager onto an open group window. The application will automatically detect the program name and path.
-
-**File > New > Program Item...**: Opens a dialog where you can manually enter:
-- Name
-- Path to the executable
-- Icon (pick from built-in icons or browse for a custom one)
-- Working directory
-- Launch group number (for batch launching)
-
-**File > New > URL...**: Opens a dialog specifically for adding web URLs as items.
-
-### Editing Item Properties
-
-1. Right-click on an item
-2. Select **Properties**
-3. Modify any fields:
-   - **Name**: Display name under the icon
-   - **Path**: Full path to the executable, script, or URL
-   - **Icon**: Click to open the icon picker (80+ built-in icons with search/filter, or browse for a custom icon file)
-   - **Working Directory**: The directory the program runs in
-   - **Launch Group**: Assign to a numbered group from 1 to 8 for batch launching
-
-### Deleting Items
-
-- Select an item and press the **Delete** key
-- Or right-click an item and select **Delete**
-- A confirmation dialog will appear before the item is removed
-
-### Icon Picker
-
-The icon picker provides over 80 built-in retro-styled icons organized in a grid. You can:
-- **Search/filter** icons by name using the text field at the top
-- **Click** an icon to select it
-- Icons include categories like: folders, web, music, video, games, tools, documents, system, and many more
-
-Custom icons are also supported. You can enter a file path, data URL, or web URL for any icon.
-
-## Launching Programs
-
-### Double-Click or Enter
-
-The most common way to launch a program:
-1. Double-click the program item, or
-2. Select an item (single click) and press **Enter**
-
-### What Gets Launched
-
-Program Manager handles different file types based on your operating system:
-
-| Platform | File Types | How It Launches |
-|----------|-----------|-----------------|
-| **Windows** | `.exe`, `.bat`, `.cmd` | Opens via shell |
-| **Windows** | `.lnk` (shortcuts) | Reads shortcut target and launches it |
-| **macOS** | `.app` bundles | Opens with `open -a` |
-| **macOS** | Other executables | Spawns directly |
-| **Linux** | `.desktop` files | Parses the `Exec=` line and spawns |
-| **Linux** | Other executables | Spawns directly |
-| **All** | `http://` or `https://` URLs | Opens in default browser |
-
-### Minimize on Use
-
-If the **Minimize on Use** setting is enabled, the Program Manager window will minimize after you launch a program, keeping your desktop clean.
-
-## Quick Search
-
-Quick Search lets you find and launch any program item across all groups without navigating through windows.
-
-### Opening Quick Search
-
-- Press **Ctrl+Shift+Space** (Windows/Linux) or **Cmd+Shift+Space** (macOS). On Windows this works from anywhere, even while Program Manager is hidden in the tray. On macOS and Linux it works while Program Manager is focused; to use it from anywhere, see [Global Quick Search shortcut on macOS and Linux](#global-quick-search-shortcut-on-macos-and-linux)
-- Choose **Quick Search** from the tray menu
-- Run `program-manager --quick-search` (it opens Quick Search in the running instance)
-- In Windows 95, choose **Start → Find → Files or Folders...**
-
-Windows 95 opens or reactivates a modeless **Find: All Files** primary window and task button. WfW retains `QuickSearchOverlay` unchanged.
-
-### Using Find in Windows 95
-
-1. On **Name & Location**, enter a `Named` value. `*` and `?` wildcards are supported; choose a launcher group in `Look in` if desired.
-2. On **Advanced**, optionally filter Application versus Internet Shortcut, containing text, or path text.
-3. The **Date Modified** page is visible for RTM composition but its predicates are disabled because launcher items do not store fabricated file dates.
-4. Choose **Find Now**. **Stop** cancels an in-progress search and **New Search** resets the criteria.
-5. Use click/Ctrl/Shift, Arrow keys, Home/End/Page keys, or Ctrl+A in results. Double-click or press Enter to launch.
-
-Start Find, Windows+F, and the global Quick Search shortcut all reuse the same Win95 Find window.
-
-### Using Quick Search in WfW
-
-Type a search term, use Arrow Up/Down to navigate ranked results, press Enter to launch, and press Escape to close. Up to 10 results are shown at a time.
-
-## Batch Launch
-
-Batch launch lets you start multiple programs at once with a configurable delay between each.
-
-### Setting Up Launch Groups
-
-1. Select a program item and open **File > Properties...** (or use Launcher Tools)
-2. Set the **Launch Group** field to a number from 1 to 8
-3. Repeat for other items you want to batch-launch
-
-Items with the same launch group number will launch together. Groups are launched in numerical order (group 1 first, then group 2, etc.).
-
-### Launching
-
-In the Win31 shell, open **Launcher > Launch All** to run every assigned group in order, or choose a numbered group to run only that group. The same controls are available in **Launcher Tools**. Windows 95 keeps batch extensions out of its canonical Start menu; open Launcher Tools from **Start → Settings** or the tray.
-
-The delay between launches is configurable from 100ms to 5000ms and defaults to 500ms. **Launch All** is disabled when no items have a launch group assigned.
+**Known gap:** an item's Shortcut Key works only in the Windows for Workgroups desktop. A bare key such as Enter can start that item (see the handbook, CORE-02).
 
 ## Settings
 
-Open Settings from **File > Settings...**. Settings are organized into three sections.
+There is no single Settings dialog. Each setting is changed where it lives:
 
-### General
+- **Windows for Workgroups Options menu:** Auto Arrange (on), Minimize on Use (off), Save Settings on Exit (on).
+- **Launcher Tools:** desktop, scale for each desktop, gray workspace mode, sound effects (on), minimize to tray on close (on), and the delay between batch items (500 ms).
+- **Classic Mac OS:** Desktop Pictures... (six colours and dark mode). **BeOS:** Backgrounds... (six colours and dark mode).
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| **Auto Arrange** | Automatically arrange icons in group windows | On |
-| **Minimize on Use** | Minimize Program Manager after launching a program | Off |
-| **Save Settings on Exit** | Persist window positions when closing | On |
-| **Minimize to Tray on Close** | Hide to system tray instead of quitting when clicking the close button | On |
+Three settings cannot be changed from the interface: label wrapping, starter groups, and the Windows for Workgroups dark mode. Their dialog is unreachable (finding W31-001).
 
-### Appearance
+## Data, backups and import/export
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| **Dark Mode** | Toggle between light and dark themes | Off (light) |
-| **Wrap item labels** | Show full item names (wrap) or truncate with ellipsis | Wrap |
-| **Sound Effects** | Enable retro sound effects (startup chime, window sounds, clicks) | On |
-| **Desktop Shell** | Choose between "Windows 3.1" and "Windows 95" | Windows 3.1 |
-| **WfW scale** | Auto or force 1×–4× whole-shell scaling | Auto |
-| **Windows 95 scale** | Auto or force 1×–4× whole-shell scaling | Auto |
+Your data is one JSON file, `program-manager-data.json`, in a folder that depends on your system:
 
-The Windows 95 shell always uses the fixed RTM palette and control metrics; dark mode and fractional title-bar scaling do not alter its canonical surface. Use Launcher Tools for shell and scale selection.
+| System | Folder |
+|---|---|
+| Windows | `%APPDATA%\program-manager` |
+| macOS | `~/Library/Application Support/program-manager` |
+| Linux | `$XDG_CONFIG_HOME/program-manager`, or `~/.config/program-manager` |
 
-### Batch Launch
+The environment variable `PM_USER_DATA`, when set, replaces that folder on every system.
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| **Delay between launches** | Time in milliseconds between each program launch in a batch | 500ms |
+- **Automatic backups** go to a `backups` folder inside the data folder. A backup is made after a change, at most every 30 seconds. The 12 newest are kept.
+- **Restore points:** Launcher Tools > *Backup and recovery*.
+- **Export and import:** Launcher Tools > *Windows 3.x groups* has Export JSON..., Import JSON..., Export .GRP... and Import .GRP.... **Importing JSON replaces every group, setting and workspace profile.** The program takes a backup first. Files over 10 MB are refused.
+- **Workspace profiles:** Launcher Tools > *Workspace profiles*. Applying a profile replaces every group and item without asking first. Export your data before you apply one.
 
-The delay slider ranges from 100ms to 5000ms in 100ms steps.
+## Keyboard shortcuts
 
----
+| Where | Keys |
+|---|---|
+| Everywhere | Ctrl+Alt+T: Launcher Tools. Ctrl+Shift+Space: Quick Search (Cmd on macOS). |
+| Windows for Workgroups | Alt+F, Alt+O, Alt+W, Alt+L, Alt+H open menus. Shift+F4 tiles, Shift+F5 cascades. Alt+Enter: properties. Delete: delete. |
+| Windows 95 | Ctrl+Esc or Win: Start. Win+R: Run. Win+F: Find. Win+E: My Computer. Alt+Tab: switch windows. Alt+F4: close. Shift+F10: context menu. Ctrl+A: select all. |
+| Classic Mac OS | Cmd+N New Folder, Cmd+O Open, Cmd+W Close, Cmd+I Get Info, Cmd+T Move To Trash, Cmd+F Find, Cmd+R Run. Delete or Backspace moves the selection to the Trash. |
+| BeOS | Enter opens the selected entry. Escape cancels a dialog. |
 
-## Import and Export
+The handbook lists every binding found in the source, with its file.
 
-You can back up your entire configuration (all groups, items, and settings) as a JSON file.
+## Trash, Find and other gaps
 
-### Exporting
+- **Trash** on the Classic Mac OS and BeOS desktops removes only the launcher's record of an item or group. No file on disk is touched, and there is no recoverable Trash.
+- **Windows 95:** Network Neighborhood, Recycle Bin, Control Panel, Printers and the Find entries for computers and the Internet show a "not available" message. Start > Documents is always empty. Find's *Include subgroups* and *Date Modified* do nothing.
+- **Windows 95 Shut Down > Restart the launcher** closes the windows. It does not reload your data.
 
-1. Go to **File > Export...**
-2. Choose a location and filename (default: `program-manager-backup.json`)
-3. Click **Save**
+The handbook's known-gaps list and audit findings have the complete set.
 
-### Importing
+## Where to go next
 
-1. Go to **File > Import...**
-2. Select a previously exported JSON file
-3. Click **Open**
-
-The imported data replaces your current groups and settings. The application reloads automatically after a successful import.
-
-**Validation**: The import process validates the structure of the JSON file before applying it. If the file is malformed or contains invalid data, an error message is shown and no changes are made.
-
-## System Tray
-
-When the **Minimize to Tray on Close** setting is enabled (default), closing the main window hides Program Manager and keeps it running; the tray icon restores it.
-
-- **Windows**: the window and its taskbar button disappear. If the background helper cannot start (for example when PowerShell is restricted by policy), the window is minimized instead.
-- **macOS**: the app is hidden; its Dock icon stays and clicking it brings the window back.
-- **Linux**: the window is minimized and its taskbar entry stays, because Linux desktops offer no portable way to hide a window.
-
-### Tray Menu
-
-Open the tray icon's menu to see:
-- **Show Program Manager** restores the main window
-- **Launcher Tools...** opens shell switching and launcher configuration
-- **Quick Search** opens Quick Search / Windows 95 Find (use this when the app is in the background)
-- A list of all your groups, each with a submenu of their items for quick launch (empty groups are disabled)
-- **Exit** quits the application
-
-### Platform Differences
-
-| Platform | Tray Behavior |
-|----------|--------------|
-| **Windows** | Double-click the tray icon to restore the window |
-| **Linux** | Click the tray icon to restore the window (requires a desktop with status-notifier tray support) |
-| **macOS** | Click the menu bar icon to open the tray menu. The icon is coloured and does not adapt to light/dark menu bars. |
-
-The tray icons are `assets/icons/tray-win.png`, `tray-linux.png` and `tray-mac.png`.
-
-## Keyboard Shortcuts
-
-### Global (All Shells)
-
-| Shortcut | Action |
-|----------|--------|
-| Ctrl+Shift+Space (Cmd+Shift+Space on macOS) | Toggle Quick Search/Win95 Find (system-wide on Windows; on macOS/Linux while the app is focused unless bound as below) |
-| Ctrl+Alt+T | Open Launcher Tools from either shell |
-| Enter | Launch the selected program item |
-| Delete | Delete the selected program item (with confirmation) |
-| Arrow keys | Navigate between items in the grid |
-
-### Global Quick Search shortcut on macOS and Linux
-
-On Windows, Ctrl+Shift+Space opens Quick Search from anywhere. macOS and Linux need the shortcut bound once in the system settings, pointing at the `--quick-search` command:
-
-- **macOS**: in the Shortcuts app, create a shortcut with a **Run Shell Script** action containing `open -n -a "Program Manager" --args --quick-search` (`-n` starts a short-lived second copy that hands the request to the running one and exits), then use **Add Keyboard Shortcut** in its details and press Cmd+Shift+Space.
-- **GNOME**: Settings → Keyboard → Custom Shortcuts → add the command `program-manager --quick-search` with Ctrl+Shift+Space.
-- **KDE Plasma**: System Settings → Shortcuts → Add New → Command or Script, with the same command.
-
-If Program Manager is not running, the command starts it with Quick Search open.
-
-### Windows 3.1 Shell
-
-| Shortcut | Action |
-|----------|--------|
-| Alt+F | Open File menu |
-| Alt+O | Open Options menu |
-| Alt+W | Open Window menu |
-| Alt+H | Open Help menu |
-| Shift+F4 | Tile windows |
-| Shift+F5 | Cascade windows |
-| Escape | Close the currently open menu |
-
-### Windows 95 Shell
-
-| Shortcut | Action |
-|----------|--------|
-| Windows key or Ctrl+Escape | Open/close Start |
-| Windows+R / Windows+F / Windows+E | Open Run / Find / My Computer |
-| Windows+Tab or Alt+Tab (Shift reverses) | Cycle launcher primary windows |
-| Arrow keys, Home, End, Page Up/Down | Navigate desktop icons, Start menus, folder items, and results |
-| Enter | Open the selected folder or launch the selected app |
-| Delete | Confirm deletion of the selected launcher item |
-| Escape | Close the current submenu, menu, or dialog |
-| Alt+Space | Open the active window's system menu |
-| Alt+F4 | Close the active launcher window/dialog |
-| Bare Alt, Alt+F / Alt+E / Alt+V / Alt+H | Enter menu-bar mode or open File/Edit/View/Help |
-| Shift+F10 or Application/Menu key | Open the selected object's context menu |
-| Ctrl+A | Select all objects/results in the active list view |
-| Ctrl+click / Shift+click | Toggle disjoint items / extend an anchor range |
-| Enter or Escape during Move/Size | Commit or cancel the outline operation |
-
-### In Dialogs
-
-| Shortcut | Action |
-|----------|--------|
-| Enter | Confirm / OK |
-| Escape | Cancel / Close |
-
-### In Quick Search
-
-| Shortcut | Action |
-|----------|--------|
-| Arrow Up/Down | Navigate results |
-| Enter | Launch selected result |
-| Escape | Close Quick Search |
-
-## Accessibility
-
-- **Keyboard navigation**: every command is reachable from the keyboard (menus with Alt access keys, arrow-key navigation in item grids, folder views and menus, Tab order in dialogs).
-- **Focus indicators**: classic dotted focus rectangles and default-button rings, as in the original systems.
-- **No motion**: neither shell animates; window and menu changes are instant.
-- **Sound toggle**: sound effects can be disabled in Settings.
-- **Screen readers**: the interface is drawn pixel by pixel to match the original systems, so it does not expose widgets to screen readers.
-
-## Data Storage
-
-Program Manager stores its data in a JSON file in the standard application data directory for your operating system. The file format and location are unchanged from the 1.x (Electron) releases, so existing data and backups are picked up automatically.
-
-### File Location
-
-The data file is named `program-manager-data.json` and is stored in:
-
-| Platform | Location |
-|----------|----------|
-| **Windows** | `%APPDATA%/program-manager/` |
-| **macOS** | `~/Library/Application Support/program-manager/` |
-| **Linux** | `~/.config/program-manager/` |
-
-### What Is Stored
-
-The file contains two main keys:
-- **groups**: All program groups/items, independent Win31/Win95 window geometry, and optional shell-specific manual item positions
-- **settings**: Application settings, including independent integer shell scales and persisted Win95 desktop-object positions
-
-For the full data model, see the [Data Flow Diagram](diagrams/data-flow.md) or the [Data Model Diagram](diagrams/data-model.md).
-
-### Resetting to Defaults
-
-To reset the application to its default state, delete the `program-manager-data.json` file and restart the application. A fresh file with default settings will be created.
-
-## Troubleshooting
-
-### The application does not start
-
-- When running from source, make sure you use Godot **4.6** (`godot --version`). Newer or older minor versions may import assets differently.
-- Run `godot --path . --verbose` in a terminal to see engine and script errors.
-- The renderer is OpenGL (GL Compatibility); update your graphics driver if the window stays blank.
-
-### A program item does not launch
-
-- Verify the path is correct by checking the item's Properties (right-click > Properties)
-- On Linux, `.desktop` files must have a valid `Exec=` line in the `[Desktop Entry]` section
-- On Windows, `.lnk` shortcuts must point to a valid target
-- On macOS, `.app` bundles must be in a location accessible to the current user
-- URLs must start with `http://` or `https://`
-- Run from a terminal (`godot --path . --verbose`) to see launch errors
-
-### Sound effects are not playing
-
-- Check that **Sound Effects** is enabled in Settings (Appearance section)
-- Your system audio must not be muted
-- Sound effects are synthesized by the app. The startup chime plays shortly after the Windows for Workgroups shell loads.
-
-### The tray icon is missing or blank
-
-- The application looks for tray icons in `assets/icons/`. If the files are missing, a small fallback icon is used.
-- On Linux, some desktop environments may not display tray icons by default. Install a system tray extension if needed.
-
-### Data seems lost after update
-
-- Your data file (`program-manager-data.json`) persists across updates. If data appears missing, check the file location listed in [Data Storage](#data-storage).
-- You can restore from a backup if you previously used **File > Export**.
-
-### The window is hidden and cannot be restored
-
-- If the window is minimized to tray, look for the tray icon and double-click it (Windows/Linux) or click it (macOS).
-- Start Program Manager again: the running copy brings its window back instead of opening a second one. On macOS, clicking the Dock icon also works.
-- On Windows the window is only hidden when a tray icon exists. To quit instead of hiding, turn off **Minimize to Tray on Close** (or set `trayOnClose` to `false` in the data file).
+- **Handbook** (`docs/handbook/index.html`): the full manual, architecture, development, build and release, troubleshooting, the audit findings and the coverage of the audit.
+- **README.md:** what the project is and how to run and build it.
+- **docs/ARCHITECTURE.md**, **docs/PLATFORM.md**, **docs/MAC_SHELL.md**, **docs/BE_SHELL.md**: developer references. Each one notes the corrections made in the 2026-11-14 audit.

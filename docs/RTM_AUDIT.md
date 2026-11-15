@@ -114,3 +114,16 @@ between native sizes. They must not be copied, traced, embedded, or used as
 inputs to generated assets. Pixel comparisons are strict for geometry,
 palette, borders, and project-owned primitives; clean-room icons are accepted
 by family resemblance and RTM design grammar rather than pixel identity.
+
+## Corrections from the 2026-11-14 audit
+
+This document was written for the Electron build. The Godot port's source was checked against it in the 2026-11-14 audit. These statements are wrong or out of date:
+
+- Start menu sub-item rows are 22 px high (`src/shells/win95/tokens.gd`, `startSubItemHeight`), not 20 px.
+- Context menus open when the right button is pressed (`desktop.gd`, `folder_view.gd`, `window.gd`), not on release.
+- Shut Down: only the MS-DOS mode row is disabled. There are no computer or logon rows. The third row switches to Windows for Workgroups 3.11.
+- Restart: "Restart the launcher" closes the windows and re-applies the frame. It does not restart the program or reload data (finding W95-003).
+- Start > Settings and Start > Find show a "not available" message for several entries, so "only commands meaningful to launcher objects are enabled" is not true for those rows.
+- The Windows 95 capture set has 40 PNG baselines, not 39.
+- References to Electron and Chromium describe the 1.x build. The Godot build draws its own text and window frame.
+- The external sources cited in this document were not fetched during the audit, so they are unverified.
