@@ -327,6 +327,7 @@ func close_window() -> void:
 ## no taskbar entry; macOS: the app is hidden, the Dock icon stays). Where that is unavailable
 ## (Linux, helper failed, no tray on Windows) the window is minimized instead.
 func hide_window() -> void:
+	ProgramStore.flush()  # a tray-hidden app can be killed by the OS (logout, update): keep disk current
 	_hidden = true
 	if desktop and desktop.can_hide(tray_present) and desktop.hide_window():
 		_os_hidden = true
