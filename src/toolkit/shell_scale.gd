@@ -61,3 +61,24 @@ static func apply(window: Window, factor_dips: float) -> void:
 ## Logical size of the content area (window pixels divided by the content scale factor).
 static func logical_size(window: Window) -> Vector2:
 	return Vector2(window.size) / window.content_scale_factor
+
+
+## UI scale for ordinary (non pixel-art) native windows such as Launcher Tools. Where the OS reports
+## a ratio (macOS, Wayland, Android) that is used as-is; elsewhere (Windows / X11 report 1.0) it is
+## inferred from the screen height so text stays readable on 1440p / 4K panels. Quarter steps keep
+## the glyph rasteriser on a consistent grid. `screen_h_px` is the physical screen height.
+static func dialog_scale(screen_h_px: float, dpr: float) -> float:
+	if is_finite(dpr) and dpr > 1.0:
+		return clampf(dpr, 1.0, 4.0)
+	if not is_finite(screen_h_px) or screen_h_px < 1400.0:
+		return 1.0
+	return clampf(floorf(screen_h_px / 1080.0 * 4.0) / 4.0, 1.0, 3.0)
+
+
+## Applies dialog_scale() to a native window and returns the factor used.
+static func apply_dialog_scale(window: Window) -> float:
+	var screen := DisplayServer.window_get_current_screen(window.get_window_id())
+	var f := dialog_scale(float(DisplayServer.screen_get_size(screen).y), display_ratio(window))
+	window.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+	window.content_scale_factor = f
+	return f

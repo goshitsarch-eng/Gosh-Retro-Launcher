@@ -77,7 +77,7 @@ Network Neighborhood, Recycle Bin storage, Control Panel, Printers, file dates, 
 
 1. Open **Launcher Tools...** from the native tray, press **Ctrl+Alt+T** in either shell, or choose **Start → Settings → Launcher Tools...** in Windows 95.
 2. Under **Shell and appearance**, choose Windows for Workgroups 3.11 or Windows 95.
-3. Choose the selected shell's Auto/1×/2×/3×/4× scale.
+3. Choose the selected shell's Auto/1×/2×/3×/4× scale. **Auto** (default) adapts to HiDPI/Retina/4K displays and the window size automatically, re-evaluating when you move the window to another monitor; the Launcher Tools window itself also scales with the display.
 4. Click **Apply**.
 
 The complete settings payload is saved before the window frame is switched (WfW draws its own frame; Windows 95 uses the operating system frame). The window's bounds are retained, program data stays shared, and each shell keeps independent group-window geometry.
