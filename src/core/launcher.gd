@@ -327,6 +327,9 @@ static func _spawn_powershell(file: String, args: PackedStringArray, window_styl
 
 static func launch_program(item: Dictionary) -> Dictionary:
 	var program_path := String(item.get("path", ""))
+	# An item with no target has nothing to run; say so instead of "Program not found: " with nothing after it.
+	if program_path.strip_edges().is_empty():
+		return _fail("No program is set for this item.")
 	var working_dir := String(item.get("workingDir", ""))
 	var item_args := tokenize_command(String(item.get("arguments", "")))
 	var env := parse_environment(String(item.get("environment", "")))

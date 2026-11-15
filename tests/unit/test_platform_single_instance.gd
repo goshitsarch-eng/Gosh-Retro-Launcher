@@ -41,6 +41,16 @@ func test_candidate_ports_are_deterministic_and_in_range() -> void:
 	expect_eq(wrapped.size(), 4)
 
 
+func test_probe_verdicts_cover_every_outcome() -> void:
+	# Pure truth table: the macOS "refused loopback connect" case is covered on every platform, not only on macOS.
+	expect_eq(SingleInstance.classify_probe(true, false, true), "ours", "valid reply")
+	expect_eq(SingleInstance.classify_probe(true, true, true), "ours", "valid reply, then closed")
+	expect_eq(SingleInstance.classify_probe(false, true, false), "free", "dropped without a byte: nothing answered")
+	expect_eq(SingleInstance.classify_probe(false, false, false), "foreign", "silent listener until the timeout")
+	expect_eq(SingleInstance.classify_probe(false, true, true), "foreign", "bytes that are not our reply, then closed")
+	expect_eq(SingleInstance.classify_probe(false, false, true), "foreign", "bytes that are not our reply, timeout")
+
+
 func test_protocol_lines() -> void:
 	var req := SingleInstance.request_line("/p")
 	expect_eq(req, "SHOW\t/p\n")

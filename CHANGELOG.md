@@ -28,6 +28,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Windows 95 icons replaced by the Claude Design `icons95` set (`tools/import_design_icons.py`); the Win95 shell shows Windows for Workgroups artwork for WfW application ids; new `launcher-logo` icon.
 - Visual harness: `click_id` waits for the element, and captures render every frame (`low_processor_mode` is off during captures) with a forced draw before the grab, which removes stale-frame captures.
 
+### Fixed
+
+- The single-instance lock is claimed on macOS. A free loopback port was misread as a foreign listener, so the app ran without the lock and a second launch did not hand off to the first.
+- Built-in SVG icons are decoded from their raw bytes, so every icon load no longer logs "will not work on export".
+- Launching an item with no target now says "No program is set for this item." instead of "Program not found: " with nothing after the colon.
+- The BeOS Find window no longer opens under the Deskbar at 640×480. It is placed below the Deskbar's real height for the open windows, and at four open windows it is slightly shorter than its minimum height. The Deskbar logo menu uses "…" like the other BeOS menus.
+- The BeOS details view shows a horizontal scrollbar when its columns are wider than the window, with the vertical scrollbar placed alongside it.
+- The Win95 Create Shortcut wizard frees its text fields and labels when it closes. Each open used to leave objects alive.
+- The Win95 Find dialog's Named field shows its text and caret vertically centred, instead of clipped at the bottom edge.
+- The Mac list view and Find results shade the Name column header only when the rows really are in name order. Rows keep their store order.
+
 ## [2.0.0] - Godot rewrite
 
 ### Changed

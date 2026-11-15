@@ -175,6 +175,17 @@ static func _win95(view: String, a: Automation, host: Node = null) -> void:
 		await a.wait_ms(80)
 		await a.click_id("w95.popup-item:New Shortcut")
 		await a.wait_ms(120)
+	if view == "win95-wizard-loop":
+		# Leak probe: open and cancel the wizard repeatedly and report the live object count each time.
+		for i in 6:
+			await a.rclick(Vector2(300, 250))
+			await a.wait_ms(80)
+			await a.click_id("w95.popup-item:New Shortcut")
+			await a.wait_ms(150)
+			var can_cancel := a.has("w95.dialog.button:Cancel")
+			await a.click_id("w95.dialog.button:Cancel")
+			await a.wait_ms(150)
+			print("WIZARD_LOOP iteration=%d cancel_found=%s objects=%d" % [i, can_cancel, int(Performance.get_monitor(Performance.OBJECT_COUNT))])
 	if view == "win95-properties":
 		await _open_my_computer(a)
 		await a.rclick(Vector2(80, 100))
@@ -219,6 +230,31 @@ static func _select_first_item(a: Automation) -> void:
 
 
 static func _wfw(view: String, a: Automation) -> void:
+	if view == "menu-sweep-wfw":
+		# Menu click-through: every item of the five WfW menus, each followed by Escape. Skipped on purpose:
+		# "Exit Windows..." (quits the app) and "Launcher Tools..." (opens a separate OS window).
+		# Setup: select the first program item, so the selection-dependent File items are enabled.
+		await a.click_id("wfw.program-item:first")
+		await a.wait_ms(60)
+		# Delete goes last, so it cannot remove the selection the other items need.
+		var sweep_items := ["New...", "Open", "Move...", "Copy...", "Properties...", "Delete", "Run...",
+			"Auto Arrange", "Minimize on Use", "Save Settings on Exit", "Contents", "Search for Help On...",
+			"How to Use Help", "About Program Manager...", "Cascade", "Tile", "Arrange Icons", "Launch All"]
+		for menu_index in 5:
+			for label in sweep_items:
+				await a.click_id("wfw.menu:%d" % menu_index)
+				await a.wait_ms(60)
+				if not a.has("wfw.popup-item:" + label):
+					print("SWEEP_SKIP wfw menu=%d item=%s (not in this menu)" % [menu_index, label])
+					continue
+				print("SWEEP wfw menu=%d item=%s" % [menu_index, label])
+				await a.click_id("wfw.popup-item:" + label)
+				await a.wait_ms(120)
+				await a.key(KEY_ESCAPE)
+				await a.wait_ms(60)
+				await a.key(KEY_ESCAPE)
+				await a.wait_ms(60)
+		print("SWEEP_DONE wfw")
 	if view == "launch-win31":
 		ProgramStore.update_item("main", "main-0", {"path": "/usr/bin/touch", "arguments": _marker(view)})
 		await a.wait_ms(200)

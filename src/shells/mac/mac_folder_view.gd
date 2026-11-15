@@ -45,6 +45,16 @@ func entries() -> Array:
 	return out
 
 
+## True when the entries are already in name order (the order Clean Up produces). The list view has no
+## sort of its own and shows the store order, so the Name column's sorted-column shading is drawn only when
+## that order really is by name. Same comparator as MacDialogLogic.clean_up.
+static func is_name_sorted(es: Array) -> bool:
+	for i in range(1, es.size()):
+		if String(es[i].name).naturalnocasecmp_to(String(es[i - 1].name)) < 0:
+			return false
+	return true
+
+
 func _wrap_labels() -> bool:
 	return String(ProgramStore.settings.get("labelDisplay", "wrap")) == "wrap"
 
@@ -134,6 +144,7 @@ func _draw() -> void:
 func _draw_details(es: Array, sel: String, off: int) -> void:
 	var cols: Array = _layout.cols
 	var h: Rect2 = _layout.header
+	var by_name := is_name_sorted(es)
 	for i in _layout.rows.size():
 		var row: Rect2 = _layout.rows[i].rect
 		var ry := row.position.y - off
@@ -143,7 +154,7 @@ func _draw_details(es: Array, sel: String, off: int) -> void:
 		var on: bool = e.id == sel
 		if on:
 			draw_rect(Rect2(0, ry, row.size.x, row.size.y), MacTheme.b("ccccff"))
-		else:
+		elif by_name:
 			draw_rect(Rect2(0, ry, cols[0].w, row.size.y), MacTheme.b("eeeeee"))
 		Px.hline(self, 0, ry + row.size.y - 1, row.size.x, MacTheme.b("eeeeee"))
 		draw_texture_rect(MacIconCatalog.texture(String(e.icon), "small"), Rect2(8, ry + 2, 16, 16), false)
@@ -153,7 +164,8 @@ func _draw_details(es: Array, sel: String, off: int) -> void:
 		MacDraw.text_centered_y(self, cols[2].x + 10, ry, row.size.y - 1, String(e.c3), fg, false, int(cols[2].w) - 14)
 	# sticky header
 	draw_rect(Rect2(0, 0, _layout.width, h.size.y), MacTheme.b("dddddd"))
-	draw_rect(Rect2(0, 0, cols[0].w, h.size.y), MacTheme.b("bbbbbb"))
+	if by_name:
+		draw_rect(Rect2(0, 0, cols[0].w, h.size.y), MacTheme.b("bbbbbb"))
 	Px.hline(self, 0, h.size.y - 1, _layout.width, MacTheme.b("888888"))
 	var names := ["Name", "Size" if is_computer() else "Command", "Type" if is_computer() else "Batch"]
 	for i in 3:
@@ -161,7 +173,7 @@ func _draw_details(es: Array, sel: String, off: int) -> void:
 		MacDraw.text_centered_y(self, cx + 10, 0, h.size.y - 1, names[i], MacTheme.t("000000"), false, int(cols[i].w) - 14)
 		if i < 2:
 			Px.vline(self, cx + cols[i].w - 1, 0, h.size.y - 1, MacTheme.b("888888"))
-		Px.hline(self, cx, 0, cols[i].w - (1 if i < 2 else 0), MacTheme.s("cccccc") if i == 0 else MacTheme.s("ffffff"))
+		Px.hline(self, cx, 0, cols[i].w - (1 if i < 2 else 0), MacTheme.s("cccccc") if i == 0 and by_name else MacTheme.s("ffffff"))
 
 
 func _draw_scrollbar() -> void:

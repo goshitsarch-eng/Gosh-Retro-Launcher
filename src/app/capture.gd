@@ -46,6 +46,22 @@ func prepare() -> void:
 	var dims := FIXTURES.window_size_for(view)
 	win.size = dims
 	await get_tree().process_frame
+	await get_tree().process_frame
+	_report_unrepresentable_size(dims, win.size)
+
+
+## macOS sizes windows in whole points, so on a 2x screen an odd pixel size (reference 511x335,
+## win95-remainder 1281x961) comes back 1 px smaller per axis and those views cannot match their
+## 1x Electron baselines (which --baseline then reports as a size mismatch). Not an app defect:
+## a bare Godot window does the same. Non-fatal; capture those views on a 1x display.
+func _report_unrepresentable_size(requested: Vector2i, actual: Vector2i) -> void:
+	if actual == requested:
+		return
+	var backing := DisplayServer.screen_get_scale(DisplayServer.window_get_current_screen()) if OS.get_name() == "macOS" else 1.0
+	var why := "the OS sizes windows in whole points (screen scale %s)" % backing \
+		if WindowLayout.os_representable_size(requested, backing) == actual else "the window manager changed it"
+	printerr("capture %s: window is %s, fixture asks for %s; %s. Capture this view on a 1x display to compare it with its baseline." \
+		% [view, actual, requested, why])
 
 
 func run() -> void:

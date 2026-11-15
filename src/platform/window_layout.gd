@@ -70,6 +70,15 @@ static func centered_position(usable: Rect2i, outer_size: Vector2i) -> Vector2i:
 		usable.position.y + maxi(0, (usable.size.y - outer_size.y) / 2))
 
 
+## Window size the OS can actually give for a requested size in pixels when it sizes windows in
+## whole points of `backing_scale` pixels each (macOS: a 2x Retina screen has no odd pixel sizes,
+## 1281x961 becomes 1280x960). Rounds down per axis, like AppKit does; scales below 1 (or not
+## whole) are treated as 1, i.e. sizes in pixels (Windows, X11).
+static func os_representable_size(requested: Vector2i, backing_scale: float) -> Vector2i:
+	var s := int(backing_scale) if is_finite(backing_scale) and backing_scale >= 1.0 and is_equal_approx(backing_scale, floorf(backing_scale)) else 1
+	return Vector2i(maxi(s, (requested.x / s) * s), maxi(s, (requested.y / s) * s))
+
+
 ## Client rect that makes the window's outer rect equal `outer`, given decoration insets
 ## (top-left offset of the client area inside the frame and the total frame size added to the client).
 static func client_rect_for_outer(outer: Rect2i, deco_origin: Vector2i, deco_size: Vector2i) -> Rect2i:

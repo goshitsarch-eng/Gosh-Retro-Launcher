@@ -1,7 +1,8 @@
 class_name BeFolderView
 extends Control
-## The white content area of a folder window: Icon / Mini Icon / List views with selection, wheel scrolling and a slim
-## scrollbar. Entries come from BeDialogLogic.entries_for(); selection lives in the shell (one selected entry).
+## The white content area of a folder window: Icon / Mini Icon / List views with selection, wheel scrolling and slim
+## scrollbars (vertical; plus horizontal when List View's columns are wider than the window). Entries come from
+## BeDialogLogic.entries_for(); selection lives in the shell (one selected entry).
 
 var shell: Control
 var key := ""
@@ -12,7 +13,9 @@ var _lines: Array = []        ## large view: wrapped label lines per entry
 var _content_h := 0.0
 var _scroll := Vector2.ZERO
 var _thumb_drag := false
+var _drag_axis := 1            ## 0 = horizontal bar, 1 = vertical bar
 var _thumb_off := 0.0
+var _bars := {"h": false, "v": false, "view": Vector2.ZERO, "content_w": 0.0, "max": Vector2.ZERO}
 
 
 func _init() -> void:
@@ -55,13 +58,17 @@ func _layout() -> void:
 		_cells = res2.rects
 		_content_h = res2.height
 	else:
-		for i in entries.size():
-			_cells.append(Rect2(0, BeGeometry.DETAILS_HEAD_H + i * BeGeometry.DETAILS_ROW_H, maxf(w, BeGeometry.DETAILS_MIN_W), BeGeometry.DETAILS_ROW_H))
 		_content_h = BeGeometry.DETAILS_HEAD_H + entries.size() * BeGeometry.DETAILS_ROW_H
-	var max_y := maxf(0.0, _content_h - inner().size.y)
-	_scroll.y = clampf(_scroll.y, 0.0, max_y)
-	var max_x := maxf(0.0, (BeGeometry.DETAILS_MIN_W if view == "details" else 0.0) - w)
-	_scroll.x = clampf(_scroll.x, 0.0, max_x)
+		var cw := float(BeGeometry.scroll_bars(BeGeometry.DETAILS_MIN_W, _content_h, inner().size).content_w)
+		for i in entries.size():
+			_cells.append(Rect2(0, BeGeometry.DETAILS_HEAD_H + i * BeGeometry.DETAILS_ROW_H, cw, BeGeometry.DETAILS_ROW_H))
+	_bars = BeGeometry.scroll_bars(_min_w(), _content_h, inner().size)
+	_scroll = _scroll.clamp(Vector2.ZERO, _bars.max)
+
+
+## Minimum content width: List View's columns need DETAILS_MIN_W; the icon grids wrap to any width.
+func _min_w() -> float:
+	return float(BeGeometry.DETAILS_MIN_W) if view == "details" else 0.0
 
 
 func _notification(what: int) -> void:
@@ -85,6 +92,8 @@ func entry_index(id: String) -> int:
 
 
 func _index_at(p: Vector2) -> int:
+	if _bar_rect().has_point(p) or _hbar_rect().has_point(p):
+		return -1
 	if view == "details" and p.y - 1 < BeGeometry.DETAILS_HEAD_H:
 		return -1
 	var q := p - Vector2(1, 1) + _scroll
@@ -99,28 +108,40 @@ func _index_at(p: Vector2) -> int:
 # ----------------------------------------------------------------- input
 
 func _scroll_by(dy: float, dx: float = 0.0) -> void:
-	var max_y := maxf(0.0, _content_h - inner().size.y)
-	var max_x := maxf(0.0, (BeGeometry.DETAILS_MIN_W if view == "details" else 0.0) - inner().size.x)
-	_scroll = Vector2(clampf(_scroll.x + dx, 0.0, max_x), clampf(_scroll.y + dy, 0.0, max_y))
+	_scroll = (_scroll + Vector2(dx, dy)).clamp(Vector2.ZERO, _bars.max)
 	queue_redraw()
 
 
+## Vertical bar: right edge, above the horizontal bar when both show.
 func _bar_rect() -> Rect2:
-	var vh := inner().size.y
-	if _content_h <= vh + 0.5:
+	if not _bars.v:
 		return Rect2()
-	return Rect2(size.x - 1 - 12, 1, 12, vh)
+	var b := BeGeometry.SCROLLBAR
+	return Rect2(size.x - 1 - b, 1, b, (_bars.view as Vector2).y)
+
+
+## Horizontal bar (List View narrower than its 520 px columns): bottom edge, left of the vertical bar.
+func _hbar_rect() -> Rect2:
+	if not _bars.h:
+		return Rect2()
+	var b := BeGeometry.SCROLLBAR
+	return Rect2(1, size.y - 1 - b, (_bars.view as Vector2).x, b)
 
 
 func _thumb_rect() -> Rect2:
 	var bar := _bar_rect()
 	if bar.size == Vector2.ZERO:
 		return Rect2()
-	var vh := bar.size.y
-	var th := maxf(24.0, vh * vh / _content_h)
-	var max_y := _content_h - vh
-	var ty := bar.position.y + (vh - th) * (_scroll.y / max_y if max_y > 0 else 0.0)
-	return Rect2(bar.position.x + 2, ty, 8, th)
+	var t := BeGeometry.scroll_thumb(bar.size.y, (_bars.view as Vector2).y, _content_h, _scroll.y)
+	return Rect2(bar.position.x + 2, bar.position.y + t.x, bar.size.x - 4, t.y)
+
+
+func _hthumb_rect() -> Rect2:
+	var bar := _hbar_rect()
+	if bar.size == Vector2.ZERO:
+		return Rect2()
+	var t := BeGeometry.scroll_thumb(bar.size.x, (_bars.view as Vector2).x, float(_bars.content_w), _scroll.x)
+	return Rect2(bar.position.x + t.x, bar.position.y + 2, t.y, bar.size.y - 4)
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -145,9 +166,22 @@ func _gui_input(event: InputEvent) -> void:
 				var bar := _bar_rect()
 				if bar.size != Vector2.ZERO and bar.has_point(p):
 					_thumb_drag = true
+					_drag_axis = 1
 					_thumb_off = p.y - thumb.position.y if thumb.has_point(p) else thumb.size.y / 2.0
-					_drag_thumb(p.y)
+					_drag_thumb(p)
 					accept_event()
+					return
+				var hthumb := _hthumb_rect()
+				var hbar := _hbar_rect()
+				if hbar.size != Vector2.ZERO and hbar.has_point(p):
+					_thumb_drag = true
+					_drag_axis = 0
+					_thumb_off = p.x - hthumb.position.x if hthumb.has_point(p) else hthumb.size.x / 2.0
+					_drag_thumb(p)
+					accept_event()
+					return
+				if _bars.h and _bars.v and p.x >= size.x - 1 - BeGeometry.SCROLLBAR and p.y >= size.y - 1 - BeGeometry.SCROLLBAR:
+					accept_event()   # the corner square between the two bars
 					return
 				shell.raise_window(key)
 				var i := _index_at(p)
@@ -171,17 +205,21 @@ func _gui_input(event: InputEvent) -> void:
 				shell.open_background_menu(key, get_global_rect().position + p)
 			accept_event()
 	elif event is InputEventMouseMotion and _thumb_drag:
-		_drag_thumb((event as InputEventMouseMotion).position.y)
+		_drag_thumb((event as InputEventMouseMotion).position)
 		accept_event()
 
 
-func _drag_thumb(y: float) -> void:
-	var bar := _bar_rect()
-	if bar.size == Vector2.ZERO:
-		return
-	var th := maxf(24.0, bar.size.y * bar.size.y / _content_h)
-	var f := clampf((y - _thumb_off - bar.position.y) / maxf(1.0, bar.size.y - th), 0.0, 1.0)
-	_scroll.y = f * (_content_h - bar.size.y)
+func _drag_thumb(p: Vector2) -> void:
+	if _drag_axis == 0:
+		var hbar := _hbar_rect()
+		if hbar.size == Vector2.ZERO:
+			return
+		_scroll.x = BeGeometry.scroll_from_thumb(hbar.size.x, (_bars.view as Vector2).x, float(_bars.content_w), p.x - _thumb_off - hbar.position.x)
+	else:
+		var bar := _bar_rect()
+		if bar.size == Vector2.ZERO:
+			return
+		_scroll.y = BeGeometry.scroll_from_thumb(bar.size.y, (_bars.view as Vector2).y, _content_h, p.y - _thumb_off - bar.position.y)
 	queue_redraw()
 
 
@@ -231,7 +269,7 @@ func _draw_entry(i: int, rc: Rect2, on: bool) -> void:
 
 
 func _draw_details(sel: String, origin: Vector2) -> void:
-	var cols := BeGeometry.details_columns(inner().size.x)
+	var cols := BeGeometry.details_columns(float(_bars.content_w))
 	var tw: float = float(cols[4]) + float(cols[5])
 	for i in entries.size():
 		var rc := Rect2(origin.x, origin.y + BeGeometry.DETAILS_HEAD_H + i * BeGeometry.DETAILS_ROW_H, tw, BeGeometry.DETAILS_ROW_H)
@@ -259,9 +297,18 @@ func _draw_details(sel: String, origin: Vector2) -> void:
 
 func _draw_bar() -> void:
 	var bar := _bar_rect()
-	if bar.size == Vector2.ZERO:
-		return
-	BeDraw.fill(self, bar, BeTheme.b("e8e8e8"))
-	BeDraw.vline(self, bar.position.x, bar.position.y, bar.size.y, BeTheme.b("b8b8b8"))
-	var th := _thumb_rect()
-	BeDraw.button_face(self, th, BeTheme.b("fafafa"), BeTheme.b("d4d4d4"), BeTheme.b("6a6a6a"), 3.0)
+	if bar.size != Vector2.ZERO:
+		BeDraw.fill(self, bar, BeTheme.b("e8e8e8"))
+		BeDraw.vline(self, bar.position.x, bar.position.y, bar.size.y, BeTheme.b("b8b8b8"))
+		BeDraw.button_face(self, _thumb_rect(), BeTheme.b("fafafa"), BeTheme.b("d4d4d4"), BeTheme.b("6a6a6a"), 3.0)
+	var hbar := _hbar_rect()
+	if hbar.size != Vector2.ZERO:
+		BeDraw.fill(self, hbar, BeTheme.b("e8e8e8"))
+		BeDraw.hline(self, hbar.position.x, hbar.position.y, hbar.size.x, BeTheme.b("b8b8b8"))
+		BeDraw.button_face(self, _hthumb_rect(), BeTheme.b("fafafa"), BeTheme.b("d4d4d4"), BeTheme.b("6a6a6a"), 3.0)
+		if bar.size != Vector2.ZERO:
+			# corner square where the two bars meet
+			var corner := Rect2(bar.position.x, hbar.position.y, bar.size.x, hbar.size.y)
+			BeDraw.fill(self, corner, BeTheme.b("e8e8e8"))
+			BeDraw.vline(self, corner.position.x, corner.position.y, corner.size.y, BeTheme.b("b8b8b8"))
+			BeDraw.hline(self, corner.position.x, corner.position.y, corner.size.x, BeTheme.b("b8b8b8"))

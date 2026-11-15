@@ -126,7 +126,10 @@ func _draw_body(c: Dictionary, _st: Dictionary) -> void:
 		MacDraw.text_centered_y(self, rr.position.x + c0 + 10, ry, ROW_H - 1, String(r.group.name), fg, false, c1 - 14)
 		MacDraw.text_centered_y(self, rr.position.x + c0 + c1 + 10, ry, ROW_H - 1, String(r.item.path), fg, false, int(rr.size.x) - c0 - c1 - 14)
 	draw_rect(Rect2(rr.position.x, rr.position.y, rr.size.x, HEADER_H), MacTheme.b("dddddd"))
-	draw_rect(Rect2(rr.position.x, rr.position.y, c0, HEADER_H), MacTheme.b("bbbbbb"))
+	# The Name header shading marks a sorted column. Results are ranked by relevance, so shade it only when they really
+	# are in name order (the same rule as the folder list view).
+	if MacFolderView.is_name_sorted(results.map(func(r): return r.item)):
+		draw_rect(Rect2(rr.position.x, rr.position.y, c0, HEADER_H), MacTheme.b("bbbbbb"))
 	Px.hline(self, rr.position.x, rr.position.y + HEADER_H - 1, rr.size.x, MacTheme.b("888888"))
 	MacDraw.text_centered_y(self, rr.position.x + 10, rr.position.y, HEADER_H - 1, "Name", fg)
 	MacDraw.text_centered_y(self, rr.position.x + c0 + 10, rr.position.y, HEADER_H - 1, "Group", fg)

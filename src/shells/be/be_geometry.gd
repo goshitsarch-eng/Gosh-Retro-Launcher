@@ -20,6 +20,10 @@ const MIN_W := 320
 const MIN_H := 220
 const FIND_MIN_W := 460
 const FIND_MIN_H := 280
+## Gap kept between the Deskbar's bottom edge and a Find window placed below it (two tasks: 144 + 16 = 160).
+const DESKBAR_GAP := 16.0
+## Thickness of the slim scrollbars in folder views (track; the thumb is inset 2 px).
+const SCROLLBAR := 12.0
 const DESK_X := 8
 const DESK_Y := 14
 const DESK_BOTTOM := 8
@@ -60,7 +64,10 @@ static func desktop_cells(lines: Array, view_h: float) -> Array:
 # ----------------------------------------------------------- window frames
 
 ## Default window rectangle for key ("computer", "g:<id>", "find") as the n-th opened window.
-static func default_rect(key: String, n: int, view: Vector2) -> Rect2:
+## `n` is the number of windows already open (BeWindowStore.order before the append); the Deskbar lists every one of
+## them plus the new window, so a Find window clears deskbar_parts(max(n + 1, 2)) unless `deskbar_bottom` (>= 0) is
+## given.
+static func default_rect(key: String, n: int, view: Vector2, deskbar_bottom: float = -1.0) -> Rect2:
 	var w_area := maxf(view.x, 640.0) - 336.0
 	var h_area := maxf(view.y, 480.0) - 34.0
 	var w := 0.0
@@ -76,6 +83,24 @@ static func default_rect(key: String, n: int, view: Vector2) -> Rect2:
 		h = maxf(280.0, minf(420.0, h_area - 90.0))
 	var x := 124.0 + maxf(0.0, minf(n * 30.0, w_area - w - 8.0))
 	var y := maxf(30.0, minf(40.0 + n * 30.0, h_area - h - 8.0))
+	if key == "find" and x + w > view.x - DESKBAR_W:
+		# Never plan for fewer than two tasks: a lone Find window still leaves room for the next window's Deskbar row.
+		var tasks := maxi(n + 1, 2)
+		var bottom := deskbar_bottom if deskbar_bottom >= 0.0 else (deskbar_parts(tasks, view.x)["rect"] as Rect2).end.y
+		if y < bottom + DESKBAR_GAP:
+			# The Deskbar fills the top-right corner: start the Find window below it and keep it on screen.
+			var view_h := maxf(view.y, 480.0)
+			# Prefer the gap, but give it up before giving up the minimum height.
+			y = maxf(bottom, minf(bottom + DESKBAR_GAP, view_h - FIND_MIN_H))
+			h = maxf(FIND_MIN_H, minf(h, view_h - 8.0 - y))
+			if y + h > view_h:
+				# No placement satisfies all three at this size (e.g. 640x480 with 4+ tasks: the Deskbar ends at 204,
+				# 204 + 280 > 480, and the window is wider than the 440 px left of the Deskbar). Least bad: stay clear
+				# of the Deskbar and on screen, and give up the minimum height, but never below MIN_H (the folder window
+				# minimum); past that (6+ tasks at 640x480) the window moves up and the Deskbar, drawn on top, covers its
+				# top-right corner.
+				h = maxf(float(MIN_H), view_h - y)
+				y = view_h - h
 	return Rect2(x, y, w, h)
 
 
@@ -174,6 +199,40 @@ static func details_columns(w: float) -> Array:
 	if c0 + c1 > free:
 		c0 = maxf(180.0, free - c1)
 	return [0.0, c0, c0, c1, c0 + c1, total - c0 - c1]
+
+
+## Slim scrollbars of a folder view (the design's `overflow:auto`). `min_w` = the content's minimum width
+## (DETAILS_MIN_W for List View, 0 for the icon grids, which wrap), `content_h` = its height, `inner` = the view's
+## inner size. A bar takes SCROLLBAR px from the other axis, so each bar can force the other.
+## Returns {h: bool, v: bool, view: Vector2 (visible area between the bars), content_w: float (laid-out width:
+## min_w, or the visible width if wider), max: Vector2 (largest scroll offset per axis)}.
+## Without a horizontal bar the vertical one overlays the content (view.x = inner.x), as before.
+static func scroll_bars(min_w: float, content_h: float, inner: Vector2) -> Dictionary:
+	var h := min_w > inner.x + 0.5
+	var v := content_h > inner.y - (SCROLLBAR if h else 0.0) + 0.5
+	if v and not h and min_w > 0.0:
+		h = min_w > inner.x - SCROLLBAR + 0.5
+	if h and not v:
+		v = content_h > inner.y - SCROLLBAR + 0.5
+	var vw := maxf(0.0, inner.x - (SCROLLBAR if v and h else 0.0))
+	var vh := maxf(0.0, inner.y - (SCROLLBAR if h else 0.0))
+	var cw := maxf(min_w, vw) if h else inner.x
+	return {"h": h, "v": v, "view": Vector2(vw, vh), "content_w": cw,
+		"max": Vector2(maxf(0.0, cw - vw) if h else 0.0, maxf(0.0, content_h - vh))}
+
+
+## Thumb of a slim scrollbar: Vector2(offset along the track, length). Length is proportional (track * view / content,
+## at least 24 px); the offset maps scroll 0..content-view onto 0..track-length.
+static func scroll_thumb(track: float, view_len: float, content_len: float, scroll: float) -> Vector2:
+	var len := minf(track, maxf(24.0, track * view_len / maxf(1.0, content_len)))
+	var max_s := content_len - view_len
+	return Vector2((track - len) * (clampf(scroll / max_s, 0.0, 1.0) if max_s > 0.0 else 0.0), len)
+
+
+## Inverse of scroll_thumb for dragging: the scroll offset when the thumb starts `pos` px into the track.
+static func scroll_from_thumb(track: float, view_len: float, content_len: float, pos: float) -> float:
+	var len := scroll_thumb(track, view_len, content_len, 0.0).y
+	return clampf(pos / maxf(1.0, track - len), 0.0, 1.0) * maxf(0.0, content_len - view_len)
 
 
 # ----------------------------------------------------------- Deskbar

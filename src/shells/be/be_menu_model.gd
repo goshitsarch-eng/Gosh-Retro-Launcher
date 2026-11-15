@@ -92,9 +92,9 @@ static func menu_bar(key: String, is_computer: bool, view: String, sel: String) 
 ## "Launch Group N" row per used number are listed, like the Classic Mac OS Special menu.
 static func deskbar_menu(buckets: Variant = null) -> Array:
 	var out := [
-		row("About Program Manager...", "about.open", {}, {"icon": "logo"}), SEP,
-		row("Find...", "find.open", {}, {"icon": "find"}), row("Run...", "run.open", {}, {"icon": "terminal"}),
-		row("Launcher Tools...", "tools.open", {}, {"icon": "tools"}), row("Backgrounds...", "backgrounds.open", {}, {"icon": "tools"})]
+		row("About Program Manager…", "about.open", {}, {"icon": "logo"}), SEP,
+		row("Find…", "find.open", {}, {"icon": "find"}), row("Run…", "run.open", {}, {"icon": "terminal"}),
+		row("Launcher Tools…", "tools.open", {}, {"icon": "tools"}), row("Backgrounds…", "backgrounds.open", {}, {"icon": "tools"})]
 	if buckets is Array:
 		out.append(SEP)
 		out.append(row("Launch All", "launch.all", {}, {"icon": "terminal", "disabled": buckets.is_empty()}))
@@ -103,7 +103,7 @@ static func deskbar_menu(buckets: Variant = null) -> Array:
 			out.append(row("Launch Group %d (%d %s)" % [int(b.groupNumber), c, "item" if c == 1 else "items"],
 				"launch.group", {"n": int(b.groupNumber)}, {"icon": "terminal"}))
 	out.append_array([row("Help", "help.open", {}, {"icon": "question"}), SEP,
-		row("Restart", "session.restart", {}, {"icon": "info"}), row("Shut Down...", "session.shutdown", {}, {"icon": "critical"})])
+		row("Restart", "session.restart", {}, {"icon": "info"}), row("Shut Down…", "session.shutdown", {}, {"icon": "critical"})])
 	return out
 
 

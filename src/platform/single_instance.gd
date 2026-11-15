@@ -116,10 +116,12 @@ func _probe(p: int, tree: SceneTree) -> String:
 		await tree.process_frame
 	peer.put_data(request_line(profile, command).to_utf8_buffer())
 	var buf := PackedByteArray()
+	var dropped := false
 	var reply_deadline := Time.get_ticks_msec() + REPLY_TIMEOUT_MS
 	while Time.get_ticks_msec() < reply_deadline:
 		peer.poll()
 		if peer.get_status() != StreamPeerTCP.STATUS_CONNECTED:
+			dropped = true
 			break
 		var avail := peer.get_available_bytes()
 		if avail > 0:
@@ -130,7 +132,18 @@ func _probe(p: int, tree: SceneTree) -> String:
 				break
 		await tree.process_frame
 	peer.disconnect_from_host()
-	return "ours" if is_valid_reply(buf.get_string_from_utf8(), profile) else "foreign"
+	return classify_probe(is_valid_reply(buf.get_string_from_utf8(), profile), dropped, not buf.is_empty())
+
+
+## Verdict of one probe, as a pure function so every platform can test it (CI runs on Linux only).
+## A connection dropped without a single byte means nothing answered: macOS reports a refused loopback
+## connect as CONNECTED and then NONE, so that is "free". acquire() still has to win the bind to claim it.
+static func classify_probe(valid_reply: bool, dropped: bool, got_bytes: bool) -> String:
+	if valid_reply:
+		return "ours"
+	if dropped and not got_bytes:
+		return "free"
+	return "foreign"
 
 
 func _start_polling() -> void:

@@ -84,7 +84,7 @@ func test_file_menu_offers_add_website_next_to_add_program() -> void:
 
 func test_deskbar_menu_matches_the_design_items() -> void:
 	var d := BeMenuModel.deskbar_menu()
-	expect_eq(_labels(d), ["About Program Manager...", "-", "Find...", "Run...", "Launcher Tools...", "Backgrounds...", "Help", "-", "Restart", "Shut Down..."])
+	expect_eq(_labels(d), ["About Program Manager…", "-", "Find…", "Run…", "Launcher Tools…", "Backgrounds…", "Help", "-", "Restart", "Shut Down…"])
 	expect_eq(d[0].icon, "logo")
 	expect_eq(d[9].icon, "critical")
 	expect_eq(d[4].action, "tools.open")

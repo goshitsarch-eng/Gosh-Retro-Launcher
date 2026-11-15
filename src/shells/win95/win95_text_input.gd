@@ -12,8 +12,11 @@ var text: String:
 	get:
 		return edit.text if edit else ""
 	set(v):
-		if edit:
+		# As an <input>'s value setter: a new value puts the caret after the text. Re-assigning the same
+		# value (for example from a handler while the user types) leaves the caret where it is.
+		if edit and edit.text != v:
 			edit.text = v
+			edit.caret_column = v.length()
 var disabled := false:
 	set(v):
 		disabled = v
@@ -52,7 +55,19 @@ func _init() -> void:
 	_layout()
 
 
+## Outside the tree the LineEdit's theme cache still holds the default theme (16px font + stylebox
+## margins), so its minimum height is 31 and any _layout() run before the field joins a tree (the
+## constructor, or a size set before add_child) clamps it to 31px: the text and caret are then
+## centred ~8px low and clipped by the 21px box. Re-lay it out once it is in the tree and its real
+## (pixel font, empty stylebox) minimum of 13px applies; deferred because the parent enters first.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ENTER_TREE:
+		_layout.call_deferred()
+
+
 func _layout() -> void:
+	if edit == null:
+		return
 	edit.position = Vector2(5, 3)
 	edit.size = Vector2(maxf(1.0, size.x - 10), 15)
 
@@ -71,6 +86,7 @@ func _draw() -> void:
 
 ## The LineEdit carries the caption a screen reader announces (set once the form is assembled).
 func _ready() -> void:
+	_layout()  # children are in the tree by now, so the first frame is already laid out correctly
 	_name_edit.call_deferred()
 
 

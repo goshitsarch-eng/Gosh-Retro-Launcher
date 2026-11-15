@@ -23,6 +23,18 @@ Scenarios live in `scenarios.gd`, fixtures in `fixtures.gd`, and the element ids
 `AUTOMATION_IDS.md`. Extra views without baselines: `switch-to-win95`, `switch-roundtrip` (runtime shell switching),
 `file`, `options`, `window`, `help`, `item-selected`, `group-maximized`, and the WfW dialog views.
 
+Menu sweeps and a leak probe print `SWEEP` or `WIZARD_LOOP` markers. Errors printed after a marker belong to that step:
+`menu-sweep-wfw`, `mac-menu-sweep` and `be-menu-sweep` click each in-scope menu item and press Escape after it.
+`win95-wizard-loop` opens and cancels the Create Shortcut wizard six times and prints the object count each time.
+Skipped items (quit, restart, separate OS windows) are listed in the comments beside each sweep.
+
+`reference` and `win95-remainder` use odd window sizes. On a 2x macOS display the OS rounds them down to whole points, so
+they come out 1 px smaller per axis, and `--baseline` reports a size mismatch. Capture them on a 1x display to compare
+them with their baselines. The capture prints a notice when this happens.
+
+BeOS scroll and placement views: `be-details-scrolled` (horizontal scrollbar dragged right), `be-details-both` (both
+scrollbars), and `be-find-3tasks` and `be-find-4tasks` (Find window with three and four open windows).
+
 ## Known, expected differences
 
 The committed baselines were rendered on a machine with a user-supplied, gitignored pack of licensed Windows icons and

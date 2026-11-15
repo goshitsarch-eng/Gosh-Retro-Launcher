@@ -30,6 +30,11 @@ static func fixture_scale(view: String) -> int:
 	return 1
 
 
+## Window size in pixels, as the Electron harness set it. `reference` (511x335) and `win95-remainder`
+## (1281x961, i.e. 640.5x480.5 logical at scale 2: the non-divisible case) have odd sizes, which a
+## macOS window on a 2x screen cannot take (it sizes in whole points and rounds down to 510x334 /
+## 1280x960, where 1280x960 divides evenly). Capture those two views on a 1x display; capture.gd
+## prints a notice when the window did not get the requested size.
 static func window_size_for(view: String) -> Vector2i:
 	var s := fixture_scale(view)
 	if view == "reference":

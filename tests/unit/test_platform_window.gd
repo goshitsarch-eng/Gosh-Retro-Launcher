@@ -53,6 +53,20 @@ func test_centering_and_outer_to_client_conversion() -> void:
 	expect_eq(WindowLayout.client_rect_for_outer(Rect2i(0, 0, 10, 10), Vector2i.ZERO, Vector2i(20, 20)).size, Vector2i(1, 1))
 
 
+func test_os_representable_size_rounds_odd_pixels_on_point_based_screens() -> void:
+	# Measured on a 2x macOS screen: asked 511x335 -> 510x334, 1281x961 -> 1280x960, 1279x959 -> 1278x958.
+	expect_eq(WindowLayout.os_representable_size(Vector2i(511, 335), 2.0), Vector2i(510, 334), "reference fixture on Retina")
+	expect_eq(WindowLayout.os_representable_size(Vector2i(1281, 961), 2.0), Vector2i(1280, 960), "win95-remainder on Retina")
+	expect_eq(WindowLayout.os_representable_size(Vector2i(1279, 959), 2.0), Vector2i(1278, 958))
+	expect_eq(WindowLayout.os_representable_size(Vector2i(640, 480), 2.0), Vector2i(640, 480), "even sizes are kept")
+	expect_eq(WindowLayout.os_representable_size(Vector2i(1281, 961), 1.0), Vector2i(1281, 961), "1x screens keep every size")
+	expect_eq(WindowLayout.os_representable_size(Vector2i(1281, 961), 3.0), Vector2i(1281, 960))
+	expect_eq(WindowLayout.os_representable_size(Vector2i(1281, 961), 1.25), Vector2i(1281, 961), "fractional scale -> pixels")
+	expect_eq(WindowLayout.os_representable_size(Vector2i(1281, 961), 0.0), Vector2i(1281, 961), "unknown scale -> pixels")
+	expect_eq(WindowLayout.os_representable_size(Vector2i(1281, 961), NAN), Vector2i(1281, 961))
+	expect_eq(WindowLayout.os_representable_size(Vector2i(1, 1), 2.0), Vector2i(2, 2), "never below one point")
+
+
 # --------------------------------------------------------------------------- tray
 
 func _groups() -> Array:

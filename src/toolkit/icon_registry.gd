@@ -54,8 +54,11 @@ static func _load_res(path: String) -> Texture2D:
 	if _svg_cache.has(path):
 		return _svg_cache[path]
 	var tex: Texture2D = null
-	var img := Image.load_from_file(path)
-	if img != null and not img.is_empty():
+	# Decode the raw bytes: Image.load_from_file() logs "this will not work on export" for every
+	# res:// file that has an import entry, which is every icon here.
+	var img := Image.new()
+	var bytes := FileAccess.get_file_as_bytes(path)
+	if not bytes.is_empty() and img.load_svg_from_buffer(bytes) == OK and not img.is_empty():
 		tex = ImageTexture.create_from_image(img)
 	_svg_cache[path] = tex
 	return tex

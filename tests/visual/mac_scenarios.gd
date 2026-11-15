@@ -26,6 +26,38 @@ static func _pick(a: Automation, label: String) -> void:
 
 
 static func run(view: String, a: Automation, _host: Node) -> void:
+	if view == "mac-menu-sweep":
+		# Menu click-through: every static item of the Mac menu bar, each followed by Escape. Skipped on purpose:
+		# "Restart" (restarts the app), "Launcher Tools…" (separate OS window), and the per-group Launch entries.
+		# Setup: open Main and select its first item, so the View and selection-dependent File items are enabled.
+		await _open_main(a)
+		await a.click_id("mac.folder-item:1")
+		await a.wait_ms(60)
+		# Order matters: View needs the folder window, Close Window ends it, Move To Trash removes the selection.
+		var sweep := {
+			"logo": ["About Program Manager…", "Desktop Pictures…", "Find…"],
+			"View": ["as Icons", "as List"],
+			"Edit": ["Undo", "Cut", "Copy", "Paste", "Clear", "Select All"],
+			"File": ["New Folder", "Open", "Get Info", "Duplicate", "Find…", "Move To Trash", "Close Window"],
+			"Special": ["Launch All", "Run…", "Shut Down"],
+			"Help": ["Program Manager Help", "Show Balloons"],
+		}
+		for title in sweep:
+			for label in sweep[title]:
+				await a.click_id("mac.menu:" + title)
+				await a.wait_ms(60)
+				if not a.has("mac.popup-item:" + label):
+					print("SWEEP_SKIP mac menu=%s item=%s" % [title, label])
+					continue
+				print("SWEEP mac menu=%s item=%s" % [title, label])
+				await a.click_id("mac.popup-item:" + label)
+				await a.wait_ms(120)
+				await a.key(KEY_ESCAPE)
+				await a.wait_ms(60)
+				await a.key(KEY_ESCAPE)
+				await a.wait_ms(60)
+		print("SWEEP_DONE mac")
+		return
 	await a.move(Vector2(600, 300))
 	await a.wait_ms(40)
 	var folder_views := ["mac-folder", "mac-folder-list", "mac-folder-selected", "mac-getinfo", "mac-context", "mac-trash",

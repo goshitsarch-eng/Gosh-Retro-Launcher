@@ -5,6 +5,14 @@ func _tok(s: String) -> Array:
 	return Array(Launcher.tokenize_command(s))
 
 
+func test_launch_without_target_explains_itself() -> void:
+	# Regression: an item with an empty target used to fail with "Program not found: " (nothing after the colon).
+	for path in ["", "   "]:
+		var r := Launcher.launch_program({"path": path})
+		expect_eq(r.get("success"), false, "an empty target is refused")
+		expect_eq(r.get("error"), "No program is set for this item.", "message names the problem")
+
+
 func test_tokenize() -> void:
 	expect_eq(_tok("ls -la"), ["ls", "-la"])
 	expect_eq(_tok('echo "hello world"'), ["echo", "hello world"])

@@ -154,8 +154,7 @@ static func open_wizard(shell: Control, ctx: Dictionary) -> void:
 		"help": "The Create Shortcut wizard adds a launcher item without modifying the selected application."})
 	var state := {"step": 0, "group_id": String(ctx.get("groupId", ProgramStore.groups[0].id if ProgramStore.groups.size() > 0 else "")),
 		"icon": "new-shortcut", "working_dir": "", "name": "New Shortcut"}
-	var page := Control.new()
-	page.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var page := _WizardPage.new()
 	m.body.add_child(page)
 	var buttons_holder := Control.new()
 	buttons_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -172,6 +171,9 @@ static func open_wizard(shell: Control, ctx: Dictionary) -> void:
 	var name_edit := Win95TextInput.new()
 	var group_select := Win95Select.new()
 	group_select.shell = shell
+	# Only one page's fields are parented at a time; the page owns all three so the ones that are
+	# detached when the modal closes are freed with it (BUG-004: they leaked on every open).
+	page.fields = [command, name_edit, group_select]
 	var rebuild := func() -> void:
 		for c in page.get_children():
 			page.remove_child(c)
@@ -336,6 +338,23 @@ static func open_about(shell: Control) -> void:
 	m.set_default(ok)
 	ok.pressed.connect(m.close)
 	ok.grab_focus()
+
+
+## The wizard's page container. The step-0 and step-1 fields persist across Back/Next, so they are
+## detached (not freed) when the other step is shown; `fields` lists them, and any that are not
+## children when the page is deleted are freed here instead of being orphaned.
+class _WizardPage extends Control:
+	var fields: Array = []
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_PREDELETE:
+			for f in fields:
+				if is_instance_valid(f) and f.get_parent() == null:
+					f.free()
+			fields.clear()
 
 
 ## The two-pane help viewer (topic list + copy), drawn directly.

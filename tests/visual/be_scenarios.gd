@@ -5,9 +5,29 @@ extends RefCounted
 ##   be, be-folder, be-details, be-mini, be-zoom, be-menu, be-context, be-bg-context, be-desk-context, be-deskbar,
 ##   be-deskbar-sub, be-getinfo, be-rename, be-trash, be-newfolder, be-find, be-find-results, be-about, be-launch,
 ##   be-two-windows, be-hidden, be-quicksearch, be-tools, be-switch, be-move, be-resize, be-close, be-trash-confirm, be-newfolder-ok, be-dark, be-dark-folder, be-scale3
+##   be-details-scrolled, be-details-both, be-find-3tasks, be-find-4tasks
 
 
 static func run(view: String, a: Automation, host: Node) -> void:
+	if view == "be-menu-sweep":
+		# Menu click-through: the Deskbar menu. Skipped on purpose: "Restart" and "Shut Down…" (end the session),
+		# "Launcher Tools…" (separate OS window), and the group entries (submenus).
+		var sweep_items := ["About Program Manager…", "Find…", "Run…", "Backgrounds…", "Help"]
+		for label in sweep_items:
+			await a.click_id("be.deskbar.logo")
+			await a.wait_ms(80)
+			if not a.has("be.popup-item:" + label):
+				print("SWEEP_SKIP be deskbar item=%s" % label)
+				continue
+			print("SWEEP be deskbar item=%s" % label)
+			await a.click_id("be.popup-item:" + label)
+			await a.wait_ms(120)
+			await a.key(KEY_ESCAPE)
+			await a.wait_ms(60)
+			await a.key(KEY_ESCAPE)
+			await a.wait_ms(60)
+		print("SWEEP_DONE be")
+		return
 	await a.move(Vector2(300, 460))
 	await a.wait_ms(60)
 	match view:
@@ -18,6 +38,33 @@ static func run(view: String, a: Automation, host: Node) -> void:
 		"be-details":
 			await _open_group(a, "main")
 			await _choose_view(a, "List View")
+		"be-details-scrolled":
+			# Drag the List View's horizontal scrollbar thumb to the right end so the third column shows.
+			await _open_group(a, "main")
+			await _choose_view(a, "List View")
+			var content := a.find_rect("be.window.active:content")
+			var at := Vector2(content.position.x + 40, content.end.y - 1 - BeGeometry.SCROLLBAR / 2.0).floor()
+			await a.drag(at, at + Vector2(300, 0), 6, true)
+			await a.wait_ms(80)
+		"be-details-both":
+			# Short List View window: both slim bars, the vertical thumb dragged to the bottom.
+			await _open_group(a, "main")
+			await _choose_view(a, "List View")
+			var grip := a.center("be.window.active:grip")
+			await a.drag(grip, grip + Vector2(0, -140), 4, true)
+			await a.wait_ms(80)
+			var c2 := a.find_rect("be.window.active:content")
+			# y + 25: below the Deskbar (its bottom row overlaps this window's top-right corner at 640x480)
+			var vat := Vector2(c2.end.x - 1 - BeGeometry.SCROLLBAR / 2.0, c2.position.y + 25).floor()
+			await a.drag(vat, vat + Vector2(0, 80), 6, true)
+			await a.wait_ms(80)
+		"be-find-3tasks", "be-find-4tasks":
+			# Default Find placement (no drag) with the Program Manager window plus one or two group windows open.
+			await _open_group(a, "main")
+			if view == "be-find-4tasks":
+				await _open_group(a, "accessories")
+			Platform.trigger_quick_search()
+			await a.wait_ms(150)
 		"be-mini":
 			await _open_group(a, "main")
 			await _choose_view(a, "Mini Icon View")
@@ -80,7 +127,7 @@ static func run(view: String, a: Automation, host: Node) -> void:
 				await a.wait_ms(60)
 		"be-about":
 			await a.click_id("be.deskbar.logo")
-			await a.click_id("be.popup-item:About Program Manager...")
+			await a.click_id("be.popup-item:About Program Manager…")
 			await a.wait_ms(150)
 		"be-launch":
 			ProgramStore.add_item("main", {"name": "Harmless", "path": "/usr/bin/true", "icon": "terminal", "workingDir": ""})
