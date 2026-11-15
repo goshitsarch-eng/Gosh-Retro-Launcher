@@ -12,8 +12,9 @@ signal data_reloaded  ## emitted after import/restore replaced everything
 ## "grp-import", "profile-apply" or "save"; `report` is {"normalized": n, "shortcutsCleared": n}.
 ## Hosts can show it to the user. (Load runs before anything connects, so `load_report` keeps it too.)
 signal data_normalized(source: String, report: Dictionary)
-## A write was refused or a safety backup could not be made. `kind` is "groups", "settings" or
-## "backup". The change stays in memory and marked dirty, so the next flush retries it.
+## A write was refused (invalid data), the store file could not be written (read-only or full disk),
+## or a safety backup could not be made. `kind` is "groups", "settings" or "backup". For groups and
+## settings the change stays in memory and marked dirty, so the next flush retries it.
 signal save_failed(kind: String, message: String)
 
 const SAVE_DEBOUNCE := 0.3
@@ -30,6 +31,11 @@ var _groups_timer: Timer
 var _settings_timer: Timer
 var _groups_dirty := false
 var _settings_dirty := false
+## Kinds ("groups", "settings") whose last flush failed.
+var _failing := {}
+
+const WRITE_FAILED_GROUPS := "Your program groups could not be saved because the data folder could not be written (it may be read-only or full)."
+const WRITE_FAILED_SETTINGS := "Your settings could not be saved because the data folder could not be written (it may be read-only or full)."
 
 
 func _init() -> void:
@@ -85,8 +91,10 @@ func load_data() -> void:
 ## Save guard. A write is never skipped silently: data the validator refuses is first repaired with
 ## the same normaliser used on load (the repair is applied in memory too, logged with push_error and
 ## announced through data_normalized), then written. Only if it is still invalid after that is the
-## write skipped; then push_error + save_failed fire and the dirty flag stays set, so the change is
-## kept in memory and retried on the next flush (including the one on exit).
+## write skipped. The same happens when the store file cannot be written (read-only or full disk).
+## Either way push_error + save_failed fire and the dirty flag stays set, so the change is kept in
+## memory and retried on the next flush (including the one on exit). The first successful save after
+## a failure emits save_recovered.
 func _flush_groups() -> void:
 	_groups_dirty = false
 	_groups_timer.stop()
@@ -99,11 +107,13 @@ func _flush_groups() -> void:
 		data_normalized.emit("save", {"normalized": ctx.normalized, "shortcutsCleared": 0})
 		groups_changed.emit()
 		if not _groups_valid(groups):
-			_groups_dirty = true
-			push_error("Program Manager: groups could not be saved because they are invalid.")
-			save_failed.emit("groups", "Your program groups could not be saved because they contain invalid data.")
+			_save_failed("groups", "groups could not be saved because they are invalid.",
+				"Your program groups could not be saved because they contain invalid data.")
 			return
-	persistence.set_groups(groups)
+	if not persistence.set_groups(groups):
+		_save_failed("groups", "groups could not be written to %s." % persistence.store_path(), WRITE_FAILED_GROUPS)
+		return
+	_save_succeeded("groups")
 
 
 func _flush_settings() -> void:
@@ -118,11 +128,28 @@ func _flush_settings() -> void:
 		data_normalized.emit("save", {"normalized": ctx.normalized, "shortcutsCleared": 0})
 		settings_changed.emit()
 		if not Validators.is_valid_settings(settings):
-			_settings_dirty = true
-			push_error("Program Manager: settings could not be saved because they are invalid.")
-			save_failed.emit("settings", "Your settings could not be saved because they contain invalid data.")
+			_save_failed("settings", "settings could not be saved because they are invalid.",
+				"Your settings could not be saved because they contain invalid data.")
 			return
-	persistence.set_settings(settings)
+	if not persistence.set_settings(settings):
+		_save_failed("settings", "settings could not be written to %s." % persistence.store_path(), WRITE_FAILED_SETTINGS)
+		return
+	_save_succeeded("settings")
+
+
+## Keeps `kind` pending (dirty) for the next flush, logs `log_text` and tells the host.
+func _save_failed(kind: String, log_text: String, message: String) -> void:
+	if kind == "groups":
+		_groups_dirty = true
+	else:
+		_settings_dirty = true
+	_failing[kind] = true
+	push_error("Program Manager: " + log_text)
+	save_failed.emit(kind, message)
+
+
+func _save_succeeded(kind: String) -> void:
+	_failing.erase(kind)
 
 
 static func _groups_valid(g: Array) -> bool:
@@ -448,7 +475,9 @@ func apply_settings_transaction(next: Dictionary) -> Dictionary:
 	var previous := settings.duplicate(true)
 	if not Validators.is_valid_settings(next):
 		return {"success": false, "error": "Invalid settings data"}
-	persistence.set_settings(next)
+	if not persistence.set_settings(next):
+		push_error("Program Manager: settings could not be written to %s." % persistence.store_path())
+		return {"success": false, "error": "The settings file could not be written"}
 	settings = next.duplicate(true)
 	settings_changed.emit()
 	return {"success": true, "previous": previous}
@@ -494,8 +523,10 @@ func import_from(path: String) -> Dictionary:
 	var cleared := Migration.clear_unsafe_shortcuts(migrated.groups)
 	for p in migrated.workspaceProfiles:
 		cleared += Migration.clear_unsafe_shortcuts(p.groups)
+	if not persistence.set_all_data(migrated):
+		push_error("Program Manager: imported data could not be written to %s." % persistence.store_path())
+		return {"success": false, "error": "Failed to save the imported data"}
 	_cancel_pending()
-	persistence.set_all_data(migrated)
 	load_data()
 	data_reloaded.emit()
 	var report := {"normalized": int(ctx.normalized), "shortcutsCleared": cleared}
@@ -551,8 +582,10 @@ func restore_backup(id: String) -> Dictionary:
 		push_error("Program Manager: " + msg)
 		save_failed.emit("backup", msg)
 		return {"success": false, "error": msg}
+	if not persistence.set_all_data(d):
+		push_error("Program Manager: the restored data could not be written to %s." % persistence.store_path())
+		return {"success": false, "error": "Failed to save the restored data"}
 	_cancel_pending()
-	persistence.set_all_data(d)
 	load_data()
 	data_reloaded.emit()
 	return {"success": true, "backup": backup}
