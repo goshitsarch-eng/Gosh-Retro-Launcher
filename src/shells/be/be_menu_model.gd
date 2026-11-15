@@ -69,7 +69,8 @@ static func menu_bar(key: String, is_computer: bool, view: String, sel: String) 
 	var a := {"gid": sel} if is_computer else {"gid": gid, "iid": sel}
 	var file := [
 		row("Open", "group.open" if is_computer else "item.open", a, {"bold": true, "disabled": none}), SEP,
-		row("New Folder" if is_computer else "Add Program…", "folder.new" if is_computer else "program.new", {"key": key}), SEP,
+		row("New Folder" if is_computer else "Add Program…", "folder.new" if is_computer else "program.new", {"key": key}),
+		row("Add Website…", "website.new", {"key": key}, {"disabled": is_computer}), SEP,
 		row("Move to Trash", "group.trash" if is_computer else "item.trash", a, {"disabled": none}),
 		row("Edit Name", "group.rename" if is_computer else "item.rename", a, {"disabled": none}),
 		row("Get Info", "group.info" if is_computer else "item.info", a, {"disabled": none}), SEP,
@@ -87,13 +88,23 @@ static func menu_bar(key: String, is_computer: bool, view: String, sel: String) 
 
 
 ## Deskbar (logo) menu: [icon-key, label, action] rows.
-static func deskbar_menu() -> Array:
-	return [
+## `buckets` = LaunchGroups.collect_launch_groups(): when given (even empty) Launch All and one
+## "Launch Group N" row per used number are listed, like the Classic Mac OS Special menu.
+static func deskbar_menu(buckets: Variant = null) -> Array:
+	var out := [
 		row("About Program Manager...", "about.open", {}, {"icon": "logo"}), SEP,
 		row("Find...", "find.open", {}, {"icon": "find"}), row("Run...", "run.open", {}, {"icon": "terminal"}),
-		row("Launcher Tools...", "tools.open", {}, {"icon": "tools"}), row("Backgrounds...", "backgrounds.open", {}, {"icon": "tools"}),
-		row("Help", "help.open", {}, {"icon": "question"}), SEP,
-		row("Restart", "session.restart", {}, {"icon": "info"}), row("Shut Down...", "session.shutdown", {}, {"icon": "critical"})]
+		row("Launcher Tools...", "tools.open", {}, {"icon": "tools"}), row("Backgrounds...", "backgrounds.open", {}, {"icon": "tools"})]
+	if buckets is Array:
+		out.append(SEP)
+		out.append(row("Launch All", "launch.all", {}, {"icon": "terminal", "disabled": buckets.is_empty()}))
+		for b in buckets:
+			var c: int = b.items.size()
+			out.append(row("Launch Group %d (%d %s)" % [int(b.groupNumber), c, "item" if c == 1 else "items"],
+				"launch.group", {"n": int(b.groupNumber)}, {"icon": "terminal"}))
+	out.append_array([row("Help", "help.open", {}, {"icon": "question"}), SEP,
+		row("Restart", "session.restart", {}, {"icon": "info"}), row("Shut Down...", "session.shutdown", {}, {"icon": "critical"})])
+	return out
 
 
 ## Right-click on the Deskbar logo button.
