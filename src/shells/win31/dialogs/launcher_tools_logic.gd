@@ -245,6 +245,30 @@ static func create_backup(store: Node) -> String:
 	return "Restore point created."
 
 
+## "2026-11-14T10:22:33.123Z" -> "2026-11-14 10:22:33 UTC" (the stored time, which is UTC; the
+## backup list shows the same value).
+static func backup_time_text(created_at: String) -> String:
+	var re := RegEx.new()
+	re.compile("^(\\d{4}-\\d{2}-\\d{2})T(\\d{2}:\\d{2}:\\d{2})")
+	var m := re.search(created_at)
+	if m == null:
+		return created_at
+	return "%s %s UTC" % [m.get_string(1), m.get_string(2)]
+
+
+## Restore replaces all data, so it asks first. Returns {required, message}; required is false when
+## the id is not in `backups` (nothing would be restored). "Backed up first" holds because
+## Persistence.set_all_data writes a forced "store-replaced" backup before it replaces the data.
+static func restore_confirmation(backups: Array, id: String) -> Dictionary:
+	if id == "":
+		return {"required": false, "message": ""}
+	for b in backups:
+		if String(b.get("id", "")) == id:
+			return {"required": true, "message": "Restore the backup from %s? Your current data is backed up first." %
+				backup_time_text(String(b.get("createdAt", "")))}
+	return {"required": false, "message": ""}
+
+
 static func restore_backup(store: Node, id: String) -> String:
 	var r: Dictionary = store.restore_backup(id)
 	if r.get("success", false):

@@ -28,7 +28,9 @@ var _ready_done := false
 var _ui_scale := 1.0  # content scale applied to this native window (HiDPI)
 var _pending_profile := ""  # profile id waiting for the Apply confirmation
 var profile_confirm: ConfirmationDialog
-var profile_store: Node  # store the profile Apply acts on; null means ProgramStore (tests pass a scratch store)
+var profile_store: Node  # store profile Apply and backup Restore act on; null means ProgramStore (tests pass a scratch store)
+var _pending_restore := ""  # backup id waiting for the Restore confirmation
+var restore_confirm: ConfirmationDialog
 
 # widgets that tests/automation reach
 var shell_option: OptionButton
@@ -119,6 +121,7 @@ func _ready() -> void:
 		_selected_profile = ProgramStore.workspace_profiles[0].id
 		_rename_profile = ProgramStore.workspace_profiles[0].name
 	_ensure_profile_confirm()
+	_ensure_restore_confirm()
 	ProgramStore.settings_changed.connect(_on_settings)
 	ProgramStore.groups_changed.connect(_rebuild)
 	ProgramStore.profiles_changed.connect(_rebuild)
@@ -673,7 +676,7 @@ func _profile_store() -> Node:
 
 
 func _refresh_backups() -> void:
-	_backups = ProgramStore.list_backups()
+	_backups = _profile_store().list_backups()
 
 
 func _build_backups() -> void:
@@ -696,13 +699,47 @@ func _build_backups() -> void:
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		r.add_child(l)
 		var id: String = b.id
-		_button(r, "Restore", func():
-			set_status(LauncherToolsLogic.restore_backup(ProgramStore, id))
-			_refresh_backups()
-			_rebuild(), false, "restore-backup")
+		_button(r, "Restore", func(): _request_restore(id), false, "restore-backup")
 		list.add_child(r)
 	if _backups.is_empty():
 		var l := Label.new()
 		l.text = "No restore points yet."
 		l.add_theme_color_override("font_color", Color("#555555"))
 		list.add_child(l)
+
+
+## Restore replaces all data, so it asks first (like profile Apply); only OK restores.
+func _request_restore(id: String) -> void:
+	var c := LauncherToolsLogic.restore_confirmation(_backups, id)
+	if not c.required:
+		return
+	_ensure_restore_confirm()
+	_pending_restore = id
+	restore_confirm.dialog_text = c.message
+	if restore_confirm.is_inside_tree():
+		restore_confirm.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+		restore_confirm.content_scale_factor = _ui_scale
+		restore_confirm.reset_size()
+		restore_confirm.popup_centered()
+
+
+func _ensure_restore_confirm() -> void:
+	if restore_confirm != null:
+		return
+	restore_confirm = ConfirmationDialog.new()
+	restore_confirm.title = "Restore Backup"
+	restore_confirm.ok_button_text = "OK"
+	restore_confirm.cancel_button_text = "Cancel"
+	restore_confirm.confirmed.connect(_confirm_restore)
+	restore_confirm.canceled.connect(func(): _pending_restore = "")
+	add_child(restore_confirm)
+
+
+func _confirm_restore() -> void:
+	var id := _pending_restore
+	_pending_restore = ""
+	if id == "":
+		return
+	set_status(LauncherToolsLogic.restore_backup(_profile_store(), id))
+	_refresh_backups()
+	_rebuild()
