@@ -16,6 +16,8 @@ signal data_normalized(source: String, report: Dictionary)
 ## or a safety backup could not be made. `kind` is "groups", "settings" or "backup". For groups and
 ## settings the change stays in memory and marked dirty, so the next flush retries it.
 signal save_failed(kind: String, message: String)
+## The first successful save of `kind` ("groups" or "settings") after save_failed reported it.
+signal save_recovered(kind: String)
 
 const SAVE_DEBOUNCE := 0.3
 
@@ -149,7 +151,8 @@ func _save_failed(kind: String, log_text: String, message: String) -> void:
 
 
 func _save_succeeded(kind: String) -> void:
-	_failing.erase(kind)
+	if _failing.erase(kind):
+		save_recovered.emit(kind)
 
 
 static func _groups_valid(g: Array) -> bool:

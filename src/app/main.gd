@@ -14,7 +14,7 @@ var desktop: DesktopBridge
 
 var _applied_shell := ""
 var _frame_shell := ""
-var _shown_save_failures := {}  ## groups/settings failures already shown (they re-fire on every retry)
+var _shown_save_failures := {}  ## groups/settings failures already shown (they re-fire on every retry); cleared by save_recovered
 
 
 func _ready() -> void:
@@ -47,6 +47,7 @@ func _ready() -> void:
 		shell.on_host_state_changed(Platform.get_window_state())
 	ProgramStore.settings_changed.connect(_on_settings_changed)
 	ProgramStore.save_failed.connect(_on_save_failed)
+	ProgramStore.save_recovered.connect(_on_save_recovered)
 	ProgramStore.data_normalized.connect(_on_data_normalized)
 	if is_capture and capture_notices_enabled(OS.get_environment("PM_CAPTURE_NOTICE")):
 		_post_capture_notice.call_deferred()
@@ -289,6 +290,13 @@ func _on_save_failed(kind: String, message: String) -> void:
 			return
 		_shown_save_failures[key] = true
 	show_notice(n)
+
+
+## A save of `kind` worked again, so the next failure of that kind is shown again.
+func _on_save_recovered(kind: String) -> void:
+	for key in _shown_save_failures.keys():
+		if String(key).begins_with(kind + "|"):
+			_shown_save_failures.erase(key)
 
 
 func _on_data_normalized(source: String, report: Dictionary) -> void:

@@ -117,3 +117,43 @@ func test_read_only_folder_keeps_the_change_pending_and_the_next_flush_saves_it(
 	expect_eq(b.settings.launchDelay, 1234)
 	b.free()
 	_rm(dir)
+
+
+func test_save_recovered_fires_once_after_a_failure_and_not_for_ordinary_saves() -> void:
+	var dir := _tmp()
+	var s := _open(dir)
+	var recovered := []
+	s.save_recovered.connect(func(kind: String) -> void: recovered.append(kind))
+	s.add_group("A")
+	s.update_settings({"launchDelay": 700})
+	s.flush()
+	expect_eq(recovered, [], "an ordinary save is not a recovery")
+	s.add_group("B")
+	if not _make_read_only(dir):
+		print("  (skipped: a read-only folder is still writable here)")
+		s.free()
+		_rm(dir)
+		return
+	s.flush()
+	s.flush()  # the retry fails again
+	_chmod(dir, "755")
+	expect_eq(recovered, [], "no recovery while failing")
+	s.flush()
+	expect_eq(recovered, ["groups"], "the first successful save after the failure")
+	s.add_group("C")
+	s.flush()
+	expect_eq(recovered, ["groups"], "only once")
+	s.free()
+	_rm(dir)
+
+
+func test_host_shows_a_failure_again_after_recovery() -> void:
+	var host: Control = preload("res://src/app/main.gd").new()
+	host._on_save_failed("groups", "m")
+	host._on_save_failed("settings", "s")
+	expect_eq(host._shown_save_failures.size(), 2)
+	host._on_save_recovered("groups")
+	expect_eq(host._shown_save_failures.keys(), ["settings|s"], "only the recovered kind is forgotten")
+	host._on_save_failed("groups", "m")
+	expect_eq(host._shown_save_failures.size(), 2, "the new groups failure is shown and remembered again")
+	host.free()
