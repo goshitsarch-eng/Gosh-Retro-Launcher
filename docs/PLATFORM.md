@@ -60,3 +60,13 @@ Windows icon/version resources need `rcedit` (the workflow downloads it and writ
 Workflows (`.github/workflows/`): `test.yml`, `build-linux.yml`, `build-windows.yml`, `build-macos.yml`;
 tagged `v*` builds attach artifacts to the release and check that the tag equals `application/config/version`.
 The workflows have not been executed (no CI access from the development sandbox).
+
+## Starting programs on Windows
+
+- A plain `.exe` or `.com` with no arguments, no environment, no working folder and Run set to Normal goes through `ShellExecute` (`OS.shell_open`), as before (`windows_exe_needs_spawn`).
+- Anything else that is spawned (a `.exe`/`.com` that needs more, a `.bat`/`.cmd` run as `%ComSpec% /d /s /c`, a `.lnk` target) goes through `plan_spawn` in `src/core/launcher.gd`. With Run set to Normal, no working folder and no environment, that is `OS.create_process` directly. Otherwise a `powershell.exe` wrapper runs a `System.Diagnostics.ProcessStartInfo` (not `Start-Process`, whose wildcard matching would break paths with `[` or `]`). All user data reaches PowerShell as JSON in an environment variable, never as command text.
+- Before PowerShell starts, `powershell_route` checks the plan. An absolute program path that does not exist fails with *Program not found*. A missing working folder fails with *Working directory not found*, unless the plan may fall back (below), in which case the program is started with `ShellExecute` without the folder and a warning is logged.
+- The wrapper runs synchronously and reports through its exit code (`PS_SCRIPT`, read by `interpret_powershell_result`): 0 means `Process.Start` returned and the program started; 2 means `Process.Start` threw (file missing, UAC prompt cancelled), and its message is reported as the launch error with no fallback; 3 means the script failed before `Process.Start` (for example Constrained Language Mode or a policy blocking `New-Object`). Exit 3, exit 2 with no message, and any other code, including -1 when `powershell.exe` could not run, count as "unavailable".
+- When the wrapper is unavailable and `can_fall_back_to_shell_open` allows it, the program is started with `ShellExecute` and a warning is logged. This is allowed only for a `.exe` or `.com` with no arguments; `ShellExecute` then ignores the working folder, environment and window style. Anything else fails with "the PowerShell launcher is unavailable or blocked". A `.bat`/`.cmd` never falls back, because its plan runs `cmd.exe` with arguments.
+- A program that starts and then fails is not reported; only a failure of `Process.Start` itself is.
+- This path was unit-tested with Windows plans on macOS; it has not been run on Windows.

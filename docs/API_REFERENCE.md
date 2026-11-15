@@ -17,8 +17,8 @@ Settings { autoArrange, minimizeOnUse, saveSettingsOnExit, launchDelay, trayOnCl
 ## Autoloads
 
 ### `ProgramStore`
-State: `groups`, `settings`, `workspace_profiles`. Signals: `groups_changed`, `settings_changed`, `profiles_changed`,
-`data_loaded`, `data_reloaded`.
+State: `groups`, `settings`, `workspace_profiles`, `load_report`. Signals: `groups_changed`, `settings_changed`, `profiles_changed`,
+`data_loaded`, `data_reloaded`, `data_normalized`, `save_failed`, `save_recovered` (see Store results below).
 Groups/items: `add_group`, `import_group`, `replace_groups`, `add_starter_workspace`, `update_group`, `delete_group`,
 `update_group_window_state(id, updates, shell)`, `update_group_icon_position`, `add_item`, `update_item`,
 `update_item_position`, `update_win95_item_position`, `delete_item`, `move_item`, `copy_item`, `find_group`, `find_item`.
@@ -47,3 +47,16 @@ Launching (`launch`, `launch_batch`, `open_external`), native dialogs (`select_e
 | `-- --capture=<view> --out=<png> [--baseline=<png>]` | Render a visual scenario and optionally diff it |
 | `-- --no-single-instance` | Skip the single-instance lock |
 | `PM_USER_DATA=<dir>` (env) | Use another data directory (tests, portable use) |
+
+## Store results and notices (added with the 2026-11-14 fixes)
+
+- `import_from(path)` returns `{"success": true}`. It adds counts (`normalized`, `shortcutsCleared`) only when something was repaired or cleared. A failed import, including one whose safety `store-replaced` backup cannot be written, returns `success: false` with an error and changes nothing.
+- `import_group(group)` returns `{"success", "normalized", "shortcutsCleared"}`, or `success: false` when the group has no usable id or name. The imported group may be given a new id if its id is already in use.
+- `apply_workspace_profile(id)` returns `{"success", "backup"?, "normalized"?, "error"?}`. It writes a forced `store-replaced` backup first and changes nothing if that backup cannot be written.
+- `restore_backup(id)` returns `{"success", "backup"?, "error"?}` with the same safety rule: one forced `store-replaced` backup of the current data is written first (`set_all_data(d, false)` then skips its own), and the restore is refused if that backup fails.
+- Signal `data_normalized(source, report)`: values were repaired. `source` is `load`, `import`, `grp-import`, `profile-apply` or `save`; `report` holds `normalized` and `shortcutsCleared` counts.
+- Signal `save_failed(kind, message)`: data was invalid even after repair, the store file could not be written, or a safety backup could not be made. `kind` is `groups`, `settings`, `profiles` or `backup`. For `groups`, `settings` and `profiles` the change stays in memory, marked dirty, and is retried by the next flush of that kind and by `flush()` (called on exit and by `create_backup` and `export_to`). A pending `profiles` change is also retried by a flush of groups or settings. For `backup` the restore, profile apply or JSON import is refused and nothing is retried.
+- Signal `save_recovered(kind)`: the first successful save of `kind` after `save_failed` reported it.
+- `apply_settings_transaction(next)` writes synchronously and returns `{"success", "previous"?, "error"?}`. A refused write changes nothing and is not kept pending.
+- `Persistence.set_groups`, `set_settings`, `set_workspace_profiles` and `set_all_data` return `bool`: whether the store file was written. On failure the in-memory data is put back as it was.
+- The host (`src/app/main.gd`) shows both signals to the user. In capture runs they are shown only with `PM_CAPTURE_NOTICE=1`.

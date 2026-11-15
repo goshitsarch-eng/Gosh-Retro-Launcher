@@ -24,7 +24,7 @@ split across Electron's main process, preload bridge and React renderer now live
 | `migration.gd` | Normalizes any persisted payload to schema v5 (legacy geometry, scales, positions) |
 | `validators.gd` | Strict guards for items, groups, settings, profiles and launch payloads |
 | `persistence.gd` | Reads/writes `program-manager-data.json` (same JSON layout as the 1.x Electron build; not re-verified here). Writes a temporary file, then renames it; the Windows fallback is not atomic (CORE-08). Versioned backups and corruption recovery |
-| `program_store.gd` | Autoload `ProgramStore`: groups, settings, profiles; 300 ms debounced saves (flushed on exit); import/export; backups |
+| `program_store.gd` | Autoload `ProgramStore`: groups, settings, profiles; 300 ms debounced saves (flushed on exit); a failed save emits `save_failed` and stays pending for the next flush; import/export; backups |
 | `ui_state.gd`, `mdi_state.gd` | Autoloads for dialogs/menus/selection/quick search/launch feedback and Win31 window stacking |
 | `launcher.gd`, `lnk_file.gd` | Tokenizer, `.desktop` / `.lnk` parsing, environment, launch method by file type and OS. Run modes other than Normal apply only to Windows `.exe` and `.com` files (CORE-09) |
 | `launch_groups.gd`, `program_search.gd`, `grp.gd` | Batch launching, Quick Search/Find ranking, Windows 3.x `.GRP` codec |
@@ -57,7 +57,7 @@ Shells use `Platform`, `Sounds` and `IconRegistry` for most platform work, but s
 
 ## Startup
 1. `main.gd` takes the single-instance lock unless the run is a capture or the check is disabled. A running copy is shown instead.
-2. `ProgramStore.init_store()` loads and migrates the data file (recovering from a corrupt file via the newest backup).
+2. `ProgramStore.init_store()` loads and migrates the data file (recovering from a corrupt file via the newest backup), and repairs values of the wrong type or range, counting each one in `load_report`. Once the shell is mounted, `main.gd` reports the count as a notice. In a capture run the temporary capture profile is chosen before this step (CORE-14).
 3. `main.gd` configures the window for the stored shell (borderless for WfW, OS frame for the other three), resolves the
    integer scale, mounts the shell and starts the tray.
 4. The shell builds its UI from `ProgramStore.groups`/`settings` and listens for `groups_changed`/`settings_changed`.

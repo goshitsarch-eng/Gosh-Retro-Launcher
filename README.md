@@ -55,7 +55,7 @@ godot --headless --path . --export-release "Windows x86_64" build/program-manage
 godot --headless --path . --export-release "macOS" build/program-manager.zip
 ```
 
-The macOS export needs ETC2 ASTC texture import enabled in the project settings on Godot 4.7; without it the export stops with an error (see the handbook's troubleshooting chapter).
+The project enables ETC2 ASTC texture import in its settings, which the universal macOS export requires. Without that setting, Godot stops the macOS export with an error (see the handbook's troubleshooting chapter).
 
 `tools/package_linux.sh` wraps the Linux export into `.tar.gz` and `.deb` packages. See [Platform integration](docs/PLATFORM.md) for CI, signing, and the pinned Godot version.
 
@@ -69,6 +69,7 @@ godot --headless --path . --script tests/run_tests.gd
 tools/capture_screenshots.sh
 
 # render a scenario with the real app and diff it against a committed baseline
+# (captures pick a temporary profile themselves; PM_USER_DATA still makes the intent explicit)
 PM_USER_DATA="$(mktemp -d)" godot --path . -- --capture=win95-start --out=artifacts/win95-start.png
 python3 tests/visual/compare.py artifacts/win95-start.png tests/visual/baselines/win95-start.png  # needs numpy and Pillow
 ```
@@ -83,7 +84,7 @@ python3 tests/visual/compare.py artifacts/win95-start.png tests/visual/baselines
 | `src/shells/win95` | Windows 95 shell: desktop, taskbar, Start, windows, folder views, Find, dialogs |
 | `src/shells/mac` | Classic Mac OS shell: menu bar, Launcher HD and folder windows, Get Info, Trash, Find (see `docs/MAC_SHELL.md`) |
 | `src/shells/be` | BeOS shell: tabbed windows, Deskbar, Get Info, Find (see `docs/BE_SHELL.md`) |
-| `src/platform`, `src/app` | Tray, single instance, native dialogs, icon extraction, sounds, window management (autoload `Platform`) |
+| `src/platform`, `src/app` | Tray, single instance, native dialogs, icon extraction, sounds, window management (autoloads `Platform`, `Sounds`) |
 | `tests` | Unit tests and the visual regression harness |
 
 ## Documentation

@@ -7,9 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- macOS export: ETC2 ASTC import is enabled, so the universal macOS export succeeds (RT-01).
+- Stored values that are out of range or of the wrong type are repaired on load and on import. Every repaired value is counted in the report, including a missing or wrong-type list or settings object (CORE-01).
+- A stored or imported `launchGroup` above 8 is kept and launched in order. Only a negative number, a fraction or a string becomes 0, and that counts as a repair.
+- Saves no longer skip silently. A failed groups, settings or workspace-profile write shows a notice, logs an error and stays pending. Groups and settings are retried by the next save of the same kind, profiles by the next save of any kind, and all of them on exit (CORE-01).
+- Restoring a backup writes one safety backup, not two.
+- A JSON import is refused, and nothing is replaced, when its safety backup cannot be written.
+- Imported shortcut keys without Ctrl, Alt, Shift, Meta or Win are cleared on import. Navigation keys never act as item shortcuts (CORE-02).
+- A Windows program with a working folder starts in that folder. A missing program or folder is reported before anything starts, except in the fallback below (CORE-03).
+- Windows: when the working folder is missing or the PowerShell launcher cannot run or is blocked, a `.exe` or `.com` with no arguments is started with ShellExecute, without its working folder. A failure of `Process.Start` itself is reported.
+- Capture runs no longer read the real data file when `PM_USER_DATA` is not set (CORE-14).
+- Options > Settings... opens the WfW settings dialog. Its changes are saved through the validated transaction, and a refused change shows "The settings could not be applied... Nothing was changed." (W31-001).
+- Applying a workspace profile or restoring a backup asks first, and backs up the current data first. Either is refused if the backup cannot be written (W31-002).
+- Import results, repaired values and save problems are reported to the user.
+
 ### Added
 - Screenshots of the four desktops in `docs/screenshots/`, shown in the README.
 - `tools/capture_screenshots.sh`, which regenerates the screenshots from the running app with a temporary data folder.
+- `PM_CAPTURE_NOTICE=1` (opt-in, capture runs only) shows store notices. Every capture run with it set then posts one sample save-failure notice, so the shell's message box can be checked. The `wfw-settings` view captures the settings dialog.
 - An offline handbook at `docs/handbook/index.html`: user manual, architecture, development, build and release, troubleshooting, audit findings and coverage.
 
 ### Changed
@@ -18,9 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation corrected against the source: menus, settings, data locations, the Windows 95 desktop, the test suite, and the baseline and scenario counts.
 
 ### Known issues
-- The macOS export fails with the default project settings, because ETC2 ASTC import is off. The handbook gives the verified fix.
 - The Windows executable icon has one 256 px image, so the export warns about the other sizes.
-- The capture harness loads the real data file unless `PM_USER_DATA` is set (CORE-14).
+- The Windows launch changes (CORE-03 and the ShellExecute fallback) have not been run on Windows.
+- The item editors offer launch groups 0-8 only. For a stored 9, the WfW and BeOS editors and Launcher Tools save 8 on OK, and the Classic Mac OS Get Info dialog saves None.
+- The item editor accepts a shortcut key without a modifier, such as F5, and that key then starts the item on the WfW desktop. Only import clears bare keys.
+- Open audit findings are listed in the handbook's Audit findings chapter.
 
 ### Fixed
 

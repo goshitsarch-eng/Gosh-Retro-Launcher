@@ -10,7 +10,7 @@ Godot build is measured against:
 
 ## Running
 
-Set `PM_USER_DATA` to a temporary folder before you run anything here. Without it, the capture harness first loads your real data file (handbook, CORE-14). `compare.py` needs numpy and Pillow. The 2026-11-14 comparison results are in the handbook's coverage chapter: no baseline passed.
+Captures choose a temporary profile when `PM_USER_DATA` is not set (CORE-14 is fixed; checked with HOME set to a temporary folder). Still set it in your own scripts. `compare.py` needs numpy and Pillow. The view `wfw-settings` captures the settings dialog from Options. The `*-notice` names (`win95-notice`, `wfw-notice`, `mac-notice`, `be-notice`) have no scenario of their own, so they capture the shell's default state. With `PM_CAPTURE_NOTICE=1`, every capture run posts one sample save-failure notice (`_post_capture_notice` in `src/app/main.gd`), so the shell's message box can be checked. The 2026-11-14 comparison results are in the handbook's coverage chapter: no baseline passed.
 
 ```bash
 # one scenario: renders the real app with a deterministic fixture profile and drives it with injected input
