@@ -157,6 +157,8 @@ static func normalize_group(value: Variant, ctx: Dictionary = {}) -> Variant:
 				items.append(it)
 			else:
 				_bump(ctx)
+	else:
+		_bump(ctx)  # items is required: missing or not a list becomes []
 	var icon_pos: Variant = normalize_position(g.get("win31IconPosition"))
 	if g.has("win31IconPosition") and icon_pos == null:
 		_bump(ctx)
@@ -185,6 +187,8 @@ static func normalize_groups(value: Variant, ctx: Dictionary = {}) -> Array:
 				groups.append(ng)
 			else:
 				_bump(ctx)
+	elif value != null:
+		_bump(ctx)  # not a list: no groups (an absent list is simply empty)
 	return groups
 
 
@@ -214,6 +218,8 @@ static func _normalize_profile(value: Variant, ctx: Dictionary = {}) -> Variant:
 ## unchanged, so valid data keeps the same JSON layout.
 static func normalize_settings(value: Variant, ctx: Dictionary = {}) -> Dictionary:
 	var raw: Dictionary = value if Jsonx.is_obj(value) else {}
+	if value != null and not Jsonx.is_obj(value):
+		_bump(ctx)  # settings that are not an object: all defaults
 	var defaults := Types.default_settings()
 	var settings: Dictionary = defaults.duplicate(true)
 	for k in raw:
@@ -266,6 +272,8 @@ static func migrate_store_data(value: Variant, ctx: Dictionary = {}) -> Dictiona
 				profiles.append(np)
 			else:
 				_bump(ctx)
+	elif data.get("workspaceProfiles") != null:
+		_bump(ctx)
 	return {
 		"schemaVersion": Types.CURRENT_SCHEMA_VERSION,
 		"groups": groups,

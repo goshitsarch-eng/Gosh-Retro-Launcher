@@ -264,3 +264,19 @@ func test_item_value_repairs_are_counted() -> void:
 	var clean := {"normalized": 0}
 	Migration._normalize_item({"id": "i", "name": "n", "path": "/p", "icon": "dos"}, clean)
 	expect_eq(clean.normalized, 0, "a missing optional workingDir is filled in, not counted")
+
+
+func test_wrong_container_types_are_counted_but_absent_keys_are_not() -> void:
+	var ctx := {"normalized": 0}
+	var g: Variant = Migration.normalize_group({"id": "g", "name": "n", "icon": "group",
+		"windowState": Types.default_window_state(), "items": "x"}, ctx)
+	expect_eq(ctx.normalized, 1, "items that are not a list are counted")
+	expect_eq(g.items, [])
+	var top := {"normalized": 0}
+	var m := Migration.migrate_store_data({"groups": {"g": 1}, "settings": "x", "workspaceProfiles": 5}, top)
+	expect_eq(top.normalized, 3, "groups, settings and workspaceProfiles of the wrong type")
+	expect_eq(m.groups, [])
+	expect(Validators.is_valid_settings(m.settings))
+	var fresh := {"normalized": 0}
+	Migration.migrate_store_data({}, fresh)
+	expect_eq(fresh.normalized, 0, "a new, empty store is not a repair")
