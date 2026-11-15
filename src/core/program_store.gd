@@ -573,8 +573,8 @@ func create_backup(reason: String = "manual") -> Dictionary:
 ## Replaces all data with the backup. Like apply_workspace_profile, a forced "store-replaced" backup
 ## of the current data is written first (create_backup flushes pending edits, so it holds the latest
 ## data); if it cannot be written, nothing is restored. The backup to restore is read before that, so
-## pruning cannot remove it. (Persistence.set_all_data then writes its own store-replaced backup of
-## the same data.) Returns {"success", "backup"?, "error"?}.
+## pruning cannot remove it. Persistence.set_all_data is told not to write a second backup of the same
+## data, so each restore uses up exactly one restore point. Returns {"success", "backup"?, "error"?}.
 func restore_backup(id: String) -> Dictionary:
 	var d := persistence.read_backup(id)
 	if d.is_empty():
@@ -585,7 +585,7 @@ func restore_backup(id: String) -> Dictionary:
 		push_error("Program Manager: " + msg)
 		save_failed.emit("backup", msg)
 		return {"success": false, "error": msg}
-	if not persistence.set_all_data(d):
+	if not persistence.set_all_data(d, false):
 		push_error("Program Manager: the restored data could not be written to %s." % persistence.store_path())
 		return {"success": false, "error": "Failed to save the restored data"}
 	_cancel_pending()
