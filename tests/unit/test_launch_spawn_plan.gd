@@ -54,7 +54,7 @@ func test_windows_plan_with_working_dir_carries_it_for_every_run_mode() -> void:
 	for mode in ["normal", "minimized", "maximized"]:
 		for args in [[], ["--flag"]]:
 			var p := Launcher.plan_spawn("Windows", "C:\\Tools\\app.exe", _args(args), "C:\\Data", {}, mode)
-			expect_eq(p.get("method"), "powershell", "%s %s: only Start-Process can set a cwd" % [mode, args])
+			expect_eq(p.get("method"), "powershell", "%s %s: only the PowerShell wrapper can set a cwd" % [mode, args])
 			expect_eq(p.get("cwd"), "C:\\Data", "%s %s: cwd kept" % [mode, args])
 			expect_eq(Array(p.get("args")), args, "%s: args kept" % mode)
 			expect_eq(p.get("file"), "C:\\Tools\\app.exe")
@@ -117,11 +117,11 @@ func test_argument_line_quoting_round_trips() -> void:
 		var line := Launcher.windows_command_line(_args(args))
 		expect_eq(_parse_windows_command_line(line), args, "round-trip of %s via %s" % [args, line])
 		var payload: Variant = JSON.parse_string(String(Launcher.build_powershell_launch("a.exe", _args(args), "", "C:\\D", {}).env.GOSH_LAUNCH))
-		expect_eq(payload.get("argline"), line, "Start-Process receives the quoted line")
+		expect_eq(payload.get("argline"), line, "ProcessStartInfo.Arguments receives the quoted line")
 
 
 func test_ampersand_and_percent_are_not_shell_quoted() -> void:
-	# Start-Process hands the line to CreateProcess/ShellExecute, not cmd.exe, so & and % are
+	# ProcessStartInfo hands the line to ShellExecute, not cmd.exe, so & and % are
 	# ordinary characters; quoting them would put literal quotes into the child's argv.
 	expect_eq(Launcher.quote_windows_arg("A&B"), "A&B")
 	expect_eq(Launcher.quote_windows_arg("%PATH%"), "%PATH%")

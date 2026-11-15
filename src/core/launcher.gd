@@ -205,7 +205,7 @@ static func spawn_detached(command: String, args: PackedStringArray, cwd: String
 
 ## Pure spawn decision (unit-tested with any OS name). Returns {"method": ...} plus its parameters:
 ##   "create_process": {command, args}  Windows, Run Normal, no working directory, no environment.
-##   "powershell": {file, args, style, cwd, env}  Windows otherwise. Start-Process is the only way to
+##   "powershell": {file, args, style, cwd, env}  Windows otherwise. A PowerShell ProcessStartInfo launch is the only way to
 ##       give the child a working directory (create_process has no cwd parameter); all user data travels
 ##       as JSON in an environment variable, never as command text (see build_powershell_launch).
 ##   "posix": {command, args, cwd, env}  every other OS (the /bin/sh cd wrapper in _spawn_posix).
@@ -233,10 +233,25 @@ static func run_spawn_plan(plan: Dictionary) -> Dictionary:
 			var pid := OS.create_process(plan.command, plan.args)
 			return _ok() if pid > 0 else _fail("Failed to spawn %s" % plan.command)
 		"powershell":
+			var problem := validate_spawn_plan(plan)
+			if problem != "":
+				return _fail(problem)
 			return _spawn_powershell(plan.file, plan.args, plan.style, plan.cwd, plan.env)
 		"posix":
 			return _spawn_posix(plan.command, plan.args, plan.cwd, plan.env)
 	return _fail("Unknown spawn method")
+
+
+## Host-side checks for a PowerShell plan, which cannot report a failed start back to us: "" when
+## fine, else an error message. A bare command name (resolved by the OS later) is not checked.
+static func validate_spawn_plan(plan: Dictionary) -> String:
+	var cwd := String(plan.get("cwd", ""))
+	if cwd != "" and not DirAccess.dir_exists_absolute(cwd):
+		return "Working directory not found: %s" % cwd
+	var file := String(plan.get("file", plan.get("command", "")))
+	if file.is_absolute_path() and not FileAccess.file_exists(file):
+		return "Program not found: %s" % file
+	return ""
 
 
 static func _spawn_posix(command: String, args: PackedStringArray, cwd: String, env_additions: Dictionary) -> Dictionary:
@@ -330,15 +345,17 @@ static func windows_command_line(args: PackedStringArray) -> String:
 	return " ".join(parts)
 
 
-## Start-Process wrapper. Everything (file, args, window style, cwd, env) travels as JSON in the
-## GOSH_LAUNCH environment variable and the script is passed with -EncodedCommand: `-Command
-## <script> <args...>` does NOT populate $args (PowerShell pastes the arguments into the command
-## text). Start-Process joins ArgumentList verbatim, so the arguments arrive as one command line
-## already quoted by quote_windows_arg().
+## ProcessStartInfo wrapper (not Start-Process: its -FilePath/-WorkingDirectory apply wildcard
+## matching, so a path containing [ or ] would fail). Everything (file, args, window style, cwd, env)
+## travels as JSON in the GOSH_LAUNCH environment variable and the script is passed with
+## -EncodedCommand: `-Command <script> <args...>` does NOT populate $args (PowerShell pastes the
+## arguments into the command text). ProcessStartInfo.Arguments is used verbatim, so the arguments
+## arrive as one command line already quoted by quote_windows_arg().
 const PS_SCRIPT := "$ErrorActionPreference='Stop';$j=$env:GOSH_LAUNCH|ConvertFrom-Json;Remove-Item Env:GOSH_LAUNCH;" \
 	+ "if($j.env){foreach($e in $j.env.PSObject.Properties){Set-Item -Path ('env:'+$e.Name) -Value ([string]$e.Value)}};" \
-	+ "$l=@{FilePath=$j.file};if($j.style){$l.WindowStyle=$j.style};if($j.cwd){$l.WorkingDirectory=$j.cwd};" \
-	+ "if($j.argline){$l.ArgumentList=$j.argline};Start-Process @l"
+	+ "$p=New-Object System.Diagnostics.ProcessStartInfo;$p.FileName=$j.file;if($j.cwd){$p.WorkingDirectory=$j.cwd};" \
+	+ "$p.UseShellExecute=$true;if($j.argline){$p.Arguments=$j.argline};if($j.style){$p.WindowStyle=$j.style};" \
+	+ "[System.Diagnostics.Process]::Start($p)|Out-Null"
 
 
 ## {"args": PackedStringArray for powershell.exe, "env": {"GOSH_LAUNCH": json}} (pure; unit-tested).
