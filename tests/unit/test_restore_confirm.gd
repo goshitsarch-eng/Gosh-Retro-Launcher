@@ -78,8 +78,26 @@ func test_import_still_writes_its_safety_backup() -> void:
 	p.init_store()
 	expect_eq(p.set_all_data({"groups": []}), true)
 	expect_eq(p.list_backups().filter(func(b): return b.reason == "store-replaced").size(), 1,
-		"set_all_data backs up by default (import relies on it)")
+		"set_all_data backs up by default")
 	_rm(p.user_data_dir)
+
+
+func test_set_all_data_refuses_when_its_backup_fails() -> void:
+	var p := FailingBackupPersistence.new(_tmp())
+	p.init_store()
+	expect_eq(p.set_groups([Migration.normalize_group({"id": "g", "name": "Keep", "items": []})]), true)
+	var stored_before := FileAccess.get_file_as_string(p.store_path())
+	expect_eq(p.set_all_data({"groups": []}), false, "no backup, no replacement")
+	expect_eq(p.get_groups().map(func(g): return g.name), ["Keep"], "data in memory unchanged")
+	expect_eq(FileAccess.get_file_as_string(p.store_path()), stored_before, "store file unchanged")
+	expect_eq(p.set_all_data({"groups": []}, false), true, "write_backup false skips the backup")
+	_rm(p.user_data_dir)
+
+
+## Cannot write a backup.
+class FailingBackupPersistence extends Persistence:
+	func create_backup(_payload: Dictionary, _reason: String, _force: bool = false) -> Dictionary:
+		return {}
 
 
 func test_invalid_id_writes_no_backup() -> void:

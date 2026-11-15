@@ -258,7 +258,7 @@ static func backup_time_text(created_at: String) -> String:
 
 ## Restore replaces all data, so it asks first. Returns {required, message}; required is false when
 ## the id is not in `backups` (nothing would be restored). "Backed up first" holds because
-## Persistence.set_all_data writes a forced "store-replaced" backup before it replaces the data.
+## ProgramStore.restore_backup writes a forced "store-replaced" backup and refuses if it cannot.
 static func restore_confirmation(backups: Array, id: String) -> Dictionary:
 	if id == "":
 		return {"required": false, "message": ""}

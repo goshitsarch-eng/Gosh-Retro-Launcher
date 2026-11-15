@@ -14,8 +14,9 @@ signal data_reloaded  ## emitted after import/restore replaced everything
 signal data_normalized(source: String, report: Dictionary)
 ## A write was refused (invalid data), the store file could not be written (read-only or full disk),
 ## or a safety backup could not be made. `kind` is "groups", "settings", "profiles" or "backup". For
-## groups, settings and profiles the change stays in memory and marked dirty, so the next flush of any
-## kind (and the one on exit) retries it.
+## groups, settings and profiles the change stays in memory and marked dirty. Groups and settings are
+## retried by their own next flush, profiles by the next flush of any kind, and all of them by the
+## flush on exit.
 signal save_failed(kind: String, message: String)
 ## The first successful save of `kind` ("groups", "settings" or "profiles") after save_failed reported it.
 signal save_recovered(kind: String)
@@ -526,8 +527,12 @@ func export_to(path: String) -> bool:
 ## Repairable values are fixed first (_repair_import_values), then top-level groups and settings are
 ## validated and a structurally malformed file is refused. Everything that passes, and the workspace
 ## profiles (which have no strict check), is then normalised like stored data, and item shortcut keys without a modifier are cleared in groups and
-## profiles alike. Returns {"success": true}, plus "normalized" and "shortcutsCleared" counts when
-## anything was changed so the UI can report it, or {"success": false, "error"}.
+## profiles alike. Like restore_backup, a forced "store-replaced" backup of the current data (pending
+## edits flushed first) is written before anything is replaced; if it cannot be written, save_failed
+## ("backup") is emitted and nothing is imported. A store file that cannot be written also refuses the
+## import and leaves the data as it was. Returns {"success": true}, plus "normalized" and
+## "shortcutsCleared" counts when anything was changed so the UI can report it, or
+## {"success": false, "error"}.
 func import_from(path: String) -> Dictionary:
 	var f := FileAccess.open(path, FileAccess.READ)
 	if f == null:
@@ -549,7 +554,12 @@ func import_from(path: String) -> Dictionary:
 	var cleared := Migration.clear_unsafe_shortcuts(migrated.groups)
 	for p in migrated.workspaceProfiles:
 		cleared += Migration.clear_unsafe_shortcuts(p.groups)
-	if not persistence.set_all_data(migrated):
+	if create_backup("store-replaced").is_empty():
+		var msg := "Could not back up your current data before importing, so the file was not imported."
+		push_error("Program Manager: " + msg)
+		save_failed.emit("backup", msg)
+		return {"success": false, "error": msg}
+	if not persistence.set_all_data(migrated, false):
 		push_error("Program Manager: imported data could not be written to %s." % persistence.store_path())
 		return {"success": false, "error": "Failed to save the imported data"}
 	_cancel_pending()

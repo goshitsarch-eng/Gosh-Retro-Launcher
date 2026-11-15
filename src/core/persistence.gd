@@ -154,11 +154,14 @@ func get_all_data() -> Dictionary:
 
 ## Replaces everything. Returns whether the store file was written (on failure `data` is unchanged).
 ## A forced "store-replaced" backup of the current data is written first unless `write_backup` is
-## false (ProgramStore.restore_backup has already written that backup itself).
+## false (ProgramStore.restore_backup and import_from write that backup themselves). If that backup
+## cannot be written, false is returned before anything changes: `data` and the store file stay as
+## they were.
 func set_all_data(value: Dictionary, write_backup: bool = true) -> bool:
 	var normalized := Migration.migrate_store_data(value)
-	if write_backup:
-		create_backup(get_all_data(), "store-replaced", true)
+	if write_backup and create_backup(get_all_data(), "store-replaced", true).is_empty():
+		push_error("Program Manager: no backup could be written before replacing the data, so it was not replaced.")
+		return false
 	var previous := data
 	data = normalized
 	if _write_store():

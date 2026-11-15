@@ -236,6 +236,113 @@ func test_exit_flush_retries_a_pending_profile_save() -> void:
 	_rm(dir)
 
 
+## Exports a store with one group "Imported" and the dark theme to a file outside `dir`'s tree.
+func _import_file() -> String:
+	var src_dir := _tmp()
+	var src := _open(src_dir)
+	src.add_group("Imported")
+	src.update_settings({"theme": "dark"})
+	src.flush()
+	var path := _tmp().path_join("import.json")
+	src.export_to(path)
+	src.free()
+	_rm(src_dir)
+	return path
+
+
+func _store_replaced(s: Node) -> Array:
+	return s.list_backups().filter(func(b): return b.reason == "store-replaced")
+
+
+func test_import_is_refused_when_its_safety_backup_cannot_be_written() -> void:
+	var file := _import_file()
+	var dir := _tmp()
+	var s := _open(dir)
+	s.add_group("Precious")
+	s.flush()
+	var backups := dir.path_join("backups")
+	DirAccess.make_dir_recursive_absolute(backups)
+	var groups_before: Array = s.groups.duplicate(true)
+	var settings_before: Dictionary = s.settings.duplicate(true)
+	var stored_before := _store_text(dir)
+	var listed_before: int = s.list_backups().size()
+	var failed := []
+	s.save_failed.connect(func(kind: String, msg: String) -> void: failed.append([kind, msg]))
+	var reloaded := [0]
+	s.data_reloaded.connect(func() -> void: reloaded[0] += 1)
+	if not _make_read_only(backups):
+		print("  (skipped: a read-only folder is still writable here)")
+		s.free()
+		_rm(dir)
+		_rm(file.get_base_dir())
+		return
+	_chmod(dir, "555")
+	var r: Dictionary = s.import_from(file)
+	_chmod(backups, "755")  # writable again before any assertion
+	_chmod(dir, "755")
+	var refused := "Could not back up your current data before importing, so the file was not imported."
+	expect_eq(r, {"success": false, "error": refused}, "the import reports the refusal")
+	expect_eq(failed, [["backup", refused]], "the host is told")
+	expect_eq(reloaded[0], 0, "nothing was reloaded")
+	expect(Jsonx.equal(s.groups, groups_before), "groups in memory unchanged")
+	expect(Jsonx.equal(s.settings, settings_before), "settings in memory unchanged")
+	expect_eq(_store_text(dir), stored_before, "store file unchanged")
+	expect_eq(s.list_backups().size(), listed_before, "no backup was written")
+	s.free()
+	_rm(dir)
+	_rm(file.get_base_dir())
+
+
+func test_import_is_refused_when_the_store_file_cannot_be_written() -> void:
+	var file := _import_file()
+	var dir := _tmp()
+	var s := _open(dir)
+	s.add_group("Precious")
+	s.flush()
+	DirAccess.make_dir_recursive_absolute(dir.path_join("backups"))
+	var groups_before: Array = s.groups.duplicate(true)
+	var stored_before := _store_text(dir)
+	var failed := []
+	s.save_failed.connect(func(kind: String, _m: String) -> void: failed.append(kind))
+	if not _make_read_only(dir):  # the backups folder stays writable
+		print("  (skipped: a read-only folder is still writable here)")
+		s.free()
+		_rm(dir)
+		_rm(file.get_base_dir())
+		return
+	var r: Dictionary = s.import_from(file)
+	_chmod(dir, "755")
+	expect_eq(r, {"success": false, "error": "Failed to save the imported data"})
+	expect_eq(failed, [], "the backup was written, so no backup failure is reported")
+	expect(Jsonx.equal(s.groups, groups_before), "groups in memory unchanged")
+	expect_eq(s.settings.theme, "light", "settings in memory unchanged")
+	expect_eq(_store_text(dir), stored_before, "store file unchanged")
+	s.free()
+	_rm(dir)
+	_rm(file.get_base_dir())
+
+
+func test_import_writes_a_safety_backup_of_the_current_data_first() -> void:
+	var file := _import_file()
+	var dir := _tmp()
+	var s := _open(dir)
+	s.add_group("Precious")
+	s.add_group("Pending")  # not flushed: the backup must still hold it
+	var r: Dictionary = s.import_from(file)
+	expect_eq(r.success, true)
+	expect_eq(s.groups.map(func(g): return g.name), ["Imported"], "imported")
+	expect_eq(s.settings.theme, "dark")
+	var replaced := _store_replaced(s)
+	expect_eq(replaced.size(), 1, "one safety backup")
+	if replaced.size() == 1:
+		var saved: Dictionary = s.persistence.read_backup(replaced[0].id)
+		expect_eq(saved.groups.map(func(g): return g.name), ["Precious", "Pending"], "it holds the replaced data")
+		expect_eq(saved.settings.theme, "light")
+	s.free()
+	_rm(dir)
+	_rm(file.get_base_dir())
+
+
 func test_host_notice_for_a_profile_failure_says_the_change_is_kept() -> void:
 	var n: Dictionary = preload("res://src/app/main.gd").save_failed_notice("profiles", "p")
 	expect(String(n.text).contains("saving is tried again"), String(n.text))
