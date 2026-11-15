@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- HiDPI: the native Launcher Tools window now scales its content and size to the display (OS scale on macOS/Wayland, inferred from screen height on Windows/X11), so text and controls stay crisp and legible on Retina and 4K panels and follow the window across monitors.
+- Godot "creating applications" best practices: native `.ico`/`.icns` project icons and the Dummy 2D/3D physics engines (no physics is used), trimming startup cost.
 - Windows 95 icons replaced by the Claude Design `icons95` set (`tools/import_design_icons.py`); the Win95 shell shows Windows for Workgroups artwork for WfW application ids; new `launcher-logo` icon.
 - Visual harness: `click_id` waits for the element, and captures render every frame (`low_processor_mode` is off during captures) with a forced draw before the grab, which removes stale-frame captures.
 

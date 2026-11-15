@@ -24,6 +24,8 @@ var _url_value := "https://"
 var _launching := false
 var _backups: Array = []
 var _building := false
+var _ready_done := false
+var _ui_scale := 1.0  # content scale applied to this native window (HiDPI)
 
 # widgets that tests/automation reach
 var shell_option: OptionButton
@@ -43,16 +45,34 @@ static func show_singleton(host: Node) -> LauncherToolsWindow:
 	return _instance
 
 
+const BASE_SIZE := Vector2i(680, 720)
+const BASE_MIN_SIZE := Vector2i(480, 360)
+
+
 func _init() -> void:
 	title = "Launcher Tools"
-	size = Vector2i(680, 720)
-	min_size = Vector2i(480, 360)
+	size = BASE_SIZE
+	min_size = BASE_MIN_SIZE
 	exclusive = false
 	transient = false
 	close_requested.connect(_on_close)
 
 
+## Window sizes are physical pixels: scale them with the content so the form keeps its layout, and
+## never exceed the usable screen area.
+func _apply_scale() -> void:
+	var before := _ui_scale
+	_ui_scale = ShellScale.apply_dialog_scale(self)
+	min_size = Vector2i(Vector2(BASE_MIN_SIZE) * _ui_scale)
+	var usable := DisplayServer.screen_get_usable_rect(DisplayServer.window_get_current_screen(get_window_id()))
+	var wanted := Vector2i(Vector2(size) * (_ui_scale / before)) if before > 0.0 and _ready_done else Vector2i(Vector2(BASE_SIZE) * _ui_scale)
+	size = Vector2i(mini(wanted.x, usable.size.x), mini(wanted.y, usable.size.y)).max(min_size)
+
+
 func _ready() -> void:
+	_apply_scale()
+	_ready_done = true
+	dpi_changed.connect(_apply_scale)
 	theme = _make_theme()
 	var bg := ColorRect.new()
 	bg.color = Color("#d4d0c8")
@@ -263,6 +283,7 @@ func _scale_option(value: Variant, cb: Callable) -> OptionButton:
 	for v in Types.SCALE_FACTORS:
 		o.add_item("%d×" % v)
 	o.select(W31DialogLogic.scale_to_index(value))
+	o.tooltip_text = "Auto adapts to your display (HiDPI / Retina / 4K) and window size, keeping text and icons crisp. Pick 1x-4x to force a size."
 	o.item_selected.connect(func(i: int): cb.call(W31DialogLogic.scale_from_index(i)))
 	return o
 

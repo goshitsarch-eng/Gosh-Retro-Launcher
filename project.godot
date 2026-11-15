@@ -12,6 +12,8 @@ config/custom_user_dir_name="program-manager"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 run/low_processor_mode=true
 config/icon="res://resources/icon.png"
+config/windows_native_icon="res://resources/icon.ico"
+config/macos_native_icon="res://resources/icon.icns"
 
 Types="*res://src/core/types.gd"
 
@@ -38,6 +40,11 @@ window/energy_saving/keep_screen_on=false
 
 theme/default_font_antialiasing=0
 common/drop_mouse_on_gui_input_disabled=true
+
+[physics]
+
+2d/physics_engine="Dummy"
+3d/physics_engine="Dummy"
 
 [rendering]
 

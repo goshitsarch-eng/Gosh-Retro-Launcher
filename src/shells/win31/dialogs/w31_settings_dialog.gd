@@ -33,6 +33,7 @@ func _scale_combo(key: String) -> W31Combo:
 	var c := W31Combo.new()
 	c.set_items(["Auto", "1x", "2x", "3x", "4x"])
 	c.selected = W31DialogLogic.scale_to_index(form[key])
+	c.tooltip_text = "Auto adapts to your display (HiDPI / Retina / 4K) and window size, keeping text and icons crisp. Pick 1x-4x to force a size."
 	c.selection_changed.connect(func(i: int): form[key] = W31DialogLogic.scale_from_index(i))
 	return c
 
