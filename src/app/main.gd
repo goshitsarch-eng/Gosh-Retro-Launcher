@@ -28,9 +28,13 @@ func _ready() -> void:
 		if not await _acquire_single_instance():
 			get_tree().quit()
 			return
+	var capture_script: Script = load("res://src/app/capture.gd") if is_capture else null
+	if capture_script:
+		# Before init_store(): without PM_USER_DATA the first init would open the real store.
+		capture_script.select_profile()
 	ProgramStore.init_store()
 	if is_capture:
-		capture = load("res://src/app/capture.gd").new()
+		capture = capture_script.new()
 		capture.host = self
 		capture.args = args
 		add_child(capture)
