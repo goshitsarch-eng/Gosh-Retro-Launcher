@@ -19,13 +19,26 @@ func owns_window_size() -> bool:
 	return _owns_size
 
 
+## The profile folder a capture run uses: PM_USER_DATA when it is set, else a per-process folder in
+## the per-user cache dir (not a predictable name in the world-writable /tmp: symlink planting). Pure.
+static func capture_profile_dir(user_data_env: String, cache_dir: String, pid: int) -> String:
+	if user_data_env != "":
+		return user_data_env
+	return cache_dir.path_join("program-manager-capture-%d" % pid)
+
+
+## Points PM_USER_DATA at the capture profile and returns it. main.gd calls this BEFORE
+## ProgramStore.init_store() so a capture run never opens (or migrates) the real store; prepare()
+## calls it again and gets the same folder, because the variable is set by then.
+static func select_profile() -> String:
+	var profile := capture_profile_dir(OS.get_environment("PM_USER_DATA"), OS.get_cache_dir(), OS.get_process_id())
+	OS.set_environment("PM_USER_DATA", profile)
+	return profile
+
+
 func prepare() -> void:
 	view = args.get("capture", "workspace")
-	var profile := OS.get_environment("PM_USER_DATA")
-	if profile == "":
-		# Per-user cache dir, not a predictable name in the world-writable /tmp (symlink planting).
-		profile = OS.get_cache_dir().path_join("program-manager-capture-%d" % OS.get_process_id())
-		OS.set_environment("PM_USER_DATA", profile)
+	var profile := select_profile()
 	DirAccess.make_dir_recursive_absolute(profile)
 	var f := FileAccess.open(profile.path_join("program-manager-data.json"), FileAccess.WRITE)
 	f.store_string(Jsonx.stringify(FIXTURES.data_for(view), "  "))

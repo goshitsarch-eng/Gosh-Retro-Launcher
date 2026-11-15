@@ -200,11 +200,61 @@ static func resolve_executable(command: String, cwd: String = "", env_additions:
 ## exactly like Node's spawn({env})) and a tiny /bin/sh wrapper only performs the `cd`; on
 ## Windows a PowerShell wrapper applies both.
 static func spawn_detached(command: String, args: PackedStringArray, cwd: String, env_additions: Dictionary) -> Dictionary:
-	if platform() == "win32":
-		if cwd.is_empty() and env_additions.is_empty():
-			var pid := OS.create_process(command, args)
-			return _ok() if pid > 0 else _fail("Failed to spawn %s" % command)
-		return _spawn_powershell(command, args, "", cwd, env_additions)
+	return run_spawn_plan(plan_spawn(OS.get_name(), command, args, cwd, env_additions, "normal"))
+
+
+## Pure spawn decision (unit-tested with any OS name). Returns {"method": ...} plus its parameters:
+##   "create_process": {command, args}  Windows, Run Normal, no working directory, no environment.
+##   "powershell": {file, args, style, cwd, env}  Windows otherwise. A PowerShell ProcessStartInfo launch is the only way to
+##       give the child a working directory (create_process has no cwd parameter); all user data travels
+##       as JSON in an environment variable, never as command text (see build_powershell_launch).
+##   "posix": {command, args, cwd, env}  every other OS (the /bin/sh cd wrapper in _spawn_posix).
+## run_mode is "normal", "minimized" or "maximized"; a working directory is carried for every mode.
+static func plan_spawn(os_name: String, command: String, args: PackedStringArray, cwd: String, env_additions: Dictionary, run_mode: String) -> Dictionary:
+	if os_name != "Windows":
+		return {"method": "posix", "command": command, "args": args, "cwd": cwd, "env": env_additions}
+	var style := ""
+	if run_mode != "normal":
+		style = "Maximized" if run_mode == "maximized" else "Minimized"
+	if style == "" and cwd.is_empty() and env_additions.is_empty():
+		return {"method": "create_process", "command": command, "args": args}
+	return {"method": "powershell", "file": command, "args": args, "style": style, "cwd": cwd, "env": env_additions}
+
+
+## Whether a Windows .exe/.com item must be spawned (plan_spawn) rather than handed to ShellExecute
+## (OS.shell_open), which can neither set a working directory, arguments, environment nor window style.
+static func windows_exe_needs_spawn(item_args: PackedStringArray, environment_text: String, working_dir: String, run_mode: String) -> bool:
+	return run_mode != "normal" or item_args.size() > 0 or environment_text != "" or working_dir != ""
+
+
+static func run_spawn_plan(plan: Dictionary) -> Dictionary:
+	match String(plan.get("method", "")):
+		"create_process":
+			var pid := OS.create_process(plan.command, plan.args)
+			return _ok() if pid > 0 else _fail("Failed to spawn %s" % plan.command)
+		"powershell":
+			var problem := validate_spawn_plan(plan)
+			if problem != "":
+				return _fail(problem)
+			return _spawn_powershell(plan.file, plan.args, plan.style, plan.cwd, plan.env)
+		"posix":
+			return _spawn_posix(plan.command, plan.args, plan.cwd, plan.env)
+	return _fail("Unknown spawn method")
+
+
+## Host-side checks for a PowerShell plan, which cannot report a failed start back to us: "" when
+## fine, else an error message. A bare command name (resolved by the OS later) is not checked.
+static func validate_spawn_plan(plan: Dictionary) -> String:
+	var cwd := String(plan.get("cwd", ""))
+	if cwd != "" and not DirAccess.dir_exists_absolute(cwd):
+		return "Working directory not found: %s" % cwd
+	var file := String(plan.get("file", plan.get("command", "")))
+	if file.is_absolute_path() and not FileAccess.file_exists(file):
+		return "Program not found: %s" % file
+	return ""
+
+
+static func _spawn_posix(command: String, args: PackedStringArray, cwd: String, env_additions: Dictionary) -> Dictionary:
 	if not cwd.is_empty() and not DirAccess.dir_exists_absolute(cwd):
 		return _fail("Working directory not found: %s" % cwd)
 	if resolve_executable(command, cwd, env_additions).is_empty():
@@ -295,15 +345,17 @@ static func windows_command_line(args: PackedStringArray) -> String:
 	return " ".join(parts)
 
 
-## Start-Process wrapper. Everything (file, args, window style, cwd, env) travels as JSON in the
-## GOSH_LAUNCH environment variable and the script is passed with -EncodedCommand: `-Command
-## <script> <args...>` does NOT populate $args (PowerShell pastes the arguments into the command
-## text). Start-Process joins ArgumentList verbatim, so the arguments arrive as one command line
-## already quoted by quote_windows_arg().
+## ProcessStartInfo wrapper (not Start-Process: its -FilePath/-WorkingDirectory apply wildcard
+## matching, so a path containing [ or ] would fail). Everything (file, args, window style, cwd, env)
+## travels as JSON in the GOSH_LAUNCH environment variable and the script is passed with
+## -EncodedCommand: `-Command <script> <args...>` does NOT populate $args (PowerShell pastes the
+## arguments into the command text). ProcessStartInfo.Arguments is used verbatim, so the arguments
+## arrive as one command line already quoted by quote_windows_arg().
 const PS_SCRIPT := "$ErrorActionPreference='Stop';$j=$env:GOSH_LAUNCH|ConvertFrom-Json;Remove-Item Env:GOSH_LAUNCH;" \
 	+ "if($j.env){foreach($e in $j.env.PSObject.Properties){Set-Item -Path ('env:'+$e.Name) -Value ([string]$e.Value)}};" \
-	+ "$l=@{FilePath=$j.file};if($j.style){$l.WindowStyle=$j.style};if($j.cwd){$l.WorkingDirectory=$j.cwd};" \
-	+ "if($j.argline){$l.ArgumentList=$j.argline};Start-Process @l"
+	+ "$p=New-Object System.Diagnostics.ProcessStartInfo;$p.FileName=$j.file;if($j.cwd){$p.WorkingDirectory=$j.cwd};" \
+	+ "$p.UseShellExecute=$true;if($j.argline){$p.Arguments=$j.argline};if($j.style){$p.WindowStyle=$j.style};" \
+	+ "[System.Diagnostics.Process]::Start($p)|Out-Null"
 
 
 ## {"args": PackedStringArray for powershell.exe, "env": {"GOSH_LAUNCH": json}} (pure; unit-tested).
@@ -352,11 +404,8 @@ static func launch_program(item: Dictionary) -> Dictionary:
 				args.append_array(item_args)
 				var cwd := String(details.get("cwd", ""))
 				return spawn_detached(details.target, args, cwd if cwd != "" else working_dir, env)
-			elif ["exe", "com"].has(ext) and run_mode != "normal":
-				var style := "Maximized" if run_mode == "maximized" else "Minimized"
-				return _spawn_powershell(program_path, item_args, style, working_dir, env)
-			elif ["exe", "com"].has(ext) and (item_args.size() > 0 or item.get("environment", "") != ""):
-				return spawn_detached(program_path, item_args, working_dir, env)
+			elif ["exe", "com"].has(ext) and windows_exe_needs_spawn(item_args, String(item.get("environment", "")), working_dir, run_mode):
+				return run_spawn_plan(plan_spawn("Windows", program_path, item_args, working_dir, env, run_mode))
 			elif ["bat", "cmd"].has(ext):
 				var com := OS.get_environment("ComSpec")
 				var cargs := PackedStringArray(["/d", "/s", "/c", program_path])
