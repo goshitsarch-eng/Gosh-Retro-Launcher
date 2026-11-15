@@ -325,6 +325,8 @@ func do_action(action: String, args: Dictionary) -> void:
 			BeDialogs.new_folder(self)
 		"program.new":
 			BeDialogs.new_program(self, BeWindowStore.group_id_of(key))
+		"website.new":
+			BeDialogs.new_website(self, BeWindowStore.group_id_of(key))
 		"find.open":
 			open_find()
 		"tools.open":

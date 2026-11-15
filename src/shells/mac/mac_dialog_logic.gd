@@ -137,9 +137,7 @@ static func add_program(store: Object, group_id: String, name: String, path: Str
 		return ""
 	var n := name.strip_edges()
 	if n.is_empty():
-		n = p.replace("\\", "/").get_file()
-		if n.is_empty():
-			n = p
+		n = Launcher.suggested_name(p)
 	return String(store.add_item(group_id, {"name": n, "path": p, "icon": "network" if is_internet_url(p) else "default", "workingDir": ""}))
 
 

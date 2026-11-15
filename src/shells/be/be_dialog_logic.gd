@@ -107,7 +107,7 @@ static func new_program(store: Object, gid: String, name: String, path: String, 
 		return ""
 	var n := name.strip_edges()
 	if n.is_empty():
-		n = basename_of(p)
+		n = Launcher.suggested_name(p)
 	var ic := icon
 	if ic == "" or ic == "default":
 		ic = "url" if is_url(p) else "default"

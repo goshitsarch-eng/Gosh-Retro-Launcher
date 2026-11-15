@@ -101,11 +101,14 @@ static func desk_icon_menu(id: String) -> Array:
 
 
 static func folder_background_menu(is_computer: bool, view: String) -> Array:
-	return [item("help", "Help"), SEP,
-		item("new-folder" if is_computer else "new-program", "New Folder" if is_computer else "New Program…"),
-		item("close-window", "Close Window"), SEP,
+	var out := [item("help", "Help"), SEP,
+		item("new-folder" if is_computer else "new-program", "New Folder" if is_computer else "New Program…")]
+	if not is_computer:
+		out.append(item("new-website", "New Website…"))
+	out.append_array([item("close-window", "Close Window"), SEP,
 		item("view:large", "as Icons", {"check": view == "large"}), item("view:details", "as List", {"check": view == "details"}),
-		item("clean-up", "Clean Up"), SEP, item("get-info", "Get Info")]
+		item("clean-up", "Clean Up"), SEP, item("get-info", "Get Info")])
+	return out
 
 
 ## Command id for a Ctrl/Cmd+<letter> accelerator, "" when none.

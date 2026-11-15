@@ -329,6 +329,10 @@ func _run_simple(id: String, t: Dictionary) -> void:
 			var win := String(t.get("win", desktop.store.active_key()))
 			if win.begins_with("g:"):
 				MacDialogs.new_program(self, win.substr(2))
+		"new-website":
+			var wwin := String(t.get("win", desktop.store.active_key()))
+			if wwin.begins_with("g:"):
+				MacDialogs.new_website(self, wwin.substr(2))
 		"run":
 			MacDialogs.run(self)
 		"open":

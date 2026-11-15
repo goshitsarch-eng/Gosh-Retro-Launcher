@@ -246,6 +246,31 @@ static func new_program(shell: Control, gid: String) -> void:
 	cmd.grab_text_focus.call_deferred()
 
 
+static func new_website(shell: Control, gid: String) -> void:
+	if ProgramStore.groups.is_empty():
+		return
+	var d := _form(shell, "New Website", 520, "be.dialog.new-website")
+	d.add_row(BeLabel.make("Type the web address of the site you want to add. The name is optional.", false, d.content_width()))
+	var url := BeField.make("", "be.dialog.field:url")
+	var name_f := BeField.make("", "be.dialog.field:name")
+	var opts := []
+	for g in ProgramStore.groups:
+		opts.append([String(g.id), String(g.name)])
+	var sel := BeSelect.make(opts, gid if gid != "" else String(ProgramStore.groups[0].id), "be.dialog.select:group", 160)
+	var g := d.row_grid([["Web address:", url], ["Name:", name_f], ["Group:", sel]], 110)
+	for c in g.get_children():
+		if c is BeSelect:
+			c.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	url.text_submitted.connect(func(_t): d.default_button.pressed.emit())
+	d.set_buttons([
+		{"label": "OK", "default": true, "cb": func():
+			Launcher.add_website(ProgramStore, sel.value, name_f.text, url.text, "url")
+			return false},
+		{"label": "Cancel"}])
+	d.finish()
+	url.grab_text_focus.call_deferred()
+
+
 ## Native file picker; fills the command (and an empty name) from the chosen file.
 static func browse_into(cmd: BeField, name_f: BeField = null) -> void:
 	var path: String = await Platform.select_executable()

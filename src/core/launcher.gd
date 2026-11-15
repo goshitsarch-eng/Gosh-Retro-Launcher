@@ -4,6 +4,42 @@ extends RefCounted
 ## All entry points return {"success": bool, "error": String (optional)}.
 
 
+## Default item name for a path or web address: the host of an http(s) URL without "www."
+## ("https://www.github.com/x" -> "github.com"), else the last path segment without a ".app" suffix.
+static func suggested_name(path: String) -> String:
+	var p := path.strip_edges()
+	if is_valid_launch_url(p):
+		var host := p.get_slice("://", 1).split("/")[0].split("?")[0].split("#")[0].split("@")[-1].split(":")[0]
+		return host.trim_prefix("www.") if host != "" else p
+	p = p.replace("\\", "/")
+	while p.ends_with("/"):
+		p = p.substr(0, p.length() - 1)
+	var n := p.get_file()
+	if n.to_lower().ends_with(".app"):
+		n = n.substr(0, n.length() - 4)
+	return n if n != "" else p
+
+
+## Adds "https://" when a typed web address has no scheme ("github.com" -> "https://github.com").
+static func normalize_web_address(raw: String) -> String:
+	var t := raw.strip_edges()
+	if t == "" or t.contains("://") or t.to_lower().begins_with("mailto:"):
+		return t
+	return "https://" + t
+
+
+## Shared "add a website" used by every shell that has no dedicated URL form: normalises the address,
+## names it after its host when no name was typed and gives it the web icon. Returns the new id or "".
+static func add_website(store: Object, group_id: String, name: String, address: String, icon: String = "network") -> String:
+	var url := normalize_web_address(address)
+	if group_id == "" or url.contains(" ") or not is_valid_launch_url(url) or store.find_group(group_id).is_empty():
+		return ""
+	var n := name.strip_edges()
+	if n == "":
+		n = suggested_name(url)
+	return String(store.add_item(group_id, {"name": n, "path": url, "icon": icon, "workingDir": ""}))
+
+
 static func is_valid_launch_url(url: String) -> bool:
 	var re := RegEx.new()
 	re.compile("(?i)^https?://[^\\s/?#]+")

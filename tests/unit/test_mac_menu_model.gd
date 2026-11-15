@@ -79,7 +79,8 @@ func test_context_menus_follow_the_design() -> void:
 	expect(MacMenuModel.desk_icon_menu("trash")[1].disabled)
 	var bg := MacMenuModel.folder_background_menu(false, "large")
 	expect_eq(bg[2].label, "New Program…")
-	expect(bg[5].check and not bg[6].check)
+	expect_eq(bg[3].label, "New Website…")
+	expect(bg[6].check and not bg[7].check)
 	expect_eq(MacMenuModel.folder_background_menu(true, "large")[2].label, "New Folder")
 
 
