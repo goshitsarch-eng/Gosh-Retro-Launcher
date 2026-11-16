@@ -208,6 +208,17 @@ static func popup_frame(ci: CanvasItem, r: Rect2) -> void:
 ## 1px-offset dither backgrounds. `origin` is the padding-box origin the tiles are anchored to.
 ## Two-layer pattern (task button / set button): (x + y) odd gets `color`.
 static func dither_checker(ci: CanvasItem, r: Rect2, origin: Vector2, color: Color) -> void:
+	# Whole-pixel origin: int(x - origin.x) is exact, so the pattern is a plain parity.
+	if origin == origin.floor() and Px.whole_pixel_grid(ci):
+		var rx := int(r.position.x)
+		var ry := int(r.position.y)
+		Px.checker_pixels(ci, rx, ry, int(r.end.x) - rx, int(r.end.y) - ry, color, rx + ry - int(origin.x) - int(origin.y) + 1)
+		return
+	dither_checker_loop(ci, r, origin, color)
+
+
+## The per-pixel form of dither_checker() (fractional origins; the tests' reference).
+static func dither_checker_loop(ci: CanvasItem, r: Rect2, origin: Vector2, color: Color) -> void:
 	var y := int(r.position.y)
 	while y < int(r.end.y):
 		var x := int(r.position.x)

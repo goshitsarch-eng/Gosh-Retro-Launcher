@@ -109,6 +109,29 @@ func current_shell_id() -> String:
 	return String(ProgramStore.settings.get("shell", "win31"))
 
 
+## The shells (and the Launcher Tools window) are loaded by path, never named as classes here: a
+## class name in this script makes Godot compile that class and everything it uses when main.gd
+## loads. Naming all four compiled about 130 scripts the running shell never uses (8.5-16.5 MB of
+## static memory, 30-35 MB RSS). Another shell is compiled on its first switch.
+const SHELL_SCRIPTS := {
+	"win31": "res://src/shells/win31/win31_shell.gd",
+	"win95": "res://src/shells/win95/win95_shell.gd",
+	"mac": "res://src/shells/mac/mac_shell.gd",
+	"be": "res://src/shells/be/be_shell.gd",
+}
+const NOTICE_DIALOGS := {
+	"win95": "res://src/shells/win95/win95_dialogs.gd",
+	"mac": "res://src/shells/mac/mac_dialogs.gd",
+	"be": "res://src/shells/be/be_dialogs.gd",
+}
+const LAUNCHER_TOOLS_WINDOW := "res://src/shells/win31/dialogs/launcher_tools_window.gd"
+
+
+## Script of the shell `id` mounts (unknown ids fall back to WfW, as before).
+static func shell_script_path(id: String) -> String:
+	return String(SHELL_SCRIPTS.get(id, SHELL_SCRIPTS.win31))
+
+
 func _mount_shell() -> void:
 	var id := current_shell_id()
 	if shell and _applied_shell == id:
@@ -116,15 +139,7 @@ func _mount_shell() -> void:
 	if shell:
 		remove_child(shell)
 		shell.queue_free()
-	match id:
-		"win95":
-			shell = Win95Shell.new()
-		"mac":
-			shell = MacShell.new()
-		"be":
-			shell = BeShell.new()
-		_:
-			shell = Win31Shell.new()
+	shell = (load(shell_script_path(id)) as GDScript).new()
 	shell.host = self
 	shell.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shell.request_quit.connect(quit_app)
@@ -254,7 +269,7 @@ func _notification(what: int) -> void:
 
 
 func _open_launcher_tools_window() -> void:
-	LauncherToolsWindow.show_singleton(self)
+	load(LAUNCHER_TOOLS_WINDOW).show_singleton(self)
 
 
 # ------------------------------------------------------------ store notices
@@ -331,12 +346,13 @@ func show_notice(n: Dictionary) -> void:
 	if not is_instance_valid(shell) or not shell.is_inside_tree() or shell.is_queued_for_deletion():
 		return
 	var alert: bool = n.get("alert", false)
-	if shell is Win95Shell:
-		Win95Dialogs.show_message(shell, String(n.title), String(n.text), "warning" if alert else "information")
-	elif shell is MacShell:
-		MacDialogs.alert(shell, [String(n.text)], "caution" if alert else "note")
-	elif shell is BeShell:
-		BeDialogs.message(shell, [String(n.text)], "warning" if alert else "information")
+	var id := shell.shell_id()
+	if id == "win95":
+		load(NOTICE_DIALOGS.win95).show_message(shell, String(n.title), String(n.text), "warning" if alert else "information")
+	elif id == "mac":
+		load(NOTICE_DIALOGS.mac).alert(shell, [String(n.text)], "caution" if alert else "note")
+	elif id == "be":
+		load(NOTICE_DIALOGS.be).message(shell, [String(n.text)], "warning" if alert else "information")
 	elif shell.has_method("show_notice"):
 		shell.show_notice(String(n.title), String(n.text))
 

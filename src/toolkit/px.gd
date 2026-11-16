@@ -44,6 +44,17 @@ static func bevel(ci: CanvasItem, r: Rect2, o_tl: Color, o_br: Color, i_tl: Colo
 ## Alternating-pixel checker fill (pressed/scroll-track patterns). Phase 0/1 picks which colour starts.
 static func checker(ci: CanvasItem, r: Rect2, a: Color, b: Color, phase: int = 0) -> void:
 	fill_rect(ci, r, b)
+	var ry := int(r.position.y)
+	# (y + phase) % 2 is a plain parity only for rows >= 0; negative rows keep the loop's own rounding.
+	if ry + phase >= 0 and whole_pixel_grid(ci):
+		checker_pixels(ci, int(r.position.x), ry, int(r.end.x) - int(r.position.x), int(r.end.y) - ry, a, (ry + phase) & 1)
+		return
+	checker_loop(ci, r, a, phase)
+
+
+## The per-pixel form of checker()'s pattern (one draw_rect per inked pixel). Kept for the cases
+## checker_pixels() does not cover, and as the reference the tests compare it with.
+static func checker_loop(ci: CanvasItem, r: Rect2, a: Color, phase: int = 0) -> void:
 	var y := int(r.position.y)
 	var end_y := int(r.end.y)
 	var end_x := int(r.end.x)
@@ -53,6 +64,47 @@ static func checker(ci: CanvasItem, r: Rect2, a: Color, b: Color, phase: int = 0
 			ci.draw_rect(Rect2(x, y, 1, 1), a)
 			x += 2
 		y += 1
+
+
+## 2x2 white masks: [ink where (i + j) is even, ink where (i + j) is odd].
+static var _checker_masks: Array = []
+
+
+static func checker_masks() -> Array:
+	if _checker_masks.is_empty():
+		for p in 2:
+			var img := Image.create_empty(2, 2, false, Image.FORMAT_RGBA8)
+			for j in 2:
+				for i in 2:
+					if (i + j + p) % 2 == 0:
+						img.set_pixel(i, j, Color.WHITE)
+			_checker_masks.append(ImageTexture.create_from_image(img))
+	return _checker_masks
+
+
+## True when one logical pixel of `ci` is a whole number of device pixels on a whole-pixel offset
+## (no rotation or skew). Only then is checker_pixels() identical to the per-pixel loops: at the
+## fractional content scales of 125%/150% displays the tiled mask samples differently.
+static func whole_pixel_grid(ci: CanvasItem) -> bool:
+	var vp := ci.get_viewport() if ci.is_inside_tree() else null
+	if vp == null:
+		return false
+	var xf := vp.get_final_transform() * ci.get_global_transform_with_canvas()
+	if not is_zero_approx(xf.x.y) or not is_zero_approx(xf.y.x):
+		return false
+	for v in [xf.x.x, xf.y.y, xf.origin.x, xf.origin.y]:
+		if not is_equal_approx(v, roundf(v)):
+			return false
+	return xf.x.x >= 1.0 and xf.y.y >= 1.0
+
+
+## Paints `color` on the pixels (x, y) of the integer rect whose (x - rx) + (y - ry) + odd is even,
+## as one tiled, modulated 2x2 mask instead of one draw_rect per pixel (a 16x300 scroll track was
+## 2,400 canvas commands per redraw). Callers check whole_pixel_grid() first.
+static func checker_pixels(ci: CanvasItem, rx: int, ry: int, w: int, h: int, color: Color, odd: int) -> void:
+	if w <= 0 or h <= 0:
+		return
+	ci.draw_texture_rect(checker_masks()[odd & 1], Rect2(rx, ry, w, h), true, color)
 
 
 ## Dotted focus rectangle (1px on / 1px off), as drawn by DrawFocusRect.

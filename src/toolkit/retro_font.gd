@@ -22,10 +22,28 @@ static var _cache := {}
 var family: String
 var font: FontFile
 var bold_font: FontFile
-var font_px := SYSTEM_FONT_PX
+var font_px := SYSTEM_FONT_PX:
+	set(value):
+		font_px = value
+		_clear_metric_caches()
 ## Optional user-supplied RTM bitmap-font atlas (gitignored `assets/win95-rtm-local/font/`), keyed by bold.
 ## {tex: Texture2D, height: int, glyphs: {code: {x, width, advance}}}. Absent -> bundled Win95Sans.
 var _atlas := {}
+## measure() results keyed by [source, bold]. Every redraw of every label measures its text again
+## (WfW: about 70% of a program item's draw time), and the answer depends only on the source, the
+## weight, font_px and the atlas, so it is cleared when font_px or an atlas changes. Only short
+## strings (labels, menu items) are kept: text fields measure every prefix of their contents, and
+## caching those let one long pasted value hold 13 MB.
+var _measure_cache := {}
+const MEASURE_CACHE_MAX := 8192
+const MEASURE_CACHE_MAX_LEN := 64
+## advance() per code point, [regular, bold]; same invalidation as _measure_cache.
+var _advance_cache := [{}, {}]
+
+
+func _clear_metric_caches() -> void:
+	_measure_cache.clear()
+	_advance_cache = [{}, {}]
 
 
 static func instance(which: String = WIN95) -> RetroFont:
@@ -87,6 +105,7 @@ func load_atlas(bold: bool, image: Image, data: Dictionary) -> void:
 		glyphs[int(str(k))] = raw[k]
 	if glyphs.is_empty():
 		return
+	_clear_metric_caches()
 	_atlas[bold] = {"tex": ImageTexture.create_from_image(img), "height": int(data.get("height", img.get_height())), "glyphs": glyphs}
 
 
@@ -111,6 +130,16 @@ func advance(ch: String, bold: bool = false) -> int:
 	if ch == "\t":
 		return 12
 	var code := ch.unicode_at(0) if ch.length() > 0 else 63
+	var cache: Dictionary = _advance_cache[1 if bold else 0]
+	var hit: Variant = cache.get(code)
+	if hit != null:
+		return hit
+	var w := _advance_uncached(ch, code, bold)
+	cache[code] = w
+	return w
+
+
+func _advance_uncached(ch: String, code: int, bold: bool) -> int:
 	if family == WIN95:
 		var ag: Variant = _atlas_glyph(ch, bold)
 		if ag != null and int(ag.get("advance", 0)) > 0:
@@ -148,10 +177,21 @@ static func parse_access(source: String) -> Dictionary:
 
 
 func measure(source: String, bold: bool = false) -> int:
+	var cacheable := source.length() <= MEASURE_CACHE_MAX_LEN
+	var key := [source, bold]
+	if cacheable:
+		var hit: Variant = _measure_cache.get(key)
+		if hit != null:
+			return hit
 	var text: String = parse_access(source).text
 	var w := 0
 	for ch in text:
 		w += advance(ch, bold)
+	if not cacheable:
+		return w
+	if _measure_cache.size() >= MEASURE_CACHE_MAX:
+		_measure_cache.clear()
+	_measure_cache[key] = w
 	return w
 
 
