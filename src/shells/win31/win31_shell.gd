@@ -580,27 +580,6 @@ func show_note_menu(item_id: String, global_pos: Vector2) -> void:
 	_note_menu_id = item_id
 
 
-## A note's text box keeps right-clicks to itself (StickyNote hears them only on its title strip and
-## edge), so the shell listens to the text box too: right-click anywhere on a note opens its menu.
-func open_note(item_id: String, focus: bool = true) -> StickyNote:
-	var n := super(item_id, focus)
-	if n != null:
-		for c in n.get_children():
-			if c is TextEdit and not c.has_meta("w31_note_menu"):
-				c.set_meta("w31_note_menu", true)
-				c.gui_input.connect(_on_note_text_input.bind(item_id, c))
-	return n
-
-
-func _on_note_text_input(event: InputEvent, item_id: String, edit: TextEdit) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-		edit.accept_event()
-		var n := note_window(item_id)
-		if n:
-			n.move_to_front()
-		show_note_menu(item_id, event.global_position)
-
-
 func close_note_menu() -> void:
 	if _note_menu != null:
 		if is_instance_valid(_note_menu):
