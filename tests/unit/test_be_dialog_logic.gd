@@ -154,7 +154,7 @@ func test_find_filters() -> void:
 	expect_eq(BeDialogLogic.find(groups, "", ids[1], "all", "").size(), 0, "group filter")
 	expect_eq(BeDialogLogic.find(groups, "", "all", "all", "example").size(), 1, "text in path")
 	expect_eq(BeDialogLogic.find_title(" "), "Find: All Programs")
-	expect_eq(BeDialogLogic.find_title(" ab "), "Find: Programs named ab")
+	expect_eq(BeDialogLogic.find_title(" ab "), "Find: “ab” in names and notes")
 	s.free()
 
 
@@ -173,7 +173,7 @@ func test_entries_and_titles() -> void:
 	expect_eq(BeDialogLogic.entries_for("g:missing", s.groups), [])
 	expect_eq(BeDialogLogic.window_title("computer", s.groups), "Program Manager")
 	expect_eq(BeDialogLogic.window_title("g:" + ids[0], s.groups), "Work")
-	expect_eq(BeDialogLogic.window_title("find", s.groups, "q"), "Find: Programs named q")
+	expect_eq(BeDialogLogic.window_title("find", s.groups, "q"), "Find: “q” in names and notes")
 	s.free()
 
 

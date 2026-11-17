@@ -213,7 +213,7 @@ func test_shell_hosts_notes_between_windows_and_deskbar() -> void:
 	expect_eq(shell.notes.mouse_filter, Control.MOUSE_FILTER_IGNORE, "the empty layer lets clicks through")
 	var st := shell.note_style()
 	expect_eq(st.font, BeFont.font())
-	expect_eq(st.font_size, BeGeometry.FONT_SMALL)
+	expect_eq(st.font_size, BeGeometry.FONT, "notes use the main UI size")
 	expect_eq(st.text_color, Color.BLACK)
 	ProgramStore.update_settings({"theme": "dark"})
 	expect(BeTheme.dark)
