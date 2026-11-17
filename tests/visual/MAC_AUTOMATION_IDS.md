@@ -55,3 +55,6 @@ Cmd/Ctrl-period.
 New Note dialog: `mac.dialog.field:Title`, `mac.dialog.field:Text`, `mac.dialog.select:Color`, `mac.dialog.select:Folder`,
 `mac.dialog.swatch:Color`. The notes layer is `mac.notes-layer`; note windows use the shared `note:<itemId>` ids
 (see AUTOMATION_IDS.md).
+
+Note menu rows (right-click or Control-click a note): `mac.popup-item:Close`, `Get Info`, `Yellow` ... `Gray`,
+`Move To Trash…`; their commands are `note-close`, `note-info`, `note-color:<id>`, `note-trash`.

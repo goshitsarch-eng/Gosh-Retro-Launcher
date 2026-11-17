@@ -57,3 +57,7 @@ Deskbar menus taller than the shell scroll; looking up a menu row scrolls it int
 
 `be.dialog.new-note`, `be.dialog.select:noteColor`, `be.dialog.field:noteText`, the popup row "New Note…" and the Find type
 "Sticky notes". Note windows use the shared `note:<itemId>` ids (see AUTOMATION_IDS.md).
+
+Note menu: `be.popup-item:Close`, `Get Info`, `Color` (submenu `Yellow` ... `Gray`), `Move to Trash…`; the trash
+confirmation is `be.dialog.note-trash` with `be.dialog.button:Delete` / `Cancel`. The logo menu adds
+`be.popup-item:New Note…`, `Launch Groups…`, `Export All…`, `Import All…`.

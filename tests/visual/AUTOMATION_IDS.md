@@ -94,3 +94,8 @@ Windows for Workgroups: `wfw.dialog.new-note`, `wfw.dialog.note-properties`, `wf
 
 Windows 95: `w95.new-note.*`, `w95.note-props.*`, `w95.change-icon.*`, `w95.launch-progress.*` (batch progress window),
 `w95.wizard.button:sticky-note` (see the class comments in `src/shells/win95/` for each control).
+
+Polish pass: WfW `wfw.note-menu` (rows via `wfw.popup-item:<label>`), `wfw.dialog.radio:Web Site`,
+`wfw.dialog.new-web-site`, `wfw.dialog.web-group`, `wfw.dialog.web-url`, `wfw.dialog.web-name`,
+`wfw.dialog.web-launch-group`, `wfw.dialog.web-properties`, `wfw.dialog.web-shortcut`. Windows 95 taskbar buttons:
+`w95.task:<window entry id>` (for example `w95.task:group:main`) and `w95.task:note:<itemId>`.
