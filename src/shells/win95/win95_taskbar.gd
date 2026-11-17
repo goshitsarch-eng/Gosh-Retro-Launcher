@@ -1,13 +1,17 @@
 class_name Win95Taskbar
 extends Control
 ## The taskbar (port of Win95Taskbar.tsx): Start button, one task button per primary window
-## (click = minimize / focus / restore, right-click = window menu, drag-hover activates after 500 ms),
-## background context menu (Cascade / Tile / Minimize All / Properties) and the notification
-## tray with the clock. In visual captures the clock shows Engine meta "pm_capture_clock".
+## (click = minimize / focus / restore, right-click = window menu, drag-hover activates after 500 ms)
+## and per open sticky note (click = front + keyboard, right-click = the note menu; see
+## Win95TaskbarState.task_list), background context menu (Cascade / Tile / Minimize All / Properties)
+## and the notification tray with the clock. In visual captures the clock shows Engine meta
+## "pm_capture_clock".
 
 const M := Win95Tokens.M
 
 var shell: Control
+## Task ids in button order (Win95TaskbarState.merge_order keeps a button where it is).
+var _order: Array = []
 
 var _clock := ""
 var _clock_timer: Timer
@@ -44,7 +48,9 @@ func setup(p_shell: Control) -> void:
 	_hover_timer.timeout.connect(_on_hover_timeout)
 	add_child(_hover_timer)
 	shell.windows.changed.connect(queue_redraw)
-	ProgramStore.groups_changed.connect(queue_redraw)
+	ProgramStore.groups_changed.connect(queue_redraw)  # renamed folders and notes
+	if shell.has_signal("notes_changed"):
+		shell.notes_changed.connect(queue_redraw)
 	shell.input.start_menu_changed.connect(func(_o): queue_redraw())
 	shell.input.register_pointer("move", "taskbar-drag-hover", _on_drag_move)
 
@@ -69,28 +75,40 @@ func tray_rect() -> Rect2:
 	return Rect2(size.x - 2 - M.trayWidth, 4, M.trayWidth, 22)
 
 
-## Task entries in taskbar order with their rects.
+## The task buttons in taskbar order (Win95TaskbarState.task_list) with their rects:
+## [{id, kind: "window"|"note", key, state, entry (the window entry, {} for a note), rect}].
 func task_buttons() -> Array:
-	var out: Array = []
-	var entries: Array = []
+	var wins: Array = []
+	var entries := {}
 	for e in shell.windows.windows:
 		if e.kind == "group" and ProgramStore.find_group(e.groupId).is_empty():
 			continue
-		entries.append(e)
-	if entries.is_empty():
-		return out
+		wins.append({"id": e.id, "minimized": shell.windows.entry_is_minimized(e)})
+		entries[e.id] = e
+	var note_ids: Array = []
+	if shell.has_method("open_notes"):
+		for n in shell.open_notes():
+			note_ids.append(n.item_id)
+	var tasks := Win95TaskbarState.task_list(wins, note_ids, _order, shell.windows.active_window_id, shell.windows.active_note_id())
+	_order = tasks.map(func(t): return t.id)
+	if tasks.is_empty():
+		return tasks
 	var avail := size.x - 4 - M.startButtonWidth - M.trayWidth - 4  # start | tasks | tray with 2px gaps
-	var n := entries.size()
+	var n := tasks.size()
 	var w := minf(160.0, (avail - (n - 1) * 2.0) / n)
 	w = maxf(22.0, floorf(w))
 	var x := 2.0 + M.startButtonWidth + 2.0
-	for e in entries:
-		out.append({"entry": e, "rect": Rect2(x, 4, w, 22)})
+	for t in tasks:
+		t["entry"] = entries.get(t.key, {}) if t.kind == "window" else {}
+		t["rect"] = Rect2(x, 4, w, 22)
 		x += w + 2
-	return out
+	return tasks
 
 
-func _task_title(e: Dictionary) -> String:
+func _task_title(t: Dictionary) -> String:
+	if t.kind == "note":
+		return String(ProgramStore.locate_item(String(t.key)).get("item", {}).get("name", "Note"))
+	var e: Dictionary = t.entry
 	if e.kind == "my-computer":
 		return "My Computer"
 	if e.kind == "find":
@@ -98,12 +116,21 @@ func _task_title(e: Dictionary) -> String:
 	return String(ProgramStore.find_group(e.groupId).get("name", ""))
 
 
-func _task_icon(e: Dictionary) -> String:
+func _task_icon(t: Dictionary) -> String:
+	if t.kind == "note":
+		return Notes.ICON
+	var e: Dictionary = t.entry
 	if e.kind == "my-computer":
 		return "my-computer"
 	if e.kind == "find":
 		return "find"
 	return String(ProgramStore.find_group(e.groupId).get("icon", "folder"))
+
+
+## The button text: `title` shortened with "..." to fit `room` pixels, its "&" kept literal.
+static func fit_title(title: String, room: int, bold: bool) -> String:
+	var measure := func(s: String) -> int: return Win95Draw.measure(s.replace("&", "&&"), bold)
+	return Win95TaskbarState.ellipsize(title, room, measure).replace("&", "&&")
 
 
 # ------------------------------------------------------------------- drawing
@@ -126,23 +153,20 @@ func _draw() -> void:
 	Win95Draw.icon(self, Win95IconCatalog.texture("windows-logo", "small"), sr.position + Vector2(4, 3) + off)
 	Win95Draw.text(self, sr.position + Vector2(22, 4) + off, "Start", Win95Draw.TEXT, {"bold": true})
 	# tasks
-	var active_id: String = shell.windows.active_window_id
 	for t in task_buttons():
-		var e: Dictionary = t.entry
 		var r: Rect2 = t.rect
-		var minimized: bool = shell.windows.entry_is_minimized(e)
-		var state := Win95TaskbarState.button_state(e.id, active_id, minimized)
-		var active := state == "active"
-		if active or _pressed_task == e.id:
+		var active: bool = t.state == "active"
+		if active or _pressed_task == t.id:
 			Win95Draw.pressed(self, r)
 			if active:
 				Win95Draw.dither_checker(self, r.grow(-2), r.position + Vector2(2, 2), Win95Draw.HIGHLIGHT)
 		else:
 			Win95Draw.raised(self, r)
 		var o := Vector2.ZERO  # .pressed/:active only change the border and shadow, not the content position
-		Win95Draw.icon(self, Win95IconCatalog.texture(_task_icon(e), "small"), r.position + Vector2(6, 3) + o)
+		Win95Draw.icon(self, Win95IconCatalog.texture(_task_icon(t), "small"), r.position + Vector2(6, 3) + o)
 		if r.size.x > 40:
-			Win95Draw.text(self, r.position + Vector2(25, 4) + o, _task_title(e), Win95Draw.TEXT, {"bold": active, "max_width": mini(126, int(r.size.x) - 33)})
+			var room := mini(126, int(r.size.x) - 33)
+			Win95Draw.text(self, r.position + Vector2(25, 4) + o, fit_title(_task_title(t), room, active), Win95Draw.TEXT, {"bold": active, "max_width": room})
 	# tray
 	var tr := tray_rect()
 	Win95Draw.status(self, tr)
@@ -152,10 +176,11 @@ func _draw() -> void:
 
 # -------------------------------------------------------------------- input
 
+## The task button under `p` (see task_buttons), or {}.
 func _task_at(p: Vector2) -> Dictionary:
 	for t in task_buttons():
 		if (t.rect as Rect2).has_point(p):
-			return t.entry
+			return t
 	return {}
 
 
@@ -169,8 +194,8 @@ func _gui_input(event: InputEvent) -> void:
 				_release(mb.position)
 			accept_event()
 		elif mb.button_index == MOUSE_BUTTON_RIGHT and mb.pressed:
-			var e := _task_at(mb.position)
-			_open_menu(get_global_transform() * mb.position, e)
+			var t := _task_at(mb.position)
+			_open_menu(get_global_transform() * mb.position, t)
 			accept_event()
 
 
@@ -185,9 +210,9 @@ func _press(p: Vector2) -> void:
 			shell.input.close_start_menu()
 		queue_redraw()
 		return
-	var e := _task_at(p)
-	if not e.is_empty():
-		_pressed_task = e.id
+	var t := _task_at(p)
+	if not t.is_empty():
+		_pressed_task = t.id
 		queue_redraw()
 
 
@@ -197,11 +222,24 @@ func _release(p: Vector2) -> void:
 	_pressed_task = ""
 	queue_redraw()
 	if id != "":
-		var e := _task_at(p)
-		if not e.is_empty() and e.id == id:
-			click_task(e)
+		var t := _task_at(p)
+		if not t.is_empty() and t.id == id:
+			click_button(t)
 
 
+## A click on a task button (see task_buttons): windows as click_task; a note comes to the front
+## with the keyboard, and its button while it is the active one keeps it there
+## (Win95TaskbarState.note_click_action).
+func click_button(t: Dictionary) -> void:
+	if t.kind != "note":
+		click_task(t.entry)
+		return
+	if Win95TaskbarState.note_click_action(t.state == "active") == "keep" and shell.note_has_focus():
+		return
+	shell.open_note(String(t.key))  # front + keyboard (back, for "keep", if a dialog took it)
+
+
+## A click on a window's task button: minimize the active one, restore a minimized one, else focus it.
 func click_task(e: Dictionary) -> void:
 	var windows: Win95WindowStore = shell.windows
 	var minimized := windows.entry_is_minimized(e)
@@ -224,8 +262,8 @@ func _on_drag_move(_event: InputEventMouse, pos: Vector2) -> bool:
 		_set_hover("")
 		return false
 	var local := pos - global_position
-	var e := _task_at(local) if Rect2(Vector2.ZERO, size).has_point(local) else {}
-	_set_hover(String(e.get("id", "")))
+	var t := _task_at(local) if Rect2(Vector2.ZERO, size).has_point(local) else {}
+	_set_hover(String(t.get("id", "")))
 	return false
 
 
@@ -239,9 +277,13 @@ func _set_hover(id: String) -> void:
 
 
 func _on_hover_timeout() -> void:
-	var e: Dictionary = shell.windows.find_entry(_hover_id)
-	if not e.is_empty():
-		activate_window(e)
+	if Win95TaskbarState.is_note_task(_hover_id):
+		if shell.note_window(Win95TaskbarState.note_item_id(_hover_id)) != null:
+			shell.activate_task(_hover_id)
+	else:
+		var e: Dictionary = shell.windows.find_entry(_hover_id)
+		if not e.is_empty():
+			activate_window(e)
 	_hover_id = ""
 
 
@@ -279,8 +321,15 @@ func _minimize_all() -> void:
 		shell.windows.minimize_entry(e)
 
 
-func _open_menu(at: Vector2, entry: Dictionary) -> void:
+## The menu for a right-click at `at`: the note menu on a note's button, the window menu on a
+## window's, the taskbar menu elsewhere (`task` is {} then; see task_buttons).
+func _open_menu(at: Vector2, task: Dictionary) -> void:
 	_close_menu()
+	var opts := {"bottom_inset": M.taskbarHeight, "on_close": func(): _menu = null}
+	if task.get("kind", "") == "note":
+		_menu = shell.open_note_menu(String(task.key), at, opts)
+		return
+	var entry: Dictionary = task.get("entry", {})
 	var items: Array
 	if entry.is_empty():
 		var any := not _visible_entries().is_empty()
@@ -304,7 +353,7 @@ func _open_menu(at: Vector2, entry: Dictionary) -> void:
 			{"id": "sep", "separator": true},
 			{"id": "close", "label": "&Close", "defaultItem": true, "onSelect": func(): shell.windows.close_entry(entry)},
 		]
-	_menu = Win95Menu.open(shell, items, at, {"bottom_inset": M.taskbarHeight, "on_close": func(): _menu = null})
+	_menu = Win95Menu.open(shell, items, at, opts)
 
 
 func _run_request(win: Win95Window) -> void:
@@ -326,6 +375,10 @@ func auto_lookup(id: String) -> Variant:
 		var tb := task_buttons()
 		if tb.size() > 0:
 			return Rect2(global_position + (tb[0].rect as Rect2).position, (tb[0].rect as Rect2).size)
+	if id.begins_with("w95.task:"):  # w95.task:<window entry id> or w95.task:note:<note item id>
+		for t in task_buttons():
+			if t.id == id.substr(9):
+				return Rect2(global_position + (t.rect as Rect2).position, (t.rect as Rect2).size)
 	return null
 
 
@@ -343,14 +396,11 @@ func a11y_part_specs() -> Array:
 	start["expanded"] = open
 	start["click"] = func(_d: Variant) -> void: shell.input.toggle_start_menu()
 	var out := [start]
-	var active_id: String = shell.windows.active_window_id
 	for t in task_buttons():
-		var e: Dictionary = t.entry
-		var state := Win95TaskbarState.button_state(e.id, active_id, shell.windows.entry_is_minimized(e))
-		var spec := A11y.button(_task_title(e).replace("&", "&&"))
+		var spec := A11y.button(_task_title(t).replace("&", "&&"))
 		spec["bounds"] = t.rect
-		spec["description"] = state if state != "inactive" else ""
-		spec["click"] = _a11y_click_task.bind(String(e.id))
+		spec["description"] = t.state if t.state != "inactive" else ""
+		spec["click"] = _a11y_click_task.bind(String(t.id))
 		out.append(spec)
 	out.append(A11y.static_text(_clock, tray_rect()))
 	return out
@@ -358,8 +408,8 @@ func a11y_part_specs() -> Array:
 
 func _a11y_click_task(_data: Variant, id: String) -> void:
 	for t in task_buttons():
-		if t.entry.id == id:
-			click_task(t.entry)
+		if t.id == id:
+			click_button(t)
 			return
 
 

@@ -201,7 +201,7 @@ func test_note_key_actions() -> void:
 	expect_eq(Win95ShellInput.note_key_action("cycle-window"), "cycle-window")
 	expect_eq(Win95ShellInput.note_key_action("close-window"), "close-note")
 	expect_eq(Win95ShellInput.note_key_action("system-menu"), "")
-	expect_eq(Win95ShellInput.note_key_action("context-menu"), "")
+	expect_eq(Win95ShellInput.note_key_action("context-menu"), "note-menu", "Shift+F10 opens the note menu")
 	expect_eq(Win95ShellInput.note_key_action(""), "")
 
 
@@ -341,16 +341,28 @@ func test_pointer_routing_around_notes() -> void:
 	mb.button_index = MOUSE_BUTTON_LEFT
 	mb.pressed = true
 	shell.windows.activate_desktop()
+	expect(not shell.note_has_focus(), "activating the desktop takes the keyboard from the note")
 	expect(not shell._route_note_press(mb, Vector2(250, 150)), "a left press goes on to the note itself")
 	expect_eq(shell.windows.active_window_id, Win95WindowStore.NOTE_ACTIVE)
+	expect_eq(shell.windows.active_note_id(), id)
+	mb.position = Vector2(50, 60)  # in the note's text
+	note._gui_input(mb)
 	expect(shell.note_has_focus())
 	expect(not shell._route_note_press(mb, Vector2(50, 300)), "a press elsewhere goes on to what is there")
 	expect(not shell.note_has_focus(), "and takes the keyboard back from the note")
 	mb.button_index = MOUSE_BUTTON_RIGHT
-	expect(shell._route_note_press(mb, Vector2(250, 150)), "right-click on a note opens its menu")
-	var menus := shell.popup_layer.get_children().filter(func(c): return c is Win95Menu)
+	expect(shell._route_note_press(mb, Vector2(250, 150)), "a right-click on the note's text opens its menu")
+	var menus := shell.popup_layer.get_children().filter(func(c): return c is Win95Menu and not c.is_queued_for_deletion())
 	expect_eq(menus.size(), 1)
-	expect_eq(menus[0].items.map(func(i): return i.id), ["note-close", "sep", "note-properties"])
+	expect_eq(menus[0].items.map(func(i): return i.id), ["note-close", "note-properties", "sep", "note-delete"])
+	expect_eq(menus[0].position, Vector2(250, 150), "at the pointer")
+	menus[0].close()
+	await _tree().process_frame
+	mb.global_position = shell.global_position + Vector2(260, 104)
+	note._gui_input(mb)  # the note's own request (its title strip) takes the same path
+	menus = shell.popup_layer.get_children().filter(func(c): return c is Win95Menu and not c.is_queued_for_deletion())
+	expect_eq(menus.size(), 1, "show_note_menu")
+	expect_eq(menus[0].position, Vector2(260, 104))
 	menus[0].close()
 	# the Start menu and the desktop menu are drawn above the notes
 	expect(shell.start_menu.get_index() > shell.notes_layer.get_index())
