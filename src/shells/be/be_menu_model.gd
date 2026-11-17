@@ -89,20 +89,22 @@ static func menu_bar(key: String, is_computer: bool, view: String, sel: String) 
 
 ## Deskbar (logo) menu: [icon-key, label, action] rows.
 ## `buckets` = LaunchGroups.collect_launch_groups(): when given (even empty) Launch All and one
-## "Launch Group N" row per used number are listed, like the Classic Mac OS Special menu.
-static func deskbar_menu(buckets: Variant = null) -> Array:
+## "Launch Group N: Name (n items)" row per used number are listed, like the Classic Mac OS Special menu
+## (`names` = settings.launchGroupNames). Launch Groups… (the manager) and Export All… / Import All…
+## (the whole launcher in one file) are always offered.
+static func deskbar_menu(buckets: Variant = null, names: Variant = null) -> Array:
 	var out := [
 		row("About Program Manager…", "about.open", {}, {"icon": "logo"}), SEP,
 		row("Find…", "find.open", {}, {"icon": "find"}), row("Run…", "run.open", {}, {"icon": "terminal"}),
-		row("Launcher Tools…", "tools.open", {}, {"icon": "tools"}), row("Backgrounds…", "backgrounds.open", {}, {"icon": "tools"})]
+		row("Launcher Tools…", "tools.open", {}, {"icon": "tools"}), row("Backgrounds…", "backgrounds.open", {}, {"icon": "tools"}),
+		row("Help", "help.open", {}, {"icon": "question"}), SEP]
 	if buckets is Array:
-		out.append(SEP)
 		out.append(row("Launch All", "launch.all", {}, {"icon": "terminal", "disabled": buckets.is_empty()}))
 		for b in buckets:
-			var c: int = b.items.size()
-			out.append(row("Launch Group %d (%d %s)" % [int(b.groupNumber), c, "item" if c == 1 else "items"],
+			out.append(row(LaunchGroups.launch_label(int(b.groupNumber), b.items.size(), names),
 				"launch.group", {"n": int(b.groupNumber)}, {"icon": "terminal"}))
-	out.append_array([row("Help", "help.open", {}, {"icon": "question"}), SEP,
+	out.append_array([row("Launch Groups…", "launchgroups.open", {}, {"icon": "tools"}), SEP,
+		row("Export All…", "data.export", {}, {"icon": "volume"}), row("Import All…", "data.import", {}, {"icon": "doc"}), SEP,
 		row("Restart", "session.restart", {}, {"icon": "info"}), row("Shut Down…", "session.shutdown", {}, {"icon": "critical"})])
 	return out
 

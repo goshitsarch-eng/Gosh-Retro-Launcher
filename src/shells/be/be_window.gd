@@ -66,7 +66,7 @@ func refresh() -> void:
 	var groups: Array = ProgramStore.groups
 	_title = "Find" if is_find else BeDialogLogic.window_title(key, groups)
 	if not is_find:
-		var ents := BeDialogLogic.entries_for(key, groups)
+		var ents := BeDialogLogic.entries_for(key, groups, ProgramStore.launch_group_names())
 		var e: Dictionary = shell.windows.get_entry(key)
 		view.refresh(ents, String(e.get("view", "large")))
 		_status = BeDialogLogic.status_count(ents.size())

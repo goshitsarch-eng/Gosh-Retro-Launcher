@@ -33,11 +33,15 @@ func _gui_input(event: InputEvent) -> void:
 		accept_event()
 
 
-func _draw() -> void:
-	var box := Rect2(0, (size.y - 15) / 2.0, 15, 15)
-	BeDraw.gradient_diag(self, box.grow(-1), BeTheme.b("ffffff"), BeTheme.b("d8d8d8"))
-	BeDraw.border(self, box, BeTheme.b("6a6a6a"))
-	if checked:
+## The 15px box with its tick (also drawn by the "checks" lists in BeChoice).
+static func draw_box(ci: CanvasItem, box: Rect2, on: bool) -> void:
+	BeDraw.gradient_diag(ci, box.grow(-1), BeTheme.b("ffffff"), BeTheme.b("d8d8d8"))
+	BeDraw.border(ci, box, BeTheme.b("6a6a6a"))
+	if on:
 		var c := BeTheme.t("1a3a8a")
-		draw_polyline(PackedVector2Array([box.position + Vector2(3.5, 7.5), box.position + Vector2(6, 10.5), box.position + Vector2(11.5, 3.5)]), c, 2.0, true)
+		ci.draw_polyline(PackedVector2Array([box.position + Vector2(3.5, 7.5), box.position + Vector2(6, 10.5), box.position + Vector2(11.5, 3.5)]), c, 2.0, true)
+
+
+func _draw() -> void:
+	draw_box(self, Rect2(0, (size.y - 15) / 2.0, 15, 15), checked)
 	BeFont.draw(self, Vector2(23, (size.y - BeGeometry.LINE) / 2.0), label, BeTheme.t("000000"))

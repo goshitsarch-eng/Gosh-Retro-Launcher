@@ -186,7 +186,10 @@ func test_clock_run_target_and_feedback_text() -> void:
 	expect_eq(BeDialogLogic.run_target(groups, "calc").path, "calc")
 	expect_eq(BeDialogLogic.run_target(groups, " "), {})
 	expect_eq(BeDialogLogic.feedback_text({"visible": false}), "")
-	expect_eq(BeDialogLogic.feedback_text({"visible": true, "status": "launching", "currentGroup": 1, "totalGroups": 3}), "Launching group 2 of 3…")
+	expect_eq(BeDialogLogic.feedback_text({"visible": true, "status": "launching", "currentGroup": 5, "completedGroups": 1, "totalGroups": 3}),
+		"Launching Group 5 (2 of 3)…", "the group number, then its place in the run")
+	expect_eq(BeDialogLogic.feedback_text({"visible": true, "status": "launching", "currentGroup": 5, "completedGroups": 0, "totalGroups": 1},
+		{"5": "Evening"}), "Launching Group 5: Evening…")
 	expect_eq(BeDialogLogic.feedback_text({"visible": true, "status": "complete", "totalItems": 1}), "Launched 1 program.")
 	expect_eq(BeDialogLogic.feedback_text({"visible": true, "status": "error", "failures": 2}), "2 programs could not be started.")
 	expect_eq(BeDialogLogic.launch_error({"error": "bad"}, {"path": "p"}), "bad")

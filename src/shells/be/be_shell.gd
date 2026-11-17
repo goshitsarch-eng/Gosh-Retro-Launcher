@@ -15,6 +15,7 @@ var dialog_layer: Control
 var popup_layer: Control
 var toast: BeToast
 var _launch_in_progress := false
+var _launch_group_names := {}
 
 var find_state := {"q": "", "where": "all", "type": "all", "ran": false}
 var selection := {"key": "", "id": ""}   ## selected entry inside a window ("find" for the Find window)
@@ -65,6 +66,7 @@ func _ready() -> void:
 	ProgramStore.settings_changed.connect(_on_settings_changed)
 	UIState.launch_feedback_changed.connect(_on_launch_feedback)
 	BeUi.auto_id(self, "be.shell")
+	_launch_group_names = ProgramStore.launch_group_names().duplicate()
 	_layout()
 	if windows.order.is_empty():
 		windows.open(BeWindowStore.COMPUTER)  # the design opens Program Manager on first show
@@ -136,6 +138,10 @@ func _on_settings_changed() -> void:
 	if dark != BeTheme.dark:
 		BeTheme.dark = dark
 		_redraw_tree(self)
+	var names := ProgramStore.launch_group_names()
+	if not Jsonx.equal(names, _launch_group_names):
+		_launch_group_names = names.duplicate()
+		_refresh_windows()  # List View shows launch group names
 
 
 func _redraw_tree(n: Node) -> void:
@@ -148,7 +154,7 @@ func _redraw_tree(n: Node) -> void:
 
 
 func _on_launch_feedback() -> void:
-	var text := BeDialogLogic.feedback_text(UIState.launch_feedback)
+	var text := BeDialogLogic.feedback_text(UIState.launch_feedback, ProgramStore.launch_group_names())
 	if text == "":
 		toast.hide_toast()
 	else:
@@ -349,6 +355,12 @@ func do_action(action: String, args: Dictionary) -> void:
 			for b in LaunchGroups.collect_launch_groups(ProgramStore.groups):
 				if int(b.groupNumber) == n:
 					launch_buckets([b])
+		"launchgroups.open":
+			BeLaunchGroups.open(self)
+		"data.export":
+			export_all()
+		"data.import":
+			confirm_import_all()
 		"session.restart":
 			restart_session()
 		"session.shutdown":
@@ -409,6 +421,32 @@ func launch_buckets(buckets: Array) -> void:
 	if is_inside_tree() and bool(ProgramStore.settings.get("minimizeOnUse", false)):
 		Platform.minimize_window()
 	_launch_in_progress = false
+
+
+# ------------------------------------------------------------ export / import
+
+## Export All… (Deskbar menu): the whole launcher to one JSON file.
+func export_all() -> void:
+	_report_transfer("export", await Platform.export_all())
+
+
+## Import All… (Deskbar menu): confirm, then replace everything from a file (the store backs up first).
+func confirm_import_all() -> void:
+	BeDialogs.confirm(self, BeDialogLogic.import_confirm_lines(), "warning", "OK", import_all, "be.dialog.import-confirm")
+
+
+func import_all() -> void:
+	_report_transfer("import", await Platform.import_data())
+
+
+func _report_transfer(kind: String, result: Dictionary) -> void:
+	var r := BeDialogLogic.transfer_report(kind, result)
+	if not bool(r.show) or not is_inside_tree():
+		return
+	if bool(r.toast):
+		toast.show_text(String(r.text), 4.0)
+	else:
+		BeDialogs.message(self, r.lines, String(r.icon))
 
 
 # ------------------------------------------------------------------ host events
