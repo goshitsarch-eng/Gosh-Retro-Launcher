@@ -33,6 +33,7 @@ shells it is drawn in integer logical pixels (the host applies the integer conte
 * **Desktop**: icon column wraps at the bottom margin; right-click = New Folder, Clean Up, Find…, Launcher Tools…,
   Backgrounds…, Help. Launcher Tools… emits `request_show_launcher_tools` (also the Deskbar tools button and
   Ctrl+Alt+T).
+* **Launch Groups…** (Deskbar menu, `be_launch_groups.gd`) creates, renames, renumbers, deletes and launches launch groups and edits their members in a checklist. The Deskbar menu also has **Export All…** / **Import All…** (asks first). Menus taller than the shell scroll.
 * **Deskbar**: logo menu (About, Find, Run, Launcher Tools, Backgrounds, Help, Restart, Shut Down) followed by a
   submenu per group listing its items; clock (`h:mm AM/PM`, fixed in captures); one row per open window (click shows /
   hides, right-click Show/Hide/Zoom/Close).

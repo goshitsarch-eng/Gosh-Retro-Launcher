@@ -37,3 +37,15 @@ meta `auto_id`). Rects are in shell logical pixels. `<label>` matches an item's 
 
 Do not run two captures at once (or alongside another shell's capture): concurrent Godot instances give
 unreliable injected input and stale PNGs.
+
+## Launch groups
+
+| Id | Element |
+|----|---------|
+| `mac.launch-groups:<n>` | row for group `n` in the Launch Groups dialog |
+| `mac.launch-groups.new` / `.rename` / `.members` / `.delete` / `.launch` / `.done` | its buttons |
+| `mac.launch-groups.number` | Number pop-up |
+| `mac.launch-group-members:<program name \| groupId:itemId \| index>` | a Members checklist row |
+
+Export All… and Import All… are File menu rows (`mac.popup-item:Export All…`). Every mac dialog now also cancels on
+Cmd/Ctrl-period.

@@ -38,3 +38,17 @@ Ids resolve through `Automation` (`src/app/automation.gd`): nodes in group `pm_a
 `be-deskbar`, `be-deskbar-sub`, `be-getinfo`, `be-rename`, `be-trash`, `be-trash-confirm`, `be-newfolder`,
 `be-newfolder-ok`, `be-find`, `be-find-results`, `be-quicksearch`, `be-about`, `be-launch`, `be-two-windows`,
 `be-hidden`, `be-move`, `be-resize`, `be-close`, `be-tools`, `be-switch`, `be-dark`, `be-dark-folder`, `be-scale3`.
+
+## Launch groups and Export All / Import All
+
+| Id | Element |
+|----|---------|
+| `be.dialog.launch-groups` | the Launch Groups dialog |
+| `be.dialog.launch-groups-list:<n>` | row for group `n` |
+| `be.dialog.launch-group-name` / `be.dialog.select:number` | name field / number select in the sub-dialogs |
+| `be.dialog.launch-group-number` / `be.dialog.launch-group-delete` | Number and Delete sub-dialogs |
+| `be.dialog.members` / `be.dialog.members-list:<groupId:itemId>` | Members dialog / one checklist row |
+| `be.dialog.select:launchGroup` | Launch group select in Get Info |
+| `be.dialog.import-confirm` | Import All confirmation |
+
+Deskbar menus taller than the shell scroll; looking up a menu row scrolls it into view first.

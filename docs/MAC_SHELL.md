@@ -19,6 +19,7 @@ design prototype's Mac block. Groups are folders, items are application icons.
   `update_settings({theme})` for dark mode). Window geometry, view mode, selection and the desktop colour are session-only:
   the schema has no Mac fields and none were added.
 * Dark theme follows `settings.theme`: `MacTheme.b/t/s(hex)` map the design's literals (DARK.b/t/s tables).
+* **Launch Groups…** (Special menu, `mac_launch_groups.gd`) creates, renames, renumbers, deletes and launches launch groups and edits their members in a checklist. File menu: **Export All…** / **Import All…** (asks first).
 * Launching shows a toast ("Starting X..."), failures an alert; Launch All / Launch Group use `LaunchGroups` with the
   shared `UIState` launch feedback. "Launcher Tools..." emits `request_show_launcher_tools`; Ctrl+Alt+T also does.
 * Shell switch (Shut Down > Switch to Windows 95) uses `apply_settings_transaction` + `Platform.recreate_for_shell`, like

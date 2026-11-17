@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - macOS export: ETC2 ASTC import is enabled, so the universal macOS export succeeds (RT-01).
 - Stored values that are out of range or of the wrong type are repaired on load and on import. Every repaired value is counted in the report, including a missing or wrong-type list or settings object (CORE-01).
 - A stored or imported `launchGroup` above 8 is kept and launched in order. Only a negative number, a fraction or a string becomes 0, and that counts as a repair.
+- Every item editor keeps a launch group above 8 when the item is saved; the WfW Properties dialog and Launcher Tools used to save it as 8.
+- The BeOS launch message no longer shows the group number as its position in the batch (BE-01).
 - Saves no longer skip silently. A failed groups, settings or workspace-profile write shows a notice, logs an error and stays pending. Groups and settings are retried by the next save of the same kind, profiles by the next save of any kind, and all of them on exit (CORE-01).
 - Restoring a backup writes one safety backup, not two.
 - A JSON import is refused, and nothing is replaced, when its safety backup cannot be written.
@@ -23,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Import results, repaired values and save problems are reported to the user.
 
 ### Added
+- Launch groups can be managed in every desktop. A Launch Groups window (WfW Launcher menu, Windows 95 Start menu, Mac Special menu, BeOS Deskbar) creates, renames, renumbers, deletes and launches groups and picks their programs from a checklist. Launcher Tools has the same controls.
+- Launch groups have optional names (`settings.launchGroupNames`), shown everywhere a group appears, for example "Launch Group 3: Morning (2 items)". A named group can be empty. Moving a group to a number that is taken swaps the two.
+- Windows 95 supports launch groups: a Launch group field in Properties and the Create Shortcut wizard, a Launch Groups cascade in Start > Programs, and an "In a launch group" Find filter.
+- Export All... and Import All... in every desktop (WfW File menu, Windows 95 Start > Settings, Mac File menu, BeOS Deskbar, Launcher Tools) save or load the whole launcher in one file. Import asks first and backs up the current data. In Launcher Tools they replace Import JSON... and Export JSON....
+- BeOS menus taller than the screen scroll, so the longer Deskbar menu fits at 640x480.
 - Screenshots of the four desktops in `docs/screenshots/`, shown in the README.
 - `tools/capture_screenshots.sh`, which regenerates the screenshots from the running app with a temporary data folder.
 - `PM_CAPTURE_NOTICE=1` (opt-in, capture runs only) shows store notices. Every capture run with it set then posts one sample save-failure notice, so the shell's message box can be checked. The `wfw-settings` view captures the settings dialog.
