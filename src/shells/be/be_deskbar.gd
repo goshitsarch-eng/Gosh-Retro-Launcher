@@ -156,7 +156,7 @@ func toggle_start() -> void:
 		return
 	shell.close_all_menus()
 	var rows := []
-	for r in BeMenuModel.deskbar_menu(LaunchGroups.collect_launch_groups(ProgramStore.groups)):
+	for r in BeMenuModel.deskbar_menu(LaunchGroups.collect_launch_groups(ProgramStore.groups), ProgramStore.launch_group_names()):
 		var row: Dictionary = r.duplicate()
 		if not row.get("sep", false):
 			row.icon = BeIconCatalog.texture(String(row.icon))

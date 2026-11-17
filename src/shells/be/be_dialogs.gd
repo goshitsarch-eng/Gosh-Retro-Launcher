@@ -8,7 +8,8 @@ const SWATCHES := [["#336698", "Be Blue"], ["#2f4f6f", "Night"], ["#3f6f5f", "Mo
 const TOPICS := [
 	["Starting programs", "Double-click an icon in a folder window to start it. Use the Deskbar menu to open Find, Run and Launcher Tools."],
 	["Creating folders and programs", "Right-click the desktop and choose New Folder, or open a folder and choose Add Program… from its File menu. You can also drag files into a folder window to add them quickly."],
-	["Batch launching", "Give items a batch group number from 1 to 8 in Get Info or Launcher Tools. Then use Launch Group or Launch All to start them with the delay you set."],
+	["Batch launching", "Choose Launch Groups… in the Deskbar menu to make, name, renumber or delete launch groups and to pick their programs, or give a single program a group in Get Info. Launch Group starts one group and Launch All starts every group in number order, with the delay you set."],
+	["Export All and Import All", "Export All… in the Deskbar menu saves everything (folders, programs, launch groups and settings) to one file. Import All… replaces everything with a file's contents after backing up your current setup."],
 	["Importing .GRP files", "Open Launcher Tools and choose Import .GRP to bring in an original Windows 3.x program group. Export .GRP writes one back out."],
 	["Switching shells", "Press Ctrl+Alt+T to open Launcher Tools, pick a shell under Appearance, and click Apply."],
 	["Backups and profiles", "Settings are saved automatically. The newest 12 automatic restore points are kept, and you can create manual restore points and named workspace profiles in Launcher Tools."],
@@ -30,6 +31,18 @@ static func message(shell: Control, lines: Array, icon: String = "information", 
 		d.set_buttons([{"label": "Yes", "default": true, "cb": on_confirm}, {"label": "No"}])
 	else:
 		d.set_buttons([{"label": "OK", "default": true}])
+	d.finish()
+	return d
+
+
+## OK / Cancel box (OK default): `on_ok` runs when OK is clicked; its return value is ignored.
+static func confirm(shell: Control, lines: Array, icon: String, ok_label: String, on_ok: Callable, auto_id: String = "be.dialog.confirm") -> BeDialog:
+	var d := BeDialog.open(_layer(shell), "", 460, false, true, auto_id)
+	d.icon_tex = BeIconCatalog.texture(icon)
+	_text_lines(d, lines)
+	d.set_buttons([{"label": ok_label, "default": true, "cb": func():
+		on_ok.call()
+		return false}, {"label": "Cancel"}])
 	d.finish()
 	return d
 
@@ -134,7 +147,8 @@ static func group_info(shell: Control, gid: String) -> void:
 	box.add_theme_constant_override("separation", 6)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(BeLabel.make("Contains: %s" % BeDialogLogic.plural(stats.items, "item", "items"), false, d.content_width()))
-	box.add_child(BeLabel.make("In launch groups: %d" % stats.batched, false, d.content_width()))
+	box.add_child(BeLabel.make("In launch groups: %s" % BeDialogLogic.launch_group_summary(g, ProgramStore.launch_group_names()),
+		false, d.content_width()))
 	d.add_row(box)
 	var f := BeField.make(String(g.name), "be.dialog.field:name")
 	d.row_grid([["Name:", f]], 110)
@@ -168,9 +182,7 @@ static func item_info(shell: Control, gid: String, iid: String) -> void:
 		"environment": BeField.make(String(v.environment), "be.dialog.field:environment"),
 		"shortcutKey": BeField.make(String(v.shortcutKey), "be.dialog.field:shortcutKey"),
 	}
-	var batch_opts := [["0", "None"]]
-	for n in range(1, BeDialogLogic.MAX_LAUNCH_GROUP + 1):
-		batch_opts.append([str(n), "Group %d" % n])
+	var batch_opts := BeDialogLogic.launch_group_options(ProgramStore.launch_group_names(), int(v.launchGroup))
 	var batch := BeSelect.make(batch_opts, str(v.launchGroup), "be.dialog.select:launchGroup", 140)
 	var run_opts := []
 	for m in BeDialogLogic.RUN_MODE_LABELS:
@@ -188,7 +200,7 @@ static func item_info(shell: Control, gid: String, iid: String) -> void:
 		["Arguments:", fields.arguments],
 		["Environment:", fields.environment],
 		["Shortcut key:", fields.shortcutKey],
-		["Batch group:", batch],
+		["Launch group:", batch],
 		["Run:", run_mode]], 100, Vector2(12, 10), true)
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for c in grid.get_children():
