@@ -26,6 +26,8 @@ var paper := Notes.COLORS[Notes.DEFAULT_COLOR]
 var title := ""
 ## Height of the title strip for this note's font.
 var title_h := TITLE_H
+## Gap between the paper's side edges and the text (style key text_inset).
+var text_inset := 3
 
 var _edit: TextEdit
 var _save_timer: Timer
@@ -35,12 +37,13 @@ var _start := Rect2()
 var _close_down := false
 
 
-## `style`: {font: Font, font_size: int, text_color: Color} from the shell (all optional).
+## `style`: {font: Font, font_size: int, text_color: Color, text_inset: int} from the shell (all optional).
 func _init(id: String = "", style: Dictionary = {}) -> void:
 	item_id = id
 	font = style.get("font", RetroFont.instance(RetroFont.WIN95).font)
 	font_size = int(style.get("font_size", 11))
 	text_color = style.get("text_color", Color.BLACK)
+	text_inset = int(style.get("text_inset", 3))
 	title_h = maxi(TITLE_H, int(ceilf(font.get_height(font_size))) + 3)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	focus_mode = Control.FOCUS_NONE
@@ -49,6 +52,7 @@ func _init(id: String = "", style: Dictionary = {}) -> void:
 	_edit.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	_edit.caret_blink = false
 	_edit.context_menu_enabled = false
+	_edit.gui_input.connect(_on_text_input)
 	_edit.highlight_current_line = false
 	_edit.scroll_smooth = false
 	_edit.set_meta("auto_id", "note.text:" + id)
@@ -167,12 +171,18 @@ func _apply_colors() -> void:
 
 
 func _layout() -> void:
-	_edit.position = Vector2(3, title_h + 2)
-	_edit.size = Vector2(maxf(8, size.x - 6), maxf(8, size.y - title_h - 3 - GRIP))
+	_edit.position = Vector2(text_inset, title_h + 2)
+	_edit.size = Vector2(maxf(8, size.x - text_inset * 2), maxf(8, size.y - title_h - 3 - GRIP))
 
 
+## The close box: CLOSE px at the top left of the strip. A strip taller than 17 px (a large font) gets a
+## larger box, centred in it.
 func _close_rect() -> Rect2:
-	return Rect2(4, 3, CLOSE, CLOSE)
+	var s := maxi(CLOSE, title_h - 10)
+	if s == CLOSE:
+		return Rect2(4, 3, CLOSE, CLOSE)
+	var y := floori((title_h - s) / 2.0)
+	return Rect2(maxi(4, y), y, s, s)
 
 
 func _grip_rect() -> Rect2:
@@ -265,6 +275,16 @@ func _gui_input(event: InputEvent) -> void:
 				_close_down = inside
 				queue_redraw()
 		accept_event()
+
+
+## A right-click on the text opens the note's menu too: the text box stops mouse events, so they never
+## reach _gui_input.
+func _on_text_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+		_edit.accept_event()
+		move_to_front()
+		activated.emit(item_id)
+		context_requested.emit(item_id, event.global_position)
 
 
 func _global_scale() -> float:
