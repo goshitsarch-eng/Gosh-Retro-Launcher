@@ -7,7 +7,12 @@ extends Control
 ## and passes its own font through note_style().
 
 signal closed(item_id: String)
+## Right-click on the note: the hosting shell shows its own menu (ShellBase.show_note_menu).
+signal context_requested(item_id: String, global_pos: Vector2)
+## The note came to the front (clicked or focused), for taskbars and window lists.
+signal activated(item_id: String)
 
+## Smallest title strip; a larger font makes it taller (see title_h).
 const TITLE_H := 13
 const CLOSE := 7
 const GRIP := 9
@@ -19,6 +24,8 @@ var font_size := 11
 var text_color := Color.BLACK
 var paper := Notes.COLORS[Notes.DEFAULT_COLOR]
 var title := ""
+## Height of the title strip for this note's font.
+var title_h := TITLE_H
 
 var _edit: TextEdit
 var _save_timer: Timer
@@ -34,6 +41,7 @@ func _init(id: String = "", style: Dictionary = {}) -> void:
 	font = style.get("font", RetroFont.instance(RetroFont.WIN95).font)
 	font_size = int(style.get("font_size", 11))
 	text_color = style.get("text_color", Color.BLACK)
+	title_h = maxi(TITLE_H, int(ceilf(font.get_height(font_size))) + 3)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	focus_mode = Control.FOCUS_NONE
 	add_to_group("pm_auto")
@@ -51,7 +59,9 @@ func _init(id: String = "", style: Dictionary = {}) -> void:
 	_edit.add_theme_font_size_override("font_size", font_size)
 	_edit.add_theme_constant_override("line_spacing", 1)
 	_edit.text_changed.connect(_on_text_changed)
-	_edit.focus_entered.connect(func(): move_to_front())
+	_edit.focus_entered.connect(func():
+		move_to_front()
+		activated.emit(item_id))
 	add_child(_edit)
 	_save_timer = Timer.new()
 	_save_timer.one_shot = true
@@ -82,6 +92,7 @@ func place(r: Rect2i) -> void:
 ## Brings the note to the front and puts the caret after its text, so typing adds to the note.
 func focus_text() -> void:
 	move_to_front()
+	activated.emit(item_id)
 	_edit.grab_focus()
 	var last := _edit.get_line_count() - 1
 	_edit.set_caret_line(last)
@@ -156,8 +167,8 @@ func _apply_colors() -> void:
 
 
 func _layout() -> void:
-	_edit.position = Vector2(3, TITLE_H + 2)
-	_edit.size = Vector2(maxf(8, size.x - 6), maxf(8, size.y - TITLE_H - 3 - GRIP))
+	_edit.position = Vector2(3, title_h + 2)
+	_edit.size = Vector2(maxf(8, size.x - 6), maxf(8, size.y - title_h - 3 - GRIP))
 
 
 func _close_rect() -> Rect2:
@@ -174,8 +185,8 @@ func _draw() -> void:
 	var edge := paper.darkened(0.55)
 	var strip := paper.darkened(0.1)
 	Px.fill(self, 0, 0, w, h, paper)
-	Px.fill(self, 0, 0, w, TITLE_H, strip)
-	Px.hline(self, 0, TITLE_H, w, paper.darkened(0.3))
+	Px.fill(self, 0, 0, w, title_h, strip)
+	Px.hline(self, 0, title_h, w, paper.darkened(0.3))
 	Px.outline(self, Rect2(0, 0, w, h), edge)
 	var cr := _close_rect()
 	if _close_down:
@@ -188,7 +199,7 @@ func _draw() -> void:
 			t = t.substr(0, t.length() - 2) + "…"
 		var tw := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 		var asc := font.get_ascent(font_size)
-		draw_string(font, Vector2(floorf((w - tw) / 2.0), floorf((TITLE_H - font.get_height(font_size)) / 2.0 + asc)),
+		draw_string(font, Vector2(floorf((w - tw) / 2.0), floorf((title_h - font.get_height(font_size)) / 2.0 + asc)),
 			t, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, text_color)
 	var g := _grip_rect()
 	for i in 3:
@@ -200,10 +211,17 @@ func _draw() -> void:
 # ------------------------------------------------------------------ input
 
 func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+		move_to_front()
+		activated.emit(item_id)
+		context_requested.emit(item_id, event.global_position)
+		accept_event()
+		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		var p: Vector2 = event.position
 		if event.pressed:
 			move_to_front()
+			activated.emit(item_id)
 			_press_at = event.global_position
 			_start = Rect2(position, size)
 			if _close_rect().grow(2).has_point(p):
@@ -211,7 +229,7 @@ func _gui_input(event: InputEvent) -> void:
 				_close_down = true
 			elif _grip_rect().grow(1).has_point(p):
 				_drag = "resize"
-			elif p.y <= TITLE_H:
+			elif p.y <= title_h:
 				_drag = "move"
 			else:
 				_edit.grab_focus()
@@ -234,7 +252,7 @@ func _gui_input(event: InputEvent) -> void:
 		if _drag == "move":
 			var np := (_start.position + d).round()
 			np.x = clampf(np.x, area.position.x - size.x + 24, area.end.x - 24)
-			np.y = clampf(np.y, area.position.y, area.end.y - TITLE_H)
+			np.y = clampf(np.y, area.position.y, area.end.y - title_h)
 			position = np
 		elif _drag == "resize":
 			var ns := (_start.size + d).round()
@@ -267,7 +285,7 @@ func auto_lookup(id: String) -> Variant:
 	if id == "note:" + item_id:
 		return Rect2(gp, size)
 	if id == "note.title:" + item_id:
-		return Rect2(gp + Vector2(_close_rect().end.x + 4, 1), Vector2(maxf(4, size.x - _close_rect().end.x - 8), TITLE_H - 2))
+		return Rect2(gp + Vector2(_close_rect().end.x + 4, 1), Vector2(maxf(4, size.x - _close_rect().end.x - 8), title_h - 2))
 	if id == "note.close:" + item_id:
 		return Rect2(gp + _close_rect().position, _close_rect().size)
 	if id == "note.grip:" + item_id:

@@ -69,8 +69,8 @@ func test_migration_keeps_good_note_fields_and_repairs_bad_ones() -> void:
 
 func test_window_rect_keeps_the_note_on_screen() -> void:
 	var area := Rect2i(0, 0, 640, 440)
-	expect_eq(Notes.window_rect({}, area, 0), Rect2i(48, 40, 180, 140), "default")
-	expect_eq(Notes.window_rect({}, area, 2).position, Vector2i(88, 80), "cascaded")
+	expect_eq(Notes.window_rect({}, area, 0), Rect2i(56, 64, 180, 140), "default")
+	expect_eq(Notes.window_rect({}, area, 2).position, Vector2i(96, 104), "cascaded")
 	var far := {"noteBounds": {"x": 900, "y": -50, "width": 5000, "height": 20}}
 	var r := Notes.window_rect(far, area)
 	expect(area.encloses(r), str(r))
@@ -127,7 +127,7 @@ func test_sticky_note_saves_text_bounds_and_close() -> void:
 	expect_eq(note.text(), "first")
 	expect_eq(note.paper, Notes.COLORS.green)
 	expect(ProgramStore.find_item(g, id).noteOpen)
-	expect_eq(note.auto_lookup("note.text:" + id), Rect2(note.global_position + Vector2(3, StickyNote.TITLE_H + 2), note._edit.size))
+	expect_eq(note.auto_lookup("note.text:" + id), Rect2(note.global_position + Vector2(3, note.title_h + 2), note._edit.size))
 	note.focus_text()
 	expect_eq([note._edit.get_caret_line(), note._edit.get_caret_column()], [0, 5], "caret after the text")
 	note.set_text_for_test("second")

@@ -11,6 +11,8 @@ signal request_minimize_window
 signal request_maximize_window
 signal request_show_launcher_tools
 signal request_switch_shell(shell: String)
+## A sticky note window was opened or closed (taskbars and window lists refresh).
+signal notes_changed
 
 var host: Node  ## the app host (src/app/main.gd); set before the shell enters the tree
 
@@ -48,6 +50,12 @@ func on_scale_changed(_factor: int) -> void:
 # Notes (see Notes) open as StickyNote windows. A shell overrides note_layer() to put them in the
 # right layer (above its windows, below its menus and dialogs) and note_style() to use its font.
 
+## Colours for Godot's own file chooser (the fallback when the system has none), drawn with this
+## shell's note_style() font. Keys as FileDialogTheme.DEFAULT_PALETTE; {} keeps the Win95 grey.
+func file_dialog_palette() -> Dictionary:
+	return {}
+
+
 ## The Control the note windows go in; it should cover the desktop area.
 func note_layer() -> Control:
 	return self
@@ -82,12 +90,36 @@ func open_note(item_id: String, focus: bool = true) -> StickyNote:
 		return null
 	var index := open_notes().size()
 	var n := StickyNote.new(item_id, note_style())
+	n.context_requested.connect(show_note_menu)
+	n.closed.connect(func(_id): notes_changed.emit.call_deferred())
 	layer.add_child(n)
 	n.place(Notes.window_rect(loc.item, Rect2i(Vector2i.ZERO, Vector2i(layer.size)), index))
 	ProgramStore.update_note_quietly(item_id, {"noteOpen": true})
+	notes_changed.emit()
 	if focus:
 		n.focus_text.call_deferred()
 	return n
+
+
+## The open window of note `item_id`, or null.
+func note_window(item_id: String) -> StickyNote:
+	for n in open_notes():
+		if n.item_id == item_id:
+			return n
+	return null
+
+
+## Closes note `item_id`'s window if it is open (its text is saved first).
+func close_note(item_id: String) -> void:
+	var n := note_window(item_id)
+	if n:
+		n.close()
+
+
+## Right-click on an open note. Shells show their own menu here (Close, Properties, Delete...);
+## `global_pos` is where the click was.
+func show_note_menu(_item_id: String, _global_pos: Vector2) -> void:
+	pass
 
 
 ## Reopens every note that was open when the program last ran (the host calls this after mounting).

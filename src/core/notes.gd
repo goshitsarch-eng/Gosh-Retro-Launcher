@@ -24,6 +24,9 @@ const COLORS := {
 const COLOR_LABELS := {"yellow": "Yellow", "pink": "Pink", "blue": "Blue", "green": "Green", "purple": "Purple", "gray": "Gray"}
 const DEFAULT_SIZE := Vector2i(180, 140)
 const MIN_SIZE := Vector2i(96, 56)
+## Where the first note opens when it has no stored bounds: clear of the menu bars every desktop has
+## at the top. Later ones cascade 20 px down and right.
+const DEFAULT_ORIGIN := Vector2i(56, 64)
 
 
 static func is_note(item: Variant) -> bool:
@@ -78,7 +81,7 @@ static func is_bounds(value: Variant) -> bool:
 ## The window rect for `item` inside `area` (the shell's logical desktop): its stored bounds,
 ## or a cascaded default from `index`, moved and shrunk so the whole note stays reachable.
 static func window_rect(item: Dictionary, area: Rect2i, index: int = 0) -> Rect2i:
-	var r := Rect2i(area.position + Vector2i(48 + (index % 8) * 20, 40 + (index % 8) * 20), DEFAULT_SIZE)
+	var r := Rect2i(area.position + DEFAULT_ORIGIN + Vector2i(index % 8, index % 8) * 20, DEFAULT_SIZE)
 	var b: Variant = item.get("noteBounds")
 	if is_bounds(b):
 		r = Rect2i(int(b.x), int(b.y), int(b.width), int(b.height))

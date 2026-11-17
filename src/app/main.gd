@@ -155,6 +155,7 @@ func _mount_shell() -> void:
 		Platform.note_open_requested.connect(_on_note_open_requested)
 	if not Platform.import_finished.is_connected(_on_import_finished):
 		Platform.import_finished.connect(_on_import_finished)
+	Platform.dialog_style_provider = _file_dialog_look
 	add_child(shell)
 	_applied_shell = id
 	shell.on_activate()
@@ -361,7 +362,14 @@ func show_notice(n: Dictionary) -> void:
 	elif id == "be":
 		load(NOTICE_DIALOGS.be).message(shell, [String(n.text)], "warning" if alert else "information")
 	elif shell.has_method("show_notice"):
-		shell.show_notice(String(n.title), String(n.text))
+		shell.show_notice(String(n.title), String(n.text), alert)
+
+
+## Font and colours of the active shell for Godot's own file chooser.
+func _file_dialog_look() -> Dictionary:
+	if not is_instance_valid(shell):
+		return {}
+	return {"style": shell.note_style(), "palette": shell.file_dialog_palette()}
 
 
 func _on_note_open_requested(item_id: String) -> void:

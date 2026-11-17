@@ -157,19 +157,16 @@ func on_files_dropped(files: PackedStringArray, logical_pos: Vector2) -> void:
 
 ## Host notice (a save failure or repaired data, see main.gd) shown as the OK message box. WfW has a
 ## single dialog slot, so a notice waits until no other dialog is open instead of replacing it.
-func show_notice(title: String, message: String) -> void:
+## A host notice: `alert` (a problem) gets the warning sign, anything else the information icon.
+func show_notice(title: String, message: String, alert: bool = true) -> void:
 	var notice := {"title": title, "message": message}
-	if Win31Shell.notice_icon(title, message) == "information":
-		notice["icon"] = "information"  # (otherwise the message box's default warning sign)
+	if not alert:
+		notice["icon"] = Win31Shell.notice_icon(alert)  # the message box's default is the warning sign
 	_queue_notice(notice)
 
 
-## The host passes no severity, so a successful Import All (reported by the host since the shell
-## stopped showing its own result) would get the warning sign; it gets the information icon.
-static func notice_icon(title: String, message: String) -> String:
-	if title == DataTransfer.IMPORT_TITLE and message.begins_with(DataTransfer.import_status({"success": true}).get_slice(".", 0)):
-		return "information"
-	return "warning"
+static func notice_icon(alert: bool) -> String:
+	return "warning" if alert else "information"
 
 
 ## Queues an OK message box ({title, message, icon?}) behind any dialog that is open.

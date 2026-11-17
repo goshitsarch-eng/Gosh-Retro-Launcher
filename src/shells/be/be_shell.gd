@@ -96,6 +96,12 @@ func note_style() -> Dictionary:
 	return {"font": BeFont.font(), "font_size": NOTE_FONT, "text_color": Color.BLACK}
 
 
+## BeOS grey with the yellow window tab, for the fallback file chooser.
+func file_dialog_palette() -> Dictionary:
+	return {"face": Color8(216, 216, 216), "shadow": Color8(152, 152, 152), "select": Color8(51, 102, 204),
+		"title": Color8(255, 203, 0), "title_text": Color.BLACK}
+
+
 func on_activate() -> void:
 	_layout()
 

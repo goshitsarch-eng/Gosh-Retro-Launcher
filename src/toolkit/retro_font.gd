@@ -147,6 +147,8 @@ func _advance_uncached(ch: String, code: int, bold: bool) -> int:
 		if code >= 32 and code <= 126:
 			return RTM_ASCII_WIDTHS[code - 32] + (1 if (bold and code != 32) else 0)
 		return 7 if bold else 6
+	if ch.length() == 1 and _lacks_glyph(_f(bold), ch, bold):
+		return _synth_advance(ch, bold)
 	return maxi(1, int(roundf(_f(bold).get_char_size(code, font_px).x)))
 
 
@@ -324,15 +326,15 @@ func _run(ci: CanvasItem, pos: Vector2, text: String, color: Color, bold: bool, 
 	var gx := x_adjust
 	for ch in text:
 		if ch != " " and ch != "\t":
-			if family == WIN95 and _lacks_glyph(f, ch, bold):
+			if _lacks_glyph(f, ch, bold):
 				_synth(ci, Vector2(x + gx, y), ch, color, bold)
 			else:
 				ci.draw_char(f, Vector2(x + gx, y), ch, font_px, color)
 		x += advance(ch, bold)
 
 
-# The bundled Win95Sans faces lack a few ASCII glyphs (normal: < > | `; bold: " ' * + , . / < = > ? \ _ |).
-# The original fell back to a system font; these 1-bit shapes stand in. Rows are strings ('#' = ink),
+# The bundled Win95Sans and WfWSans faces lack a few ASCII glyphs (normal: < > | `; bold: " ' * + , . / < = > ? \ _ |).
+# The original fell back to a system font; these 1-bit shapes stand in, in both families. Rows are strings ('#' = ink),
 # `y` is the first row's offset below the cap-height line (cap top = baseline - 9).
 const _SYNTH_NORMAL := {
 	"<": {"y": 1, "rows": ["...#", "..#.", ".#..", "#...", ".#..", "..#.", "...#"]},
@@ -364,6 +366,14 @@ func _lacks_glyph(f: FontFile, ch: String, bold: bool) -> bool:
 	if not _lack_cache.has(key):
 		_lack_cache[key] = (_SYNTH_BOLD if bold else _SYNTH_NORMAL).has(ch) and not f.has_char(ch.unicode_at(0))
 	return _lack_cache[key]
+
+
+## Advance of a stand-in glyph: its widest row, one column of space before it and one after.
+func _synth_advance(ch: String, bold: bool) -> int:
+	var w := 0
+	for row in (_SYNTH_BOLD if bold else _SYNTH_NORMAL)[ch].rows:
+		w = maxi(w, String(row).length())
+	return w + 2
 
 
 func _synth(ci: CanvasItem, pos: Vector2, ch: String, color: Color, bold: bool) -> void:

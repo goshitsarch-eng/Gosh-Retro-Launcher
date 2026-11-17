@@ -1,4 +1,6 @@
 extends TestCase
+
+const MAIN := preload("res://src/app/main.gd")
 ## Sticky notes in the WfW shell: New Sticky Note / note Properties rules and dialogs, Quick Search,
 ## launch group members, the note icon, the note layer (stacking, font, input), drop-downs showing
 ## "&" literally, the .GRP export status and the Launcher Tools width.
@@ -280,11 +282,11 @@ func test_new_note_dialog_creates_and_opens_the_note() -> void:
 	_restore_store(saved)
 
 
-func test_host_import_result_gets_the_information_icon() -> void:
-	var ok := DataTransfer.import_status({"success": true, "normalized": 2})
-	expect_eq(Win31Shell.notice_icon(DataTransfer.IMPORT_TITLE, ok), "information")
-	expect_eq(Win31Shell.notice_icon(DataTransfer.IMPORT_TITLE, "Invalid file format"), "warning")
-	expect_eq(Win31Shell.notice_icon("Program Manager", ok), "warning", "other notices keep the warning sign")
+func test_host_notice_icon_follows_its_severity() -> void:
+	expect_eq(Win31Shell.notice_icon(false), "information", "a successful Import All")
+	expect_eq(Win31Shell.notice_icon(true), "warning", "a save failure or a refused import")
+	expect_eq(MAIN.import_notice({"success": true}).alert, false)
+	expect_eq(MAIN.import_notice({"success": false, "error": "Invalid file format"}).alert, true)
 
 
 # ------------------------------------------------------ Launcher Tools

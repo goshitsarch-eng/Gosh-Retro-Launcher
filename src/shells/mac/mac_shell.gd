@@ -147,6 +147,12 @@ func note_style() -> Dictionary:
 	return {"font": MacDraw.font().font, "font_size": 11, "text_color": Color.BLACK}
 
 
+## Platinum grey with a light title bar and the lavender highlight, for the fallback file chooser.
+func file_dialog_palette() -> Dictionary:
+	return {"face": Color8(221, 221, 221), "shadow": Color8(136, 136, 136), "select": Color8(204, 204, 255),
+		"select_text": Color.BLACK, "title": Color8(221, 221, 221), "title_text": Color.BLACK}
+
+
 ## The StickyNote that holds `node` (the note's text box, for instance), or null.
 func _note_of(node: Node) -> StickyNote:
 	var n := node
