@@ -3,7 +3,7 @@ extends Control
 ## Contents of the Find window: "Find [type] in [group]", "Name contains [____] (Find)", and the results list
 ## (Name / Group / Command). State lives in shell.find_state so reopening the window keeps the last search.
 
-const TYPES := [["all", "All programs"], ["app", "Applications"], ["url", "URLs"], ["batch", "In a launch group"]]
+const TYPES := [["all", "All programs"], ["app", "Applications"], ["url", "URLs"], ["note", "Sticky notes"], ["batch", "In a launch group"]]
 
 var shell: Control
 var window: Control
@@ -222,7 +222,7 @@ func _draw_results(c: Control) -> void:
 		BeDraw.icon(c, BeIconCatalog.texture(String(res.item.get("icon", "default")), String(res.item.name)), Rect2(8, y + 4, 16, 16))
 		BeFont.draw(c, Vector2(8 + 16 + 6, y + 3), BeFont.clip(String(res.item.name), float(cols[1]) - 38), col)
 		BeFont.draw(c, Vector2(float(cols[2]) + 10, y + 3), BeFont.clip(String(res.group.name), float(cols[3]) - 12), col)
-		BeFont.draw(c, Vector2(float(cols[4]) + 10, y + 3), BeFont.clip(String(res.item.path), float(cols[5]) - 20), col)
+		BeFont.draw(c, Vector2(float(cols[4]) + 10, y + 3), BeFont.clip(BeDialogLogic.command_text(res.item), float(cols[5]) - 20), col)
 	var hr := Rect2(1, 1, rr.size.x - 2, 26)
 	BeDraw.gradient_v(c, hr, BeTheme.b("f4f4f4"), BeTheme.b("d4d4d4"))
 	BeDraw.hline(c, hr.position.x, hr.end.y - 1, hr.size.x, BeTheme.b("989898"))

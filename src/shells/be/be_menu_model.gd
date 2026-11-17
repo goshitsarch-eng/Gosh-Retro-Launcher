@@ -7,6 +7,7 @@ extends RefCounted
 const VIEWS := [["large", "Icon View"], ["small", "Mini Icon View"], ["details", "List View"]]
 
 const SEP := {"sep": true}
+const NEW_NOTE := "New Note…"
 
 
 static func row(label: String, action: String, args: Dictionary = {}, opts: Dictionary = {}) -> Dictionary:
@@ -36,7 +37,7 @@ static func window_menu(key: String) -> Array:
 
 
 static func desktop_menu() -> Array:
-	return [row("New Folder", "folder.new"), SEP, row("Clean Up", "desktop.cleanup"),
+	return [row("New Folder", "folder.new"), row(NEW_NOTE, "note.new"), SEP, row("Clean Up", "desktop.cleanup"),
 		row("Select All", "none", {}, {"disabled": true}), SEP, row("Find…", "find.open"),
 		row("Launcher Tools…", "tools.open"), row("Backgrounds…", "backgrounds.open"), SEP, row("Help", "help.open")]
 
@@ -53,6 +54,7 @@ static func folder_background_menu(key: String, is_computer: bool, view: String)
 	var out := [row("New Folder" if is_computer else "Add Program…", "folder.new" if is_computer else "program.new", {"key": key})]
 	if not is_computer:
 		out.append(row("Add Website…", "website.new", {"key": key}))
+	out.append(row(NEW_NOTE, "note.new", {"key": key}))
 	out.append(SEP)
 	for v in VIEWS:
 		out.append(row(v[1], "window.view", {"key": key, "view": v[0]}, {"dot": view == v[0]}))
@@ -70,7 +72,8 @@ static func menu_bar(key: String, is_computer: bool, view: String, sel: String) 
 	var file := [
 		row("Open", "group.open" if is_computer else "item.open", a, {"bold": true, "disabled": none}), SEP,
 		row("New Folder" if is_computer else "Add Program…", "folder.new" if is_computer else "program.new", {"key": key}),
-		row("Add Website…", "website.new", {"key": key}, {"disabled": is_computer}), SEP,
+		row("Add Website…", "website.new", {"key": key}, {"disabled": is_computer}),
+		row(NEW_NOTE, "note.new", {"key": key}), SEP,
 		row("Move to Trash", "group.trash" if is_computer else "item.trash", a, {"disabled": none}),
 		row("Edit Name", "group.rename" if is_computer else "item.rename", a, {"disabled": none}),
 		row("Get Info", "group.info" if is_computer else "item.info", a, {"disabled": none}), SEP,
@@ -96,6 +99,7 @@ static func deskbar_menu(buckets: Variant = null, names: Variant = null) -> Arra
 	var out := [
 		row("About Program Manager…", "about.open", {}, {"icon": "logo"}), SEP,
 		row("Find…", "find.open", {}, {"icon": "find"}), row("Run…", "run.open", {}, {"icon": "terminal"}),
+		row(NEW_NOTE, "note.new", {}, {"icon": "note"}),
 		row("Launcher Tools…", "tools.open", {}, {"icon": "tools"}), row("Backgrounds…", "backgrounds.open", {}, {"icon": "tools"}),
 		row("Help", "help.open", {}, {"icon": "question"}), SEP]
 	if buckets is Array:

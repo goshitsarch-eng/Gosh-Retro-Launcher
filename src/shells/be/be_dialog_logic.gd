@@ -5,6 +5,9 @@ extends RefCounted
 
 const RUN_MODE_LABELS := [["normal", "Normal window"], ["minimized", "Minimized"], ["maximized", "Maximized"]]
 const MAX_LAUNCH_GROUP := 8
+const NOTE_KIND := "Sticky note"
+const NEW_NOTE_HELP := "Type a title and choose a paper color. The text is optional: you can also type it in the note."
+const NO_FOLDER_FOR_NOTE := "There are no folders yet. Make a folder first, then add notes to it."
 
 
 static func plural(n: int, one: String, many: String) -> String:
@@ -16,7 +19,17 @@ static func is_url(path: String) -> bool:
 
 
 static func kind_of(item: Dictionary) -> String:
+	if Notes.is_note(item):
+		return NOTE_KIND
 	return "Internet shortcut" if is_url(String(item.get("path", ""))) else "Shortcut to program"
+
+
+## The List View / Find "Command" column: the command line, or for a sticky note "Sticky note: <first line>".
+static func command_text(item: Dictionary) -> String:
+	if Notes.is_note(item):
+		var p := Notes.preview(item)
+		return NOTE_KIND + (": " + p if p != "" else "")
+	return String(item.get("path", ""))
 
 
 ## "None", "Group 3" or "Group 3: Morning" (`names` = settings.launchGroupNames).
@@ -116,6 +129,7 @@ static func duplicate_item(store: Object, gid: String, iid: String) -> String:
 	copy.erase("id")
 	copy.erase("win31Position")
 	copy.erase("win95Position")
+	copy.erase("noteOpen")  # a duplicated note starts closed
 	copy["name"] = String(src.name) + " copy"
 	return String(store.add_item(gid, copy))
 
@@ -141,6 +155,57 @@ static func new_program(store: Object, gid: String, name: String, path: String, 
 	if ic == "" or ic == "default":
 		ic = "url" if is_url(p) else "default"
 	return String(store.add_item(gid, {"name": n, "path": p, "icon": ic, "workingDir": working_dir.strip_edges()}))
+
+
+# ------------------------------------------------------------------ notes
+
+## [[id, label]] of the paper colours for a BeSelect (Notes.color_choices order).
+static func note_color_options() -> Array:
+	var out := []
+	for c in Notes.color_choices():
+		out.append([String(c.id), String(c.label)])
+	return out
+
+
+## The folder New Note… puts the note in: the folder of window `key` (a menu of that window), else the
+## active folder window, else the first folder. "" when there are no folders.
+static func note_group_for(key: String, active_key: String, groups: Array) -> String:
+	for k in [key, active_key]:
+		if BeWindowStore.is_group_key(String(k)):
+			var gid := BeWindowStore.group_id_of(String(k))
+			for g in groups:
+				if String(g.id) == gid:
+					return gid
+	return String(groups[0].id) if not groups.is_empty() else ""
+
+
+## New Note… OK: a note in folder `gid` (blank title = "Note"). Returns its id, or "" without a folder.
+static func new_note(store: Object, gid: String, title: String, text: String, color: String) -> String:
+	if gid == "" or store.find_group(gid).is_empty():
+		return ""
+	return String(store.add_item(gid, Notes.make_note(title, text, color)))
+
+
+## Get Info OK/Apply for a note. fields: {name, noteColor, launchGroup, icon, groupId}. A blank title keeps
+## the old one. Returns {ok, groupId}.
+static func apply_note_info(store: Object, gid: String, iid: String, fields: Dictionary) -> Dictionary:
+	var item: Dictionary = store.find_item(gid, iid)
+	if item.is_empty() or not Notes.is_note(item):
+		return {"ok": false, "groupId": gid}
+	var name := String(fields.get("name", "")).strip_edges()
+	var color := String(fields.get("noteColor", item.get("noteColor", Notes.DEFAULT_COLOR)))
+	var icon := String(fields.get("icon", Notes.ICON))
+	store.update_item(gid, iid, {
+		"name": name if name != "" else String(item.get("name", "Note")),
+		"noteColor": color if Notes.COLORS.has(color) else Notes.DEFAULT_COLOR,
+		"launchGroup": _launch_group_value(int(fields.get("launchGroup", 0)), int(item.get("launchGroup", 0))),
+		"icon": icon if icon != "" else Notes.ICON,
+	})
+	var target := String(fields.get("groupId", gid))
+	if target != "" and target != gid and not store.find_group(target).is_empty():
+		store.move_item(gid, target, iid)
+		return {"ok": true, "groupId": target}
+	return {"ok": true, "groupId": gid}
 
 
 ## Get Info OK/Apply. fields: {name, path, workingDir, arguments, environment, runMode, launchGroup, shortcutKey, icon, groupId}.
@@ -189,13 +254,14 @@ static func info_fields(item: Dictionary, gid: String) -> Dictionary:
 		"runMode": String(item.get("runMode", "minimized" if item.get("runMinimized", false) else "normal")),
 		"launchGroup": int(item.get("launchGroup", 0)), "shortcutKey": String(item.get("shortcutKey", "")),
 		"icon": String(item.get("icon", "default")), "groupId": gid,
+		"isNote": Notes.is_note(item), "noteColor": String(item.get("noteColor", Notes.DEFAULT_COLOR)),
 	}
 
 
 # ------------------------------------------------------------------- Find
 
-## Find window query (design: name contains, text in path, type all/app/url/batch, group).
-## Returns [{group, item}] in store order.
+## Find window query (design: name contains, text in path, type all/app/url/note/batch, group). A sticky
+## note matches `query` by its title or its text, and `text` by its text. Returns [{group, item}] in store order.
 static func find(groups: Array, query: String, where: String, type: String, text: String) -> Array:
 	var out := []
 	var q := query.strip_edges().to_lower()
@@ -204,14 +270,18 @@ static func find(groups: Array, query: String, where: String, type: String, text
 		if where != "all" and where != g.id:
 			continue
 		for it in g.items:
-			var url := is_url(String(it.path))
-			if q != "" and not String(it.name).to_lower().contains(q):
+			var note := Notes.is_note(it)
+			var url := not note and is_url(String(it.get("path", "")))
+			var body := String(it.get("note", "")).to_lower() if note else ""
+			if q != "" and not (String(it.name).to_lower().contains(q) or body.contains(q)):
 				continue
-			if tx != "" and not String(it.path).to_lower().contains(tx):
+			if tx != "" and not (body.contains(tx) if note else String(it.get("path", "")).to_lower().contains(tx)):
 				continue
-			if type == "app" and url:
+			if type == "app" and (url or note):
 				continue
 			if type == "url" and not url:
+				continue
+			if type == "note" and not note:
 				continue
 			if type == "batch" and int(it.get("launchGroup", 0)) <= 0:
 				continue
@@ -291,7 +361,7 @@ static func entries_for(key: String, groups: Array, names: Variant = null) -> Ar
 		for it in g.items:
 			var lg := int(it.get("launchGroup", 0))
 			out.append({"id": String(it.id), "name": String(it.name), "icon": String(it.get("icon", "default")), "is_group": false,
-				"c2": String(it.path), "c3": batch_text(lg, names) if lg > 0 else "—"})
+				"c2": command_text(it), "c3": batch_text(lg, names) if lg > 0 else "—", "is_note": Notes.is_note(it)})
 	return out
 
 
@@ -336,7 +406,7 @@ static func transfer_report(kind: String, result: Dictionary) -> Dictionary:
 const LAUNCH_GROUPS_INTRO := "A launch group starts several programs one after another. Launch All starts every group in number order."
 const LAUNCH_GROUPS_FULL := "All 8 launch group numbers are in use. Delete a launch group before making another."
 const LAUNCH_GROUP_NAME_NEEDED := "Type a name for the new launch group."
-const MEMBERS_HELP := "Check the programs this group starts. A program is in one launch group at a time, so checking one from another group moves it here."
+const MEMBERS_HELP := "Check the programs and sticky notes this group opens. Each is in one launch group at a time, so checking one from another group moves it here."
 
 
 ## Manager list rows: [{id: "3", number, label: "Group 3: Morning", sub: "2 items"}].
@@ -418,8 +488,9 @@ static func new_group_error(groups: Array, names: Variant, name: String) -> Stri
 	return ""
 
 
-## Members checklist rows for group `number`, every program in folder order: [{id: "gid:iid",
-## label: "Notepad" or "Notepad (Group 2: Evening)", sub: folder name, checked, launchGroup, icon, name}].
+## Members checklist rows for group `number`, every program and sticky note in folder order: [{id: "gid:iid",
+## label: "Notepad" or "Notepad (Group 2: Evening)", sub: folder name (", sticky note" for notes), checked,
+## launchGroup, icon, name}].
 static func member_rows(groups: Array, names: Variant, number: int) -> Array:
 	var out := []
 	for g in groups:
@@ -428,7 +499,10 @@ static func member_rows(groups: Array, names: Variant, number: int) -> Array:
 			var label := String(it.get("name", ""))
 			if lg > 0 and lg != number:
 				label += " (%s)" % batch_text(lg, names)
-			out.append({"id": "%s:%s" % [g.id, it.id], "label": label, "sub": String(g.get("name", "")),
+			var sub := String(g.get("name", ""))
+			if Notes.is_note(it):
+				sub += ", sticky note"
+			out.append({"id": "%s:%s" % [g.id, it.id], "label": label, "sub": sub,
 				"checked": lg == number, "launchGroup": lg, "icon": String(it.get("icon", "default")),
 				"name": String(it.get("name", ""))})
 	return out
