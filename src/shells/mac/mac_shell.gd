@@ -179,13 +179,9 @@ func _on_launch_feedback() -> void:
 	var fb: Dictionary = UIState.launch_feedback
 	if not fb.get("visible", false):
 		return
-	var status := String(fb.get("status", ""))
-	if status == "launching":
-		toast("Launching group %d of %d…" % [int(fb.get("completedGroups", 0)) + 1, int(fb.get("totalGroups", 1))])
-	elif status == "complete":
-		toast("Launched %s." % MacDialogLogic.plural(int(fb.get("totalItems", 0)), "item"))
-	elif status == "error":
-		toast("%s failed to launch." % MacDialogLogic.plural(int(fb.get("failures", 0)), "item"))
+	var text := MacDialogLogic.launch_feedback_text(fb, ProgramStore.launch_group_names())
+	if text != "":
+		toast(text)
 
 
 func launch_buckets(buckets: Array) -> void:
@@ -239,6 +235,7 @@ func _menu_context() -> Dictionary:
 		"groups": ProgramStore.groups, "active_key": key, "view": String(st.get("view", "")),
 		"selected": {"kind": String(t.get("kind", "")), "groupId": String(t.get("groupId", "")), "itemId": String(t.get("itemId", ""))},
 		"buckets": LaunchGroups.collect_launch_groups(ProgramStore.groups),
+		"launch_names": ProgramStore.launch_group_names(),
 	}
 
 
@@ -377,10 +374,39 @@ func _run_simple(id: String, t: Dictionary) -> void:
 			MacDialogLogic.clean_up(ProgramStore, k2.substr(2) if k2.begins_with("g:") else "")
 		"launch-all":
 			launch_buckets(LaunchGroups.collect_launch_groups(ProgramStore.groups))
+		"launch-groups":
+			MacLaunchGroups.open(self)
+		"export-all":
+			export_all()
+		"import-all":
+			import_all()
 		"restart":
 			restart()
 		"shutdown":
 			MacDialogs.shutdown(self)
+
+
+# ------------------------------------------------------------ export / import
+
+## File > Export All…: the whole launcher to one JSON file (Platform picks the file).
+func export_all() -> void:
+	var result: Dictionary = await Platform.export_all()
+	_show_transfer("export", result)
+
+
+## File > Import All…: confirm, pick the file, replace everything (Platform backs up the current setup first).
+func import_all() -> MacDialog:
+	return MacDialogs.confirm(self, DataTransfer.IMPORT_CONFIRM, func():
+		var result: Dictionary = await Platform.import_data()
+		_show_transfer("import", result), "caution", "OK", "Cancel")
+
+
+func _show_transfer(kind: String, result: Dictionary) -> void:
+	if not is_inside_tree():
+		return
+	var msg := MacDialogLogic.transfer_message(kind, result)
+	if String(msg.text) != "":
+		MacDialogs.message(self, String(msg.text), String(msg.icon))
 
 
 func _confirm_trash(kind: String, gid: String, iid: String) -> void:

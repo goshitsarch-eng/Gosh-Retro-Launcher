@@ -3,7 +3,7 @@ extends Control
 ## Modal dialog frame of the Mac shell. Two styles from the design:
 ##  * alert  - untitled: 3px frame with a 2px #888 inner border (messages, confirmations, About)
 ##  * titled - striped title bar with a close box (Get Info, Run, forms, lists), body padding 14/14/12
-## A full-rect overlay swallows pointer input underneath. Enter presses the default button, Esc cancels.
+## A full-rect overlay swallows pointer input underneath. Enter presses the default button, Esc or Cmd-. cancels.
 ## `body` is positioned at the content origin; add widgets with add(widget, body-local position).
 
 signal closed
@@ -15,6 +15,8 @@ var frame_size := Vector2(360, 120)
 var body: Control
 var default_button: MacButton
 var on_cancel: Callable = Callable()
+## Optional key hook for the topmost dialog: (InputEventKey) -> bool handled. Runs before Return / Esc / Cmd-.
+var on_key: Callable = Callable()
 var auto_name := ""
 
 var _frame_pos := Vector2.ZERO
@@ -173,7 +175,10 @@ func _input(event: InputEvent) -> void:
 	if shell.dialog_layer.get_child(shell.dialog_layer.get_child_count() - 1) != self:
 		return  # only the topmost dialog reacts
 	var k := event as InputEventKey
-	if k.keycode == KEY_ESCAPE:
+	if on_key.is_valid() and on_key.call(k):
+		get_viewport().set_input_as_handled()
+		return
+	if k.keycode == KEY_ESCAPE or (k.keycode == KEY_PERIOD and (k.meta_pressed or k.ctrl_pressed)):
 		cancel()
 		get_viewport().set_input_as_handled()
 	elif k.keycode == KEY_ENTER or k.keycode == KEY_KP_ENTER:

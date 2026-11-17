@@ -38,10 +38,10 @@ func entries() -> Array:
 			out.append({"id": String(g.id), "name": String(g.name), "icon": "folder", "c2": MacDialogLogic.plural(g.items.size(), "item"), "c3": "Program group"})
 	else:
 		var g := ProgramStore.find_group(group_id())
+		var names := ProgramStore.launch_group_names()
 		for it in g.get("items", []):
-			var lg := int(it.get("launchGroup", 0))
 			out.append({"id": String(it.id), "name": String(it.name), "icon": String(it.get("icon", "")), "c2": String(it.path),
-				"c3": "Group %d" % lg if lg > 0 else "—"})
+				"c3": MacDialogLogic.launch_group_cell(int(it.get("launchGroup", 0)), names)})
 	return out
 
 
