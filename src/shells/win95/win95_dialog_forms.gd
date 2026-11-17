@@ -171,13 +171,19 @@ static func open_wizard(shell: Control, ctx: Dictionary) -> void:
 	var name_edit := Win95TextInput.new()
 	var group_select := Win95Select.new()
 	group_select.shell = shell
-	# Only one page's fields are parented at a time; the page owns all three so the ones that are
+	var lg_choices := Win95LaunchGroupLogic.choices(ProgramStore.launch_group_names())
+	var lg_select := Win95Select.new()
+	lg_select.shell = shell
+	lg_select.options = Win95LaunchGroupLogic.choice_labels(lg_choices)
+	lg_select.set_meta("auto_id", "w95.wizard.select:launchGroup")
+	lg_select.add_to_group("pm_auto")
+	# Only one page's fields are parented at a time; the page owns all of them so the ones that are
 	# detached when the modal closes are freed with it (BUG-004: they leaked on every open).
-	page.fields = [command, name_edit, group_select]
+	page.fields = [command, name_edit, group_select, lg_select]
 	var rebuild := func() -> void:
 		for c in page.get_children():
 			page.remove_child(c)
-			if c != command and c != name_edit and c != group_select:
+			if c != command and c != name_edit and c != group_select and c != lg_select:
 				c.free()
 		var icon_id: String = "new-shortcut" if state.step == 0 else String(state.icon)
 		page.add_child(Win95IconBox.make(icon_id, Vector2(CX + 5, CY + 5)))
@@ -219,6 +225,12 @@ static func open_wizard(shell: Control, ctx: Dictionary) -> void:
 			group_select.position = Vector2(col_x + 111, ry + 26)
 			group_select.size = Vector2(col_w - 111, 21)
 			page.add_child(group_select)
+			var l3 := Win95Label.make("&Launch group:", Vector2(0, 0))
+			l3.position = Vector2(col_x + 105 - l3.size.x, ry + 52 + 4)
+			page.add_child(l3)
+			lg_select.position = Vector2(col_x + 111, ry + 52)
+			lg_select.size = Vector2(col_w - 111, 21)
+			page.add_child(lg_select)
 	var sync := func() -> void:
 		back.disabled = state.step == 0
 		if state.step == 0:
@@ -246,7 +258,8 @@ static func open_wizard(shell: Control, ctx: Dictionary) -> void:
 			sync.call()
 			name_edit.focus_edit()
 		else:
-			var id := Win95DialogLogic.wizard_finish(ProgramStore, state.group_id, name_edit.text, command.text, state.icon, state.working_dir)
+			var id := Win95DialogLogic.wizard_finish(ProgramStore, state.group_id, name_edit.text, command.text, state.icon, state.working_dir,
+				Win95LaunchGroupLogic.choice_value(lg_choices, lg_select.selected_index))
 			if id == "":
 				return
 			var gid: String = state.group_id

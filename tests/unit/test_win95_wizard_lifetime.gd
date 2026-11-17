@@ -47,9 +47,9 @@ func test_cancel_on_step_one_frees_detached_step_two_fields() -> void:
 	var m := _open(shell)
 	expect(m != null)
 	var fields := _fields(m)
-	expect_eq(fields.size(), 3)
+	expect_eq(fields.size(), 4, "command, name, program group and launch group")
 	expect(fields[0].is_inside_tree(), "command is shown on step 1")
-	expect(not fields[1].is_inside_tree() and not fields[2].is_inside_tree(), "step-2 fields are detached")
+	expect(not fields[1].is_inside_tree() and not fields[2].is_inside_tree() and not fields[3].is_inside_tree(), "step-2 fields are detached")
 	await _close_and_settle(m)
 	for f in fields:
 		expect(not is_instance_valid(f), "wizard field outlived the modal")
@@ -66,7 +66,7 @@ func test_cancel_on_step_two_frees_detached_command_field() -> void:
 	fields[0].text = "notepad.exe"
 	_button(m, "&Next >").pressed.emit()
 	expect(not fields[0].is_inside_tree(), "command is detached on step 2")
-	expect(fields[1].is_inside_tree() and fields[2].is_inside_tree())
+	expect(fields[1].is_inside_tree() and fields[2].is_inside_tree() and fields[3].is_inside_tree())
 	await _close_and_settle(m)
 	for f in fields:
 		expect(not is_instance_valid(f), "wizard field outlived the modal")

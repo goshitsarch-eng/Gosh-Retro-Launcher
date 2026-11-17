@@ -5,6 +5,9 @@ extends RefCounted
 ## argument so tests can pass a throwaway ProgramStore instance.
 
 const FIND_PAGE_STEP := 3
+## Find > Advanced > Of type: ids and labels ("launch-group" = items in any launch group).
+const FIND_TYPES := ["all", "application", "internet", "launch-group"]
+const FIND_TYPE_LABELS := ["All launcher items", "Application", "Internet Shortcut", "In a launch group"]
 const RUN_MODES := ["normal", "minimized", "maximized"]
 const RUN_MODE_LABELS := ["Normal window", "Minimized", "Maximized"]
 const SHUTDOWN_HELP := "Shut Down affects only Gosh Retro Launcher. Restart can recreate this launcher in Windows 95 or switch it to Windows for Workgroups 3.11. Computer and MS-DOS operations remain unavailable."
@@ -25,6 +28,15 @@ static func find_filters(named: String, group_id: String, include_subgroups: boo
 	if group_id != "":
 		f["groupId"] = group_id
 	return f
+
+
+## ProgramSearch.find_programs plus the win95-only "launch-group" type (items in any launch group).
+static func find_results(groups: Array, filters: Dictionary) -> Array:
+	if String(filters.get("type", "all")) != "launch-group":
+		return ProgramSearch.find_programs(groups, filters)
+	var all_types := filters.duplicate()
+	all_types["type"] = "all"
+	return ProgramSearch.find_programs(groups, all_types).filter(func(r): return int(r.item.get("launchGroup", 0)) > 0)
 
 
 static func find_result_ids(results: Array) -> Array:
@@ -98,12 +110,16 @@ static func wizard_can_finish(name: String, group_id: String, command: String) -
 	return group_id != "" and not name.strip_edges().is_empty() and not command.strip_edges().is_empty()
 
 
-## Creates the item; returns its id or "" when the form is invalid.
-static func wizard_finish(store: Object, group_id: String, name: String, command: String, icon: String, working_dir: String) -> String:
+## Creates the item; returns its id or "" when the form is invalid. `launch_group` > 0 puts the new
+## item in that launch group.
+static func wizard_finish(store: Object, group_id: String, name: String, command: String, icon: String, working_dir: String,
+		launch_group: int = 0) -> String:
 	if not wizard_can_finish(name, group_id, command):
 		return ""
-	return String(store.add_item(group_id, {
-		"name": name.strip_edges(), "path": command.strip_edges(), "icon": icon, "workingDir": working_dir.strip_edges()}))
+	var item := {"name": name.strip_edges(), "path": command.strip_edges(), "icon": icon, "workingDir": working_dir.strip_edges()}
+	if launch_group > 0:
+		item["launchGroup"] = launch_group
+	return String(store.add_item(group_id, item))
 
 
 ## Applies browse results (AppInfo) to the wizard fields: {name, workingDir, icon?}.
@@ -140,18 +156,21 @@ static func create_url_item(store: Object, group_id: String, name: String, url: 
 
 # ------------------------------------------------------------------ Properties
 
-## Item sheet Apply/OK. fields: {name, command, workingDir, arguments, runMode, groupId}.
+## Item sheet Apply/OK. fields: {name, command, workingDir, arguments, runMode, groupId, launchGroup?}.
 ## Returns {"ok": bool, "groupId": String (the group the item now lives in)}.
 static func apply_item_properties(store: Object, persisted_group_id: String, item_id: String, fields: Dictionary) -> Dictionary:
 	if String(fields.name).strip_edges().is_empty() or String(fields.command).strip_edges().is_empty() or String(fields.groupId) == "":
 		return {"ok": false, "groupId": persisted_group_id}
-	store.update_item(persisted_group_id, item_id, {
+	var updates := {
 		"name": String(fields.name).strip_edges(),
 		"path": String(fields.command).strip_edges(),
 		"workingDir": String(fields.workingDir).strip_edges(),
 		"arguments": String(fields.arguments).strip_edges(),
 		"runMode": fields.runMode,
-	})
+	}
+	if fields.has("launchGroup"):
+		updates["launchGroup"] = maxi(0, int(fields.launchGroup))
+	store.update_item(persisted_group_id, item_id, updates)
 	var group_id: String = persisted_group_id
 	if fields.groupId != persisted_group_id:
 		store.move_item(persisted_group_id, fields.groupId, item_id)

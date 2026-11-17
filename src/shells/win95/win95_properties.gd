@@ -2,6 +2,7 @@ class_name Win95Properties
 extends RefCounted
 ## Tabbed property sheets (ports of ItemPropertySheet / GroupPropertySheet in Win95Dialogs.tsx).
 ##   Win95Properties.open_item(shell, group_id, item)   # "<name> Properties": Shortcut + Program tabs
+##                                                       # (Program: Arguments, Run, Launch group)
 ##   Win95Properties.open_group(shell, group)            # "<name> Properties": General tab
 ## OK = apply then close; Apply is enabled only while the sheet is dirty; invalid fields (blank
 ## name/command) are not applied (see Win95DialogLogic.apply_*). Desktop objects use a message box
@@ -152,12 +153,20 @@ static func open_item(shell: Control, group_id: String, item: Dictionary) -> voi
 	run_select.selected_index = maxi(0, Win95DialogLogic.RUN_MODES.find(String(live.get("runMode", "normal"))))
 	_row(m, program_page, "&Arguments:", oy, args_edit, cw)
 	_row(m, program_page, "&Run:", oy + 26, run_select, cw)
+	var lg_choices := Win95LaunchGroupLogic.choices(ProgramStore.launch_group_names(), int(live.get("launchGroup", 0)))
+	var lg_select := Win95Select.new()
+	lg_select.shell = shell
+	lg_select.options = Win95LaunchGroupLogic.choice_labels(lg_choices)
+	lg_select.selected_index = Win95LaunchGroupLogic.choice_index(lg_choices, int(live.get("launchGroup", 0)))
+	lg_select.set_meta("auto_id", "w95.properties.select:launchGroup")
+	lg_select.add_to_group("pm_auto")
+	_row(m, program_page, "&Launch group:", oy + 52, lg_select, cw)
 	var close_on_exit := Win95Checkbox.new()
 	close_on_exit.label = "Close on e&xit"
 	close_on_exit.checked = true
 	close_on_exit.disabled = true
 	program_page.add_child(close_on_exit)
-	close_on_exit.position = Vector2(ox, oy + 52 + 4)
+	close_on_exit.position = Vector2(ox, oy + 78 + 4)
 	strip.tab_selected.connect(func(id):
 		shortcut_page.visible = id == "shortcut"
 		program_page.visible = id == "program")
@@ -169,12 +178,14 @@ static func open_item(shell: Control, group_id: String, item: Dictionary) -> voi
 		e.text_changed.connect(dirty)
 	group_select.item_selected.connect(dirty)
 	run_select.item_selected.connect(dirty)
+	lg_select.item_selected.connect(dirty)
 	var do_apply := func() -> bool:
 		var gi := clampi(group_select.selected_index, 0, maxi(0, ProgramStore.groups.size() - 1))
 		var result := Win95DialogLogic.apply_item_properties(ProgramStore, state.group, item_id, {
 			"name": name_edit.text, "command": cmd_edit.text, "workingDir": dir_edit.text, "arguments": args_edit.text,
 			"runMode": Win95DialogLogic.RUN_MODES[clampi(run_select.selected_index, 0, 2)],
-			"groupId": String(ProgramStore.groups[gi].id) if ProgramStore.groups.size() > 0 else ""})
+			"groupId": String(ProgramStore.groups[gi].id) if ProgramStore.groups.size() > 0 else "",
+			"launchGroup": Win95LaunchGroupLogic.choice_value(lg_choices, lg_select.selected_index)})
 		if result.ok:
 			state.group = result.groupId
 		return result.ok

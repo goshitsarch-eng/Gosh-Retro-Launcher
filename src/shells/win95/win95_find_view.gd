@@ -150,7 +150,7 @@ func _build_pages() -> void:
 	_pages["advanced"] = a
 	type_select = Win95Select.new()
 	type_select.shell = shell
-	type_select.options = ["All launcher items", "Application", "Internet Shortcut"]
+	type_select.options = Win95DialogLogic.FIND_TYPE_LABELS
 	type_select.position = Vector2(74, 0)
 	type_select.size = Vector2(257, 21)
 	containing_edit = Win95TextInput.new()
@@ -232,7 +232,7 @@ func _group_id() -> String:
 
 
 func _type() -> String:
-	return ["all", "application", "internet"][clampi(type_select.selected_index, 0, 2)]
+	return Win95DialogLogic.FIND_TYPES[clampi(type_select.selected_index, 0, Win95DialogLogic.FIND_TYPES.size() - 1)]
 
 
 func stop() -> void:
@@ -261,7 +261,7 @@ func find_now() -> void:
 
 func _on_found() -> void:
 	var filters := Win95DialogLogic.find_filters(named_edit.text, _group_id(), include_sub.checked, _type(), containing_edit.text, path_edit.text)
-	results = ProgramSearch.find_programs(ProgramStore.groups, filters)
+	results = Win95DialogLogic.find_results(ProgramStore.groups, filters)
 	_set_running(false)
 	result_count_changed.emit(results.size())
 	_sync_scrollbar()
