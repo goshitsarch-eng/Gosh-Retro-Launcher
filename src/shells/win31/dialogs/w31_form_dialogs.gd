@@ -22,24 +22,28 @@ class NewObject extends W31Dialog:
 	func _build(cw: int) -> void:
 		add_text(2, 2, "What type of object do you want to create?")
 		var box_w := cw - 10
-		add_op(func(ci: CanvasItem): W31.group_frame(ci, Rect2(5, 24, box_w, 55)))
+		add_op(func(ci: CanvasItem): W31.group_frame(ci, Rect2(5, 24, box_w, 75)))
 		var group := []
 		var rg := W31Radio.new("Program &Group")
 		var ri := W31Radio.new("Program &Item")
-		rg.group = group
-		ri.group = group
-		group.append(rg)
-		group.append(ri)
+		var rn := W31Radio.new("Sticky &Note")
+		for r in [rg, ri, rn]:
+			r.group = group
+			group.append(r)
 		ri.disabled = groups.is_empty()
+		rn.disabled = groups.is_empty()
 		rg.checked = kind == "group"
 		ri.checked = kind == "item"
+		rn.checked = kind == "note"
 		rg.selected.connect(func(): kind = "group")
 		ri.selected.connect(func(): kind = "item")
+		rn.selected.connect(func(): kind = "note")
 		add_widget(rg, 5 + 1 + 12, 24 + 1 + 10)
 		add_widget(ri, 5 + 1 + 12, 24 + 1 + 10 + 20)
+		add_widget(rn, 5 + 1 + 12, 24 + 1 + 10 + 40)
 		var ok := make_button("OK", true, _submit)
-		add_button_row(91, [ok, make_button("Cancel", false, UIState.close_dialog), make_button("Help", false, W31FormDialogs.open_help)])
-		_finish(91 + 4 + 22 + 8)
+		add_button_row(111, [ok, make_button("Cancel", false, UIState.close_dialog), make_button("Help", false, W31FormDialogs.open_help)])
+		_finish(111 + 4 + 22 + 8)
 
 	func _submit() -> void:
 		var next := W31DialogLogic.new_object_next(kind, preferred_group_id, groups)

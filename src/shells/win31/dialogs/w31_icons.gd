@@ -7,7 +7,7 @@ const IDS := [
 	"group", "default", "file-manager", "control-panel", "print-manager",
 	"clipbook", "dos", "setup", "pif", "readme", "accessories", "network",
 	"games", "startup", "program-manager", "terminal", "calculator", "clock",
-	"paint", "cardfile", "warning", "information", "question",
+	"paint", "cardfile", "warning", "information", "question", "note",
 ]
 
 const ALIASES := {

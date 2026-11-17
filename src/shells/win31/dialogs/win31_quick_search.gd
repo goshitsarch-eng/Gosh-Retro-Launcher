@@ -280,15 +280,23 @@ class _Results extends W31Widget:
 			var fg := W31.WHITE if sel else W31.BLACK
 			var sub := Color(1, 1, 1, 1).lerp(W31.NAVY, 0.2) if sel else W31.BLACK.lerp(W31.FACE, 0.2)
 			var item: Dictionary = d[i].item
-			var tex: Texture2D = IconRegistry.resolve(String(item.get("icon", "")))
+			var tex: Texture2D
+			if Notes.is_note(item):
+				tex = W31Icons.texture(WfwIcons.item_icon_string(item))  # the WfW note icon, not the generic default
+			else:
+				tex = IconRegistry.resolve(String(item.get("icon", "")))
 			if tex == null:
 				tex = W31Icons.texture(String(item.get("win31Icon", item.get("icon", ""))))
 			if y + 7 >= clip_top and y + 7 + 16 <= clip_bottom:
 				Px.tex(self, tex, Vector2(1 + 5, y + 7), Vector2(16, 16))
 			if y + 2 >= clip_top and y + 28 <= clip_bottom:
 				var f := W31.font()
-				f.draw(self, Vector2(1 + 5 + 16 + 5, y + 2), f.clip(String(item.name), int(inner_w) - 5 - 16 - 5 - 5, true), fg, {"bold": true})
-				W31.text(self, 1 + 5 + 16 + 5, y + 15, String(d[i].group.name), sub, 10, {"line_height": 13})
+				var tw := int(inner_w) - 5 - 16 - 5 - 5
+				# Names and note text are user text: an "&" is shown, never read as an access key.
+				var name_src := f.clip(String(item.name).replace("&", "&&"), tw, true).replace("&", "&&")
+				f.draw(self, Vector2(1 + 5 + 16 + 5, y + 2), name_src, fg, {"bold": true, "show_access": false})
+				var detail := W31.font(10).clip(W31DialogLogic.quick_search_detail(d[i]).replace("&", "&&"), tw).replace("&", "&&")
+				W31.text(self, 1 + 5 + 16 + 5, y + 15, detail, sub, 10, {"line_height": 13, "show_access": false})
 		if view.get("hasMore", false):
 			var y2 := 1 + d.size() * ROW_H - scroll_y
 			var s2: String = view.moreText
@@ -309,7 +317,7 @@ class _Results extends W31Widget:
 		var d := displayed()
 		if i < 0 or i >= d.size():
 			return ""
-		return "%s, %s" % [String(d[i].item.get("name", "")), String(d[i].group.get("name", ""))]
+		return "%s, %s" % [String(d[i].item.get("name", "")), W31DialogLogic.quick_search_detail(d[i])]
 
 	## Text of the live region: the highlighted result with its position, or "No results found".
 	func a11y_status() -> String:

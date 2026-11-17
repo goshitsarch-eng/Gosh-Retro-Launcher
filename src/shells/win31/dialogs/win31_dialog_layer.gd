@@ -39,7 +39,13 @@ static func create_dialog(type: String, data: Dictionary) -> W31Dialog:
 				return null
 			return W31PropertiesDialogs.GroupProperties.new(data)
 		"newItem", "itemProperties":
+			if type == "itemProperties" and Notes.is_note(data.get("item", {})):
+				return W31NoteDialogs.NoteProperties.new(data, groups)
 			return W31PropertiesDialogs.ItemProperties.new(data, groups)
+		"newNote":
+			if groups.is_empty():
+				return null
+			return W31NoteDialogs.NewNote.new(data, groups)
 		"newUrl":
 			return W31FormDialogs.NewUrl.new(data, groups)
 		"settings":

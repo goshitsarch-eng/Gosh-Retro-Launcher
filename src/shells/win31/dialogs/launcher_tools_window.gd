@@ -60,6 +60,12 @@ static func show_singleton(host: Node) -> LauncherToolsWindow:
 
 const BASE_SIZE := Vector2i(680, 720)
 const BASE_MIN_SIZE := Vector2i(480, 360)
+## Layout caps so the form fits BASE_SIZE.x and still works at BASE_MIN_SIZE.x with no horizontal
+## clipping: drop-downs do not grow to their longest entry, fields start small and stretch, rows
+## wrap (HFlowContainer) and long text wraps.
+const FIELD_MIN_W := 120
+const OPTION_MIN_W := 120
+const COUNT_W := 76
 
 
 func _init() -> void:
@@ -119,6 +125,7 @@ func _ready() -> void:
 	footer.add_theme_stylebox_override("panel", fs)
 	status_label = Label.new()
 	status_label.text = "Ready."
+	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	status_label.set("accessibility_live", 1)  # LIVE_POLITE; enum moved DisplayServer -> AccessibilityServer in 4.7. Old footer was role="status"
 	status_label.set_meta("auto_id", "tools.status")
 	footer.add_child(status_label)
@@ -231,11 +238,37 @@ static func _padded(bg: Color, pad: int) -> StyleBoxFlat:
 	return s
 
 
-func _row(parent: Control) -> HBoxContainer:
-	var r := HBoxContainer.new()
-	r.add_theme_constant_override("separation", 7)
+## A row of controls that wraps onto more lines when the window is narrow.
+func _row(parent: Control) -> HFlowContainer:
+	var r := _flow(7)
 	parent.add_child(r)
 	return r
+
+
+static func _flow(h_sep: int) -> HFlowContainer:
+	var r := HFlowContainer.new()
+	r.add_theme_constant_override("h_separation", h_sep)
+	r.add_theme_constant_override("v_separation", 6)
+	return r
+
+
+## A label whose text wraps to the width it gets instead of widening the window.
+static func _wrapped(text: String) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return l
+
+
+## A drop-down that keeps a small minimum width and trims long entries (by default an OptionButton
+## is as wide as its longest entry, so one long group or program name widened the whole window).
+static func _fit_option(o: OptionButton, min_w: int = OPTION_MIN_W) -> OptionButton:
+	o.fit_to_longest_item = false
+	o.clip_text = true
+	o.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	o.custom_minimum_size.x = min_w
+	return o
 
 
 func _button(parent: Control, text: String, cb: Callable, disabled: bool = false, id: String = "") -> Button:
@@ -254,6 +287,7 @@ func _labeled(parent: Control, label: String, ctl: Control, expand: bool = true)
 	v.add_theme_constant_override("separation", 3)
 	if expand:
 		v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	v.custom_minimum_size.x = maxf(ctl.custom_minimum_size.x, FIELD_MIN_W)
 	var l := Label.new()
 	l.text = label
 	v.add_child(l)
@@ -266,7 +300,7 @@ func _labeled(parent: Control, label: String, ctl: Control, expand: bool = true)
 
 
 func _group_option(parent: Control, on_change: Callable) -> OptionButton:
-	var o := OptionButton.new()
+	var o := _fit_option(OptionButton.new())
 	o.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for g in ProgramStore.groups:
 		o.add_item(g.name)
@@ -294,12 +328,13 @@ func _line(text: String, placeholder: String, cb: Callable) -> LineEdit:
 	var e := LineEdit.new()
 	e.text = text
 	e.placeholder_text = placeholder
+	e.custom_minimum_size.x = FIELD_MIN_W
 	e.text_changed.connect(cb)
 	return e
 
 
 func _scale_option(value: Variant, cb: Callable) -> OptionButton:
-	var o := OptionButton.new()
+	var o := _fit_option(OptionButton.new())
 	o.add_item("Auto")
 	for v in Types.SCALE_FACTORS:
 		o.add_item("%d×" % v)
@@ -349,8 +384,7 @@ func _build_header() -> void:
 	t.text = "Launcher Tools"
 	t.add_theme_font_size_override("font_size", 22)
 	h.add_child(t)
-	var p := Label.new()
-	p.text = "Modern launcher features are kept outside the Windows 3.11 Program Manager surface."
+	var p := _wrapped("Modern launcher features are kept outside the Windows 3.11 Program Manager surface.")
 	p.add_theme_color_override("font_color", Color("#444444"))
 	h.add_child(p)
 	_content.add_child(h)
@@ -358,13 +392,10 @@ func _build_header() -> void:
 
 func _build_appearance() -> void:
 	var s := _section("Shell and appearance")
-	var active := Label.new()
-	active.text = "Active shell: %s" % LauncherToolsLogic.shell_label(String(ProgramStore.settings.get("shell", "win31")))
-	s.add_child(active)
-	var grid := HBoxContainer.new()
-	grid.add_theme_constant_override("separation", 9)
+	s.add_child(_wrapped("Active shell: %s" % LauncherToolsLogic.shell_label(String(ProgramStore.settings.get("shell", "win31")))))
+	var grid := _flow(9)
 	s.add_child(grid)
-	shell_option = OptionButton.new()
+	shell_option = _fit_option(OptionButton.new())
 	for sh in Types.SHELLS:
 		shell_option.add_item(LauncherToolsLogic.shell_label(sh))
 	shell_option.select(maxi(0, Types.SHELLS.find(_form.shell)))
@@ -379,8 +410,7 @@ func _build_appearance() -> void:
 		_form[skey] = v)
 	scale_option.set_meta("auto_id", "tools.scale")
 	_labeled(grid, "WfW scale" if is31 else LauncherToolsLogic.shell_label(String(_form.shell)) + " scale", scale_option)
-	var checks := HBoxContainer.new()
-	checks.add_theme_constant_override("separation", 12)
+	var checks := _flow(12)
 	s.add_child(checks)
 	desktop_check = _check(checks, "WfW gray desktop mode", _form.win31DesktopMode, func(on: bool): _form.win31DesktopMode = on)
 	sound_check = _check(checks, "Sound effects", _form.soundEnabled, func(on: bool): _form.soundEnabled = on)
@@ -409,10 +439,7 @@ func _build_groups() -> void:
 
 func _build_transfer() -> void:
 	var s := _section("Export and import everything")
-	var l := Label.new()
-	l.text = "One file with all program groups, programs, launch groups, settings and workspace profiles."
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	s.add_child(l)
+	s.add_child(_wrapped("One file with all program groups, programs, launch groups, settings and workspace profiles."))
 	var row := _row(s)
 	_button(row, "Export All...", func(): _export_all(), false, "export-all")
 	_button(row, "Import All...", _request_import_all, false, "import-all")
@@ -443,7 +470,8 @@ func _export_grp() -> void:
 	if group.is_empty():
 		return
 	var result: Dictionary = await Platform.export_grp(group)
-	var st := LauncherToolsLogic.export_grp_status(String(group.name), result)
+	var notes := (group.items as Array).filter(func(i): return Notes.is_note(i)).size()
+	var st := LauncherToolsLogic.export_grp_status(String(group.name), result, notes)
 	if st != "":
 		set_status(st)
 
@@ -491,8 +519,7 @@ func _confirm_import_all() -> void:
 
 func _build_url() -> void:
 	var s := _section("URL launcher")
-	var grid := HBoxContainer.new()
-	grid.add_theme_constant_override("separation", 9)
+	var grid := _flow(9)
 	s.add_child(grid)
 	var add_btn: Button
 	var name_edit := _line(_url_name, "", func(t: String):
@@ -506,6 +533,7 @@ func _build_url() -> void:
 	lv.size_flags_stretch_ratio = 2.0
 	var gv := VBoxContainer.new()
 	gv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gv.custom_minimum_size.x = OPTION_MIN_W
 	var gl := Label.new()
 	gl.text = "Group"
 	gv.add_child(gl)
@@ -536,17 +564,13 @@ func _build_launch() -> void:
 	var all := _button(row, "Launching..." if _launching else "Launch All", func(): _launch(buckets), _launching or buckets.is_empty(), "launch-all")
 	all.size_flags_vertical = Control.SIZE_SHRINK_END
 	var rows := LauncherToolsLogic.launch_group_rows(ProgramStore.groups, names)
-	var grid := GridContainer.new()
-	grid.columns = 6
-	grid.add_theme_constant_override("h_separation", 7)
-	grid.add_theme_constant_override("v_separation", 5)
-	s.add_child(grid)
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override("separation", 5)
+	s.add_child(list)
 	for r in rows:
-		_launch_group_row(grid, r, buckets)
+		_launch_group_row(list, r, buckets)
 	if rows.is_empty():
-		var l := Label.new()
-		l.text = "No launch groups yet. Name one below, then pick its programs with Batch group in the next section."
-		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		var l := _wrapped("No launch groups yet. Name one below, then pick its programs with Batch group in the next section.")
 		l.add_theme_color_override("font_color", Color("#555555"))
 		s.add_child(l)
 	var add_row := _row(s)
@@ -566,10 +590,19 @@ func _build_launch() -> void:
 		_rebuild(), LaunchGroups.clean_name(_new_group_name) == "", "launch-group-new")
 
 
-## One launch group: number (choosing a taken one swaps), name + Rename, size, Launch, Delete.
-func _launch_group_row(grid: GridContainer, r: Dictionary, buckets: Array) -> void:
+## One launch group: number (choosing a taken one swaps), name + Rename, size, Launch, Delete. Two
+## blocks that sit side by side when there is room and stack when the window is narrow (the name
+## field takes the spare width).
+func _launch_group_row(list: VBoxContainer, r: Dictionary, buckets: Array) -> void:
 	var n := int(r.number)
-	var num := OptionButton.new()
+	var row := _flow(7)
+	row.set_meta("auto_id", "tools.launch-group-row-%d" % n)
+	list.add_child(row)
+	var grid := HBoxContainer.new()
+	grid.add_theme_constant_override("separation", 7)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(grid)
+	var num := _fit_option(OptionButton.new(), 84)
 	for v in range(1, LaunchGroups.MAX_GROUP + 1):
 		num.add_item("Group %d" % v)
 		num.set_item_metadata(num.item_count - 1, v)
@@ -592,15 +625,20 @@ func _launch_group_row(grid: GridContainer, r: Dictionary, buckets: Array) -> vo
 		set_status(LauncherToolsLogic.rename_launch_group(ProgramStore, n, String(_group_names.get(n, r.name))))
 		_group_names.erase(n)
 		_rebuild(), false, "launch-group-rename-%d" % n)
+	var tail := HBoxContainer.new()
+	tail.add_theme_constant_override("separation", 7)
+	row.add_child(tail)
 	var count := Label.new()
 	count.text = String(r.right)
-	grid.add_child(count)
+	count.custom_minimum_size.x = COUNT_W
+	count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	tail.add_child(count)
 	var bucket := []
 	for b in buckets:
 		if int(b.groupNumber) == n:
 			bucket = [b]
-	_button(grid, "Launch", func(): _launch(bucket), _launching or bucket.is_empty(), "launch-group-%d" % n)
-	_button(grid, "Delete", func(): _request_group_delete(n), false, "launch-group-delete-%d" % n)
+	_button(tail, "Launch", func(): _launch(bucket), _launching or bucket.is_empty(), "launch-group-%d" % n)
+	_button(tail, "Delete", func(): _request_group_delete(n), false, "launch-group-delete-%d" % n)
 
 
 func _request_group_delete(number: int) -> void:
@@ -651,7 +689,7 @@ func _launch(buckets: Array) -> void:
 
 func _build_profile_editor() -> void:
 	var s := _section("Launch profile and batch metadata")
-	var opt := OptionButton.new()
+	var opt := _fit_option(OptionButton.new())
 	opt.add_item("Select a program item...")
 	opt.set_item_metadata(0, "")
 	var choices := LauncherToolsLogic.item_choices(ProgramStore.groups)
@@ -677,9 +715,7 @@ func _build_profile_editor() -> void:
 	var env := String(item.get("environment", ""))
 	var mode := String(item.get("runMode", "normal"))
 	var lg := int(item.get("launchGroup", 0))
-	var box := GridContainer.new()
-	box.columns = 2
-	box.add_theme_constant_override("h_separation", 8)
+	var box := _flow(8)
 	box.add_theme_constant_override("v_separation", 8)
 	s.add_child(box)
 	var a_edit := _line(args, "", func(t: String): args = t)
@@ -691,15 +727,14 @@ func _build_profile_editor() -> void:
 	e_edit.placeholder_text = "KEY=VALUE"
 	e_edit.custom_minimum_size = Vector2(0, 60)
 	e_edit.text_changed.connect(func(): env = e_edit.text)
-	var ev := _labeled(box, "Environment", e_edit)
-	box.add_child(Control.new())
-	var m_opt := OptionButton.new()
+	_labeled(box, "Environment", e_edit)
+	var m_opt := _fit_option(OptionButton.new())
 	for m in ["Normal", "Minimized", "Maximized"]:
 		m_opt.add_item(m)
 	m_opt.select(Types.RUN_MODES.find(mode))
 	m_opt.item_selected.connect(func(i: int): mode = Types.RUN_MODES[i])
 	_labeled(box, "Run mode", m_opt)
-	var lg_opt := OptionButton.new()
+	var lg_opt := _fit_option(OptionButton.new())
 	var stored_lg := lg
 	for label in LauncherToolsLogic.batch_group_labels(ProgramStore.launch_group_names(), stored_lg):
 		lg_opt.add_item(label)
@@ -707,7 +742,6 @@ func _build_profile_editor() -> void:
 	lg_opt.set_meta("auto_id", "tools.batch-group")
 	lg_opt.item_selected.connect(func(i: int): lg = LauncherToolsLogic.batch_group_value(i, stored_lg))
 	_labeled(box, "Batch group", lg_opt)
-	ev = ev
 	var save := _button(s, "Save launch profile", func():
 		var st := LauncherToolsLogic.save_launch_profile(ProgramStore, parts[0], parts[1],
 			LauncherToolsLogic.launch_profile_updates(args, wd, env, mode, lg))
@@ -733,7 +767,7 @@ func _build_workspaces() -> void:
 		set_status(r.status)
 		_rebuild(), false, "save-workspace")
 	var r2 := _row(s)
-	var sel := OptionButton.new()
+	var sel := _fit_option(OptionButton.new())
 	sel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sel.add_item("Select a profile...")
 	sel.set_item_metadata(0, "")
@@ -750,24 +784,31 @@ func _build_workspaces() -> void:
 				_rename_profile = p.name
 		_rebuild())
 	sel.set_meta("auto_id", "tools.profile-select")
-	r2.add_child(sel)
+	var pick := HBoxContainer.new()  # [profile][Apply] and [name][Rename][Delete] stack when narrow
+	pick.add_theme_constant_override("separation", 7)
+	pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	r2.add_child(pick)
+	pick.add_child(sel)
 	var none := _selected_profile == ""
-	_button(r2, "Apply", _request_apply_profile, none, "apply-profile")
+	_button(pick, "Apply", _request_apply_profile, none, "apply-profile")
+	var edit_box := HBoxContainer.new()
+	edit_box.add_theme_constant_override("separation", 7)
+	edit_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	r2.add_child(edit_box)
 	var ren_edit := _line(_rename_profile, "", func(t: String): _rename_profile = t)
 	ren_edit.editable = not none
 	ren_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	r2.add_child(ren_edit)
-	_button(r2, "Rename", func():
+	edit_box.add_child(ren_edit)
+	_button(edit_box, "Rename", func():
 		LauncherToolsLogic.rename_profile(ProgramStore, _selected_profile, _rename_profile), none or _rename_profile.strip_edges().is_empty(), "rename-profile")
-	_button(r2, "Delete", func():
+	_button(edit_box, "Delete", func():
 		LauncherToolsLogic.delete_profile(ProgramStore, _selected_profile)
 		_selected_profile = ""
 		_rename_profile = ""
 		_rebuild(), none, "delete-profile")
 	for p in profiles:
 		if p.id == _selected_profile:
-			var small := Label.new()
-			small.text = LauncherToolsLogic.profile_summary(p)
+			var small := _wrapped(LauncherToolsLogic.profile_summary(p))
 			small.add_theme_font_size_override("font_size", 11)
 			s.add_child(small)
 
@@ -831,10 +872,7 @@ func _build_backups() -> void:
 	s.add_child(list)
 	for b in _backups:
 		var r := HBoxContainer.new()
-		var l := Label.new()
-		l.text = LauncherToolsLogic.backup_label(b)
-		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		r.add_child(l)
+		r.add_child(_wrapped(LauncherToolsLogic.backup_label(b)))
 		var id: String = b.id
 		_button(r, "Restore", func(): _request_restore(id), false, "restore-backup")
 		list.add_child(r)

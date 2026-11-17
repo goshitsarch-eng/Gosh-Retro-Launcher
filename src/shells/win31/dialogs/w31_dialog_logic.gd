@@ -181,14 +181,15 @@ static func new_group_followup(data: Dictionary) -> String:
 	return ""
 
 
-## NewProgramObjectDialog OK: which dialog opens next -> {type, data}.
+## NewProgramObjectDialog OK: which dialog opens next -> {type, data}. `kind` is "group", "item"
+## or "note" (Sticky Note).
 static func new_object_next(kind: String, preferred_group_id: String, groups: Array) -> Dictionary:
 	if kind == "group":
 		return {"type": "newGroup", "data": {}}
 	var gid := preferred_group_id
 	if gid == "" and groups.size() > 0:
 		gid = groups[0].id
-	return {"type": "newItem", "data": {"groupId": gid}}
+	return {"type": "newNote" if kind == "note" else "newItem", "data": {"groupId": gid}}
 
 
 static func new_object_default_kind(groups: Array) -> String:
@@ -328,6 +329,74 @@ static func apply_move_copy(store: Node, copy: bool, source_group_id: String, de
 	return true
 
 
+# ---------------------------------------------------------- sticky notes
+
+## Labels and ids of the "Color:" drop-down, in Notes.COLORS order.
+static func note_color_choices() -> Dictionary:
+	var labels := []
+	var values := []
+	for c in Notes.color_choices():
+		labels.append(String(c.label))
+		values.append(String(c.id))
+	return {"labels": labels, "values": values}
+
+
+## Initial values of the New Sticky Note / note Properties form ({} = a new note).
+static func note_form(existing: Dictionary = {}) -> Dictionary:
+	var color := String(existing.get("noteColor", Notes.DEFAULT_COLOR))
+	if not Notes.COLORS.has(color):
+		color = Notes.DEFAULT_COLOR
+	var icon := String(existing.get("win31Icon", ""))
+	if icon == "":
+		icon = String(existing.get("icon", ""))
+	return {
+		"name": String(existing.get("name", "")),
+		"text": String(existing.get("note", "")),
+		"noteColor": color,
+		"launchGroup": maxi(0, int(existing.get("launchGroup", 0))),
+		"win31Icon": icon if icon != "" else Notes.ICON,
+	}
+
+
+## OK needs a group to put the note in (a blank title becomes "Note", like Notes.make_note).
+static func note_form_valid(group_id: String) -> bool:
+	return group_id != ""
+
+
+## New Sticky Note OK: adds the note to `group_id` and returns its id ("" when refused).
+static func apply_new_note(store: Node, group_id: String, form: Dictionary) -> String:
+	if not note_form_valid(group_id):
+		return ""
+	var id: String = store.add_note(group_id, String(form.get("name", "")), String(form.get("text", "")),
+		String(form.get("noteColor", Notes.DEFAULT_COLOR)))
+	var lg := maxi(0, int(form.get("launchGroup", 0)))
+	if id != "" and lg > 0:
+		store.update_item(group_id, id, {"launchGroup": lg})
+	return id
+
+
+## What note Properties writes: title, paper colour, launch group and icon only (the text is
+## edited in the note itself; a note has no command line, directory or shortcut key).
+static func note_values(form: Dictionary) -> Dictionary:
+	var name := String(form.get("name", "")).strip_edges()
+	var color := String(form.get("noteColor", Notes.DEFAULT_COLOR))
+	var icon := String(form.get("win31Icon", ""))
+	return {
+		"name": name if name != "" else "Note",
+		"noteColor": color if Notes.COLORS.has(color) else Notes.DEFAULT_COLOR,
+		"launchGroup": maxi(0, int(form.get("launchGroup", 0))),
+		"win31Icon": icon if icon != "" else Notes.ICON,
+	}
+
+
+## Note Properties OK. Returns false when the group or item is missing.
+static func apply_note_properties(store: Node, group_id: String, item_id: String, form: Dictionary) -> bool:
+	if group_id == "" or item_id == "" or store.find_item(group_id, item_id).is_empty():
+		return false
+	store.update_item(group_id, item_id, note_values(form))
+	return true
+
+
 # --------------------------------------------------------------- Run
 
 ## RunProgramDialog: the item passed to Platform.launch. {} for a blank command line.
@@ -433,9 +502,42 @@ static func settings_failure_notice(result: Dictionary) -> Dictionary:
 
 # ---------------------------------------------------------- Quick Search
 
+## Quick Search matches: ProgramSearch's ranking (name, path, group) plus sticky notes whose text
+## contains the query (ranked like a path match), each item once.
+static func quick_search_results(groups: Array, query: String) -> Array:
+	var results := ProgramSearch.search_programs(groups, query)
+	var q := query.strip_edges().to_lower()
+	if q.is_empty():
+		return results
+	var seen := {}
+	for r in results:
+		seen[String(r.item.get("id", ""))] = true
+	var extra := []
+	for g in groups:
+		for item in g.get("items", []):
+			if Notes.is_note(item) and not seen.has(String(item.get("id", ""))) \
+					and String(item.get("note", "")).to_lower().contains(q):
+				extra.append({"group": g, "item": item, "score": 1})
+	if extra.is_empty():
+		return results
+	results.append_array(extra)
+	results.sort_custom(ProgramSearch._cmp)
+	return results
+
+
+## Second line of a Quick Search row: a note's first line of text (when it has any), else the group.
+static func quick_search_detail(result: Dictionary) -> String:
+	var item: Dictionary = result.get("item", {})
+	if Notes.is_note(item):
+		var p := Notes.preview(item)
+		if p != "":
+			return p
+	return String(result.get("group", {}).get("name", ""))
+
+
 ## {displayed, total, hasMore, moreCount, moreText, empty (show "No results found")}.
 static func quick_search_view(groups: Array, query: String) -> Dictionary:
-	var results := ProgramSearch.search_programs(groups, query)
+	var results := quick_search_results(groups, query)
 	var displayed := results.slice(0, MAX_QUICK_SEARCH_RESULTS)
 	var more := results.size() - MAX_QUICK_SEARCH_RESULTS
 	return {
@@ -674,11 +776,18 @@ static func member_check_set(groups: Array, number: int) -> Dictionary:
 static func member_rows(groups: Array, names: Variant, number: int, checked: Dictionary) -> Array:
 	var out := []
 	var last_group := ""
+	var note_keys := {}  # sticky notes can be members too (they open when the group runs); say which rows are notes
+	for g in groups:
+		for it in g.get("items", []):
+			if Notes.is_note(it):
+				note_keys["%s:%s" % [g.id, it.id]] = true
 	for e in LaunchGroups.all_items(groups):
 		if String(e.groupId) != last_group:
 			last_group = String(e.groupId)
 			out.append({"header": true, "text": String(e.groupName)})
 		var text := String(e.name)
+		if note_keys.has(String(e.key)):
+			text += " (note)"
 		var lg := int(e.launchGroup)
 		if lg > 0 and lg != number:
 			text += " (%s)" % format_launch_group(lg, names)
