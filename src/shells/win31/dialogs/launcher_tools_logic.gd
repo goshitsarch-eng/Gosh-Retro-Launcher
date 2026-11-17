@@ -98,9 +98,13 @@ static func repair_summary(normalized: int, shortcuts_cleared: int) -> String:
 	return DataTransfer.repair_summary(normalized, shortcuts_cleared)
 
 
-static func export_grp_status(group_name: String, result: Dictionary) -> String:
+## `skipped_notes`: sticky notes in the group, which a .GRP file cannot hold (Grp leaves them out).
+static func export_grp_status(group_name: String, result: Dictionary, skipped_notes: int = 0) -> String:
 	if result.get("success", false):
-		return "Exported “%s” as a Windows 3.x .GRP file." % group_name
+		var line := "Exported “%s” as a Windows 3.x .GRP file." % group_name
+		if skipped_notes > 0:
+			line += " %s left out: a .GRP file has no sticky notes." % ("1 sticky note was" if skipped_notes == 1 else "%d sticky notes were" % skipped_notes)
+		return line
 	if result.get("error", "") != "Canceled":
 		return String(result.get("error", "")) if String(result.get("error", "")) != "" else "Could not export the group."
 	return ""

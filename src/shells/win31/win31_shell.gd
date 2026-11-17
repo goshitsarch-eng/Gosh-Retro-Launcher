@@ -10,6 +10,7 @@ const MIN_H := 240
 
 var pm: Win31ProgramManager
 var desktop_icon: Win31DesktopIcon
+var notes: Control                ## sticky note windows (see note_layer)
 var feedback: Win31LaunchFeedback
 var dialogs: Win31DialogLayer
 var quick: Win31QuickSearch
@@ -28,8 +29,32 @@ var _notices: Array = []          ## host notices ({title, message}) waiting for
 var _notices_live := false        ## true between on_activate and _exit_tree
 
 
+const Z_MENUS := 1     ## menu bar, Control-menu and group window popups (above the notes)
+const Z_OVERLAYS := 2  ## launch feedback, dialogs and Quick Search (above everything)
+
+
 func shell_id() -> String:
 	return "win31"
+
+
+## The full-shell layer the sticky notes live in. It takes no input itself, so a click between
+## notes reaches the Program Manager or the desktop underneath.
+static func make_note_layer() -> Control:
+	var layer := Control.new()
+	layer.name = "Notes"
+	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.focus_mode = Control.FOCUS_NONE
+	layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	return layer
+
+
+func note_layer() -> Control:
+	return notes
+
+
+## WfW notes use the shell's 1-bit WfW Sans at its native 11 px, like every other WfW text.
+func note_style() -> Dictionary:
+	return {"font": W31.font().font, "font_size": RetroFont.SYSTEM_FONT_PX, "text_color": W31.BLACK}
 
 
 func _init() -> void:
@@ -41,12 +66,21 @@ func _init() -> void:
 	desktop_icon.visible = false
 	desktop_icon.restore_requested.connect(func(): ProgramStore.update_settings({"win31ProgramManagerMinimized": false}))
 	add_child(desktop_icon)
+	notes = Win31Shell.make_note_layer()
+	add_child(notes)
 	feedback = Win31LaunchFeedback.new()
 	add_child(feedback)
 	dialogs = Win31DialogLayer.new()
 	add_child(dialogs)
 	quick = Win31QuickSearch.new()
 	add_child(quick)
+	# Stacking: desktop, Program Manager and its group windows < sticky notes < the menus (which live
+	# inside the Program Manager, so they are lifted with z_index) < launch feedback, dialogs and Quick
+	# Search. Menus take their clicks in _input, so drawing order is all that needs lifting.
+	pm.popup_layer.z_index = Win31Shell.Z_MENUS
+	pm.client.popup_layer.z_index = Win31Shell.Z_MENUS
+	for overlay in [feedback, dialogs, quick]:
+		overlay.z_index = Win31Shell.Z_OVERLAYS
 	pm.command_chosen.connect(run_command)
 	pm.minimize_requested.connect(minimize_program_manager)
 	pm.maximize_toggle_requested.connect(toggle_program_manager_maximize)
@@ -124,7 +158,18 @@ func on_files_dropped(files: PackedStringArray, logical_pos: Vector2) -> void:
 ## Host notice (a save failure or repaired data, see main.gd) shown as the OK message box. WfW has a
 ## single dialog slot, so a notice waits until no other dialog is open instead of replacing it.
 func show_notice(title: String, message: String) -> void:
-	_queue_notice({"title": title, "message": message})
+	var notice := {"title": title, "message": message}
+	if Win31Shell.notice_icon(title, message) == "information":
+		notice["icon"] = "information"  # (otherwise the message box's default warning sign)
+	_queue_notice(notice)
+
+
+## The host passes no severity, so a successful Import All (reported by the host since the shell
+## stopped showing its own result) would get the warning sign; it gets the information icon.
+static func notice_icon(title: String, message: String) -> String:
+	if title == DataTransfer.IMPORT_TITLE and message.begins_with(DataTransfer.import_status({"success": true}).get_slice(".", 0)):
+		return "information"
+	return "warning"
 
 
 ## Queues an OK message box ({title, message, icon?}) behind any dialog that is open.
@@ -312,6 +357,9 @@ func _on_grid_launch(item: Dictionary) -> void:
 ## Launches one item. `group_id` is the window to minimize for Minimize on Use (the grid passes
 ## its own group; the Open command / shortcut keys use the selected group).
 func launch_item(item: Dictionary, group_id: String = "") -> void:
+	if Notes.is_note(item):
+		open_note(String(item.get("id", "")))  # a note opens its window; Minimize on Use does not apply
+		return
 	var result: Dictionary = Platform.launch(item)
 	if not result.get("success", false):
 		UIState.open_dialog("confirm", {"confirmOptions": {
@@ -463,7 +511,9 @@ func export_all() -> void:
 		"icon": "information" if result.get("success", false) else "warning"})
 
 
-## File > Import All...: asks first (it replaces everything after a backup), then imports.
+## File > Import All...: asks first (it replaces everything after a backup), then imports. The result
+## is shown by the host (Platform.import_finished), because an import that switches the desktop
+## frees this shell before it could show anything.
 func confirm_import_all() -> void:
 	UIState.open_dialog("confirm", {"confirmOptions": {
 		"title": DataTransfer.IMPORT_TITLE, "message": W31DialogLogic.wfw_text(DataTransfer.IMPORT_CONFIRM), "width": 400,
@@ -472,13 +522,8 @@ func confirm_import_all() -> void:
 	}})
 
 
-func import_all() -> void:
-	var result: Dictionary = await Platform.import_data()
-	var line := W31DialogLogic.wfw_text(DataTransfer.import_status(result))
-	if line == "" or not is_inside_tree():
-		return
-	var ok: bool = result.get("success", false)
-	_queue_notice({"title": DataTransfer.IMPORT_TITLE, "message": line, "icon": "information" if ok else "warning"})
+func import_all() -> Dictionary:
+	return await Platform.import_data()
 
 
 func _confirm_delete_item(group: Dictionary, item: Dictionary, message: String) -> void:

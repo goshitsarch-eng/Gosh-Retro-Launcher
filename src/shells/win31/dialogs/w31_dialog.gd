@@ -115,8 +115,10 @@ func _finish_layout(with_scroll: bool) -> void:
 	viewport.size = Vector2(dialog_width - 2 * FRAME, vh)
 	body.position = Vector2(PAD, PAD)
 	body.size = Vector2(_content_w, _inner_h)
-	size = Vector2(dialog_width, chrome + vh)
-	custom_minimum_size = size
+	# Minimum first: setting `size` below an older, larger minimum is ignored, so a dialog that got
+	# shorter (Quick Search as its results narrow) kept its tallest height.
+	custom_minimum_size = Vector2(dialog_width, chrome + vh)
+	size = custom_minimum_size
 	if with_scroll:
 		scroll = W31ScrollBar.new()
 		scroll.position = Vector2(viewport.size.x - W31ScrollBar.WIDTH, 0)
