@@ -17,6 +17,8 @@ const TITLE_H := 13
 const CLOSE := 7
 const GRIP := 9
 const SAVE_DELAY := 0.4
+## Space between the paper's edge and the text.
+const TEXT_MARGIN := 6
 
 var item_id := ""
 var font: Font
@@ -167,8 +169,8 @@ func _apply_colors() -> void:
 
 
 func _layout() -> void:
-	_edit.position = Vector2(3, title_h + 2)
-	_edit.size = Vector2(maxf(8, size.x - 6), maxf(8, size.y - title_h - 3 - GRIP))
+	_edit.position = Vector2(TEXT_MARGIN, title_h + 3)
+	_edit.size = Vector2(maxf(8, size.x - TEXT_MARGIN * 2 + 2), maxf(8, size.y - title_h - 4 - GRIP))
 
 
 func _close_rect() -> Rect2:
