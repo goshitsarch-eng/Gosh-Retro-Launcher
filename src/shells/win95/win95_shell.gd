@@ -5,6 +5,7 @@ extends ShellBase
 ## integer content scale). It hosts the single Win95 input model (Win95InputController): every key
 ## and mouse event passes through _input() first.
 ##
+## Launch groups: launch_group_row(row_id) / launch_buckets(buckets) (Win95LaunchGroupLogic rows).
 ## Layers (back to front): desktop (windows inside) < taskbar < Start menu < popup_layer < dialog_layer.
 ## Public surface used by the Win95* components: windows (Win95WindowStore), input, desktop, taskbar,
 ## popup_layer, dialog_layer, logical_size, desktop_size(), host_focused, dragging, launch_item().
@@ -145,6 +146,46 @@ func launch_item(item: Dictionary) -> void:
 	var result: Dictionary = Platform.launch(item)
 	if not result.get("success", false):
 		Win95Dialogs.show_message(self, String(item.name), String(result.get("error", "Windows cannot find '%s'." % item.path)), "warning")
+	elif ProgramStore.settings.get("minimizeOnUse", false):
+		Platform.minimize_window()
+
+
+var _launch_in_progress := false
+
+
+func is_launching_groups() -> bool:
+	return _launch_in_progress
+
+
+## Start > Programs > Launch Groups rows ("launch-all" / "launch:<n>") and the manager's Launch button.
+func launch_group_row(row_id: String) -> void:
+	launch_buckets(Win95LaunchGroupLogic.buckets_for(ProgramStore.groups, row_id))
+
+
+## Starts launch-group buckets one batch after another (LaunchGroups.launch_group_buckets), ignoring
+## a second request while a run is in progress. Programs that fail are listed in one warning box,
+## the way a single failed launch is reported.
+func launch_buckets(buckets: Array) -> void:
+	if _launch_in_progress or buckets.is_empty():
+		return
+	_launch_in_progress = true
+	var title := Win95LaunchGroupLogic.launch_title(buckets, ProgramStore.launch_group_names())
+	var total := 0
+	for b in buckets:
+		total += b.items.size()
+	UIState.begin_launch_feedback(buckets.size(), total)
+	Input.set_default_cursor_shape(Input.CURSOR_BUSY)  # Win95's "working in background" pointer while programs start
+	var results: Array = await LaunchGroups.launch_group_buckets(self, buckets, ProgramStore.settings.get("launchDelay", 500),
+		func(progress: Dictionary): UIState.update_launch_feedback(progress.groupNumber, progress.groupIndex),
+		Callable(Platform, "launch_batch"))
+	var text := Win95LaunchGroupLogic.failure_message(results, buckets)
+	UIState.finish_launch_feedback(results.filter(func(r): return not r.get("success", false)).size())
+	_launch_in_progress = false
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+	if not is_inside_tree():
+		return
+	if text != "":
+		Win95Dialogs.show_message(self, Win95LaunchGroupLogic.escape(title), Win95LaunchGroupLogic.escape(text), "warning")
 	elif ProgramStore.settings.get("minimizeOnUse", false):
 		Platform.minimize_window()
 
