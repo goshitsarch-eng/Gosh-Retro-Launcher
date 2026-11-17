@@ -4,12 +4,16 @@ extends RefCounted
 ##   Win95Properties.open_item(shell, group_id, item)   # "<name> Properties": Shortcut + Program tabs
 ##                                                       # (Program: Arguments, Run, Launch group)
 ##   Win95Properties.open_group(shell, group)            # "<name> Properties": General tab
+##   Win95Properties.open_note(shell, group_id, note)    # a sticky note (open_item sends notes here):
+##                                                       # General tab: Title, Paper color, Launch group, Change Icon...
+##   Win95Properties.open_change_icon(shell, current, on_pick)   # Change Icon box (Win95IconGrid)
 ## OK = apply then close; Apply is enabled only while the sheet is dirty; invalid fields (blank
 ## name/command) are not applied (see Win95DialogLogic.apply_*). Desktop objects use a message box
 ## (Win95Dialogs.show_message), as in the original.
 
 const CX := 9.0
 const PAGE_TOP := 32.0   ## body y of the page frame (tab strip 23 px - 1 px overlap + 10 px content top)
+const NOTE_PAGE_H := 170.0  ## page frame height of the sticky note sheet (three rows + Change Icon...)
 
 
 ## The sunken sheet page frame (1px light/shadow border).
@@ -105,6 +109,9 @@ static func open_item(shell: Control, group_id: String, item: Dictionary) -> voi
 	if live.is_empty():
 		Win95Dialogs.show_message(shell, "Properties", "The shortcut no longer exists.", "warning")
 		return
+	if Notes.is_note(live):
+		open_note(shell, group_id, live)
+		return
 	var item_id: String = live.id
 	var state := {"group": group_id}
 	var m := Win95Modal.open(shell, "%s Properties" % live.name, Vector2(420, 285))
@@ -197,3 +204,128 @@ static func open_item(shell: Control, group_id: String, item: Dictionary) -> voi
 		m.close())
 	name_edit.focus_edit()
 	name_edit.edit.select_all()
+
+
+## "<title> Properties" for a sticky note: one General tab with the note's icon (Change Icon...),
+## Title, Paper color and Launch group. The text is edited in the note itself; notes have no
+## command line, working directory, shortcut key or Run mode. Applied with
+## Win95DialogLogic.apply_note_properties. Automation: w95.note-props.title / .color /
+## .launchGroup / .change-icon / .icon.
+static func open_note(shell: Control, group_id: String, live: Dictionary) -> Win95Modal:
+	var item_id: String = live.id
+	var state := {"icon": String(live.get("icon", Notes.ICON))}
+	var m := Win95Modal.open(shell, "%s Properties" % live.name, Vector2(365, 271))
+	var cw: float = m.body.size.x - 18
+	var page := _Page.new()
+	page.position = Vector2(CX, PAGE_TOP)
+	page.size = Vector2(cw, NOTE_PAGE_H)
+	m.body.add_child(page)
+	var strip := Win95TabStrip.new()
+	strip.position = Vector2(CX, 10)
+	strip.size = Vector2(cw, 23)
+	strip.configure([{"id": "general", "label": "&General"}], "sheet", "general")
+	m.body.add_child(strip)
+	var ox := CX + 10.0
+	var oy := PAGE_TOP + 12.0
+	var icon_box := Win95IconBox.make(state.icon, Vector2(ox, oy))
+	_auto(icon_box, "w95.note-props.icon")
+	m.body.add_child(icon_box)
+	var heading := Win95Label.make(String(live.name).replace("&", "&&"), Vector2(ox + 42, oy), {"bold": true, "show_access": false})
+	m.body.add_child(heading)
+	m.body.add_child(Win95Label.make("Sticky Note", Vector2(ox + 42, oy + 15), {"show_access": false}))
+	var holder := Control.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	m.body.add_child(holder)
+	var name_edit := Win95TextInput.new()
+	name_edit.text = String(live.name)
+	var color_select := Win95Select.new()
+	color_select.shell = shell
+	color_select.options = Win95DialogLogic.note_color_labels()
+	color_select.selected_index = Win95DialogLogic.note_color_index(String(live.get("noteColor", Notes.DEFAULT_COLOR)))
+	var lg_choices := Win95LaunchGroupLogic.choices(ProgramStore.launch_group_names(), int(live.get("launchGroup", 0)))
+	var lg_select := Win95Select.new()
+	lg_select.shell = shell
+	lg_select.options = Win95LaunchGroupLogic.choice_labels(lg_choices)
+	lg_select.selected_index = Win95LaunchGroupLogic.choice_index(lg_choices, int(live.get("launchGroup", 0)))
+	_row(m, holder, "&Title:", oy + 41, name_edit, cw)
+	_row(m, holder, "Paper &color:", oy + 41 + 26, color_select, cw)
+	_row(m, holder, "&Launch group:", oy + 41 + 52, lg_select, cw)
+	_auto(name_edit, "w95.note-props.title")
+	_auto(color_select, "w95.note-props.color")
+	_auto(lg_select, "w95.note-props.launchGroup")
+	var change := Win95Button.new()
+	change.label = "Change &Icon..."
+	change.size = Vector2(97, 23)
+	change.custom_minimum_size = change.size
+	m.add(change, Vector2(ox + 111, oy + 41 + 78 + 4))
+	_auto(change, "w95.note-props.change-icon")
+	var btns := _buttons(m, PAGE_TOP + NOTE_PAGE_H + 12)
+	var ok: Win95Button = btns[0]
+	var apply: Win95Button = btns[2]
+	var dirty := func(_x = null): apply.disabled = false
+	name_edit.text_changed.connect(dirty)
+	color_select.item_selected.connect(dirty)
+	lg_select.item_selected.connect(dirty)
+	change.pressed.connect(func():
+		open_change_icon(shell, String(state.icon), func(id: String):
+			if not is_instance_valid(icon_box):
+				return
+			state.icon = id
+			icon_box.icon = id
+			apply.disabled = false))
+	var do_apply := func() -> bool:
+		var gid := Win95DialogLogic.group_of_item(ProgramStore, item_id)
+		if gid == "":
+			return false
+		var applied := Win95DialogLogic.apply_note_properties(ProgramStore, gid, item_id, {
+			"name": name_edit.text, "color": Win95DialogLogic.note_color_at(color_select.selected_index),
+			"launchGroup": Win95LaunchGroupLogic.choice_value(lg_choices, lg_select.selected_index), "icon": state.icon})
+		if applied:
+			heading.text = name_edit.text.strip_edges().replace("&", "&&")
+		return applied
+	apply.pressed.connect(func():
+		if do_apply.call():
+			apply.disabled = true)
+	ok.pressed.connect(func():
+		do_apply.call()
+		m.close())
+	name_edit.focus_edit()
+	name_edit.edit.select_all()
+	return m
+
+
+static func _auto(c: Control, id: String) -> void:
+	c.set_meta("auto_id", id)
+	c.add_to_group("pm_auto")
+
+
+# ----------------------------------------------------------------- Change Icon
+
+## The Windows 95 Change Icon box: "Current icon:" over a sunken list of the catalog icons
+## (Win95IconCatalog.PICKABLE_IDS, three rows, filled column by column), OK / Cancel. Double-click
+## or OK picks; on_pick(icon_id). Automation: w95.change-icon.list, w95.change-icon.item:<id>.
+static func open_change_icon(shell: Control, current: String, on_pick: Callable) -> Win95Modal:
+	var m := Win95Modal.open(shell, "Change Icon", Vector2(380, 214))
+	m.add(Win95Label.make("&Current icon:", Vector2.ZERO), Vector2(CX, 10))
+	var grid := Win95IconGrid.new()
+	grid.icons = Win95IconCatalog.PICKABLE_IDS
+	grid.select_icon(current)
+	m.add(grid, Vector2(CX, 10 + 16))
+	grid.size = Vector2(m.body.size.x - 18, Win95IconGrid.CELL.y * Win95IconGrid.ROWS + 4)
+	_auto(grid, "w95.change-icon.list")
+	var ok := _button("OK")
+	var cancel := _button("Cancel")
+	var y: float = m.body.size.y - 8 - 23
+	m.add(cancel, Vector2(m.body.size.x - 9 - 75, y))
+	m.add(ok, Vector2(m.body.size.x - 9 - 75 * 2 - 6, y))
+	m.set_default(ok)
+	cancel.pressed.connect(m.close)
+	var pick := func():
+		var id := grid.selected_icon()
+		m.close()
+		if id != "":
+			on_pick.call(id)
+	ok.pressed.connect(pick)
+	grid.activated.connect(func(_id): pick.call())
+	grid.grab_focus()
+	return m

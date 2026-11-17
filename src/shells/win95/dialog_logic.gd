@@ -5,9 +5,12 @@ extends RefCounted
 ## argument so tests can pass a throwaway ProgramStore instance.
 
 const FIND_PAGE_STEP := 3
-## Find > Advanced > Of type: ids and labels ("launch-group" = items in any launch group).
-const FIND_TYPES := ["all", "application", "internet", "launch-group"]
-const FIND_TYPE_LABELS := ["All launcher items", "Application", "Internet Shortcut", "In a launch group"]
+## Find > Advanced > Of type: ids and labels ("launch-group" = items in any launch group, "note" =
+## sticky notes only).
+const FIND_TYPES := ["all", "application", "internet", "launch-group", "note"]
+const FIND_TYPE_LABELS := ["All launcher items", "Application", "Internet Shortcut", "In a launch group", "Sticky notes"]
+## Longest note preview shown after a note's name in the Find results.
+const FIND_PREVIEW_CHARS := 32
 const RUN_MODES := ["normal", "minimized", "maximized"]
 const RUN_MODE_LABELS := ["Normal window", "Minimized", "Maximized"]
 const SHUTDOWN_HELP := "Shut Down affects only Gosh Retro Launcher. Restart can recreate this launcher in Windows 95 or switch it to Windows for Workgroups 3.11. Computer and MS-DOS operations remain unavailable."
@@ -30,13 +33,72 @@ static func find_filters(named: String, group_id: String, include_subgroups: boo
 	return f
 
 
-## ProgramSearch.find_programs plus the win95-only "launch-group" type (items in any launch group).
+## ProgramSearch.find_programs for programs and web sites, plus sticky notes (found by their title or
+## their text, see find_notes) and the win95-only types "note" and "launch-group" (items in any
+## launch group). Programs keep ProgramSearch's ranking; notes are merged in by the same rule.
 static func find_results(groups: Array, filters: Dictionary) -> Array:
-	if String(filters.get("type", "all")) != "launch-group":
-		return ProgramSearch.find_programs(groups, filters)
-	var all_types := filters.duplicate()
-	all_types["type"] = "all"
-	return ProgramSearch.find_programs(groups, all_types).filter(func(r): return int(r.item.get("launchGroup", 0)) > 0)
+	var type := String(filters.get("type", "all"))
+	var out: Array = []
+	if type != "note":
+		var program_filters := filters.duplicate()
+		if type == "launch-group":
+			program_filters["type"] = "all"
+		out = ProgramSearch.find_programs(groups, program_filters).filter(func(r): return not Notes.is_note(r.item))
+	if type == "all" or type == "note" or type == "launch-group":
+		out.append_array(find_notes(groups, filters))
+	if type == "launch-group":
+		out = out.filter(func(r): return int(r.item.get("launchGroup", 0)) > 0)
+	out.sort_custom(func(a, b):
+		if a.score != b.score:
+			return a.score > b.score
+		return String(a.item.name).naturalnocasecmp_to(String(b.item.name)) < 0)
+	return out
+
+
+## The sticky notes matching `filters` ({named, groupId?, containing?, path?}) as Find results
+## {group, item, score}. "Named" matches the title (as for programs) or anywhere in the text;
+## "Containing text" searches the title and text; notes have no path, so "Path contains" skips them.
+static func find_notes(groups: Array, filters: Dictionary) -> Array:
+	var named := String(filters.get("named", "")).strip_edges()
+	if named.is_empty():
+		named = "*"
+	var wild := named.contains("*") or named.contains("?")
+	var name_re := ProgramSearch._wildcard(named if wild else "*" + named + "*")
+	var text_re := ProgramSearch._wildcard("*" + named + "*")
+	var containing := String(filters.get("containing", "")).strip_edges().to_lower()
+	var group_id := String(filters.get("groupId", ""))
+	if String(filters.get("path", "")).strip_edges() != "":
+		return []
+	var named_l := named.to_lower()
+	var out := []
+	for group in groups:
+		if group_id != "" and group.id != group_id:
+			continue
+		for item in group.items:
+			if not Notes.is_note(item):
+				continue
+			var text := String(item.get("note", ""))
+			var by_name := name_re.search(String(item.name)) != null
+			if not by_name and text_re.search(text) == null:
+				continue
+			if containing != "" and not (String(item.name) + "\n" + text).to_lower().contains(containing):
+				continue
+			var lname := String(item.name).to_lower()
+			var score := 1
+			if by_name:
+				score = 3 if lname == named_l else (2 if lname.begins_with(named_l) else 1)
+			out.append({"group": group, "item": item, "score": score})
+	return out
+
+
+## Text drawn after a result's name in the Find list: a note's first line, else "".
+static func find_preview(item: Dictionary) -> String:
+	return Notes.preview(item, FIND_PREVIEW_CHARS) if Notes.is_note(item) else ""
+
+
+## The Type column of a folder window in Details view.
+static func item_type_label(item: Dictionary) -> String:
+	return "Sticky Note" if Notes.is_note(item) else "Application"
 
 
 static func find_result_ids(results: Array) -> Array:
@@ -152,6 +214,63 @@ static func create_url_item(store: Object, group_id: String, name: String, url: 
 	if group_id == "" or name.strip_edges().is_empty() or not is_internet_url(url):
 		return ""
 	return String(store.add_item(group_id, {"name": name.strip_edges(), "path": url.strip_edges(), "icon": "url", "workingDir": ""}))
+
+
+# --------------------------------------------------------------- Sticky notes
+
+const NOTE_DEFAULT_TITLE := "New Sticky Note"
+
+
+## Ids and labels of the paper colours, in Notes.color_choices() order.
+static func note_color_ids() -> Array:
+	return Notes.color_choices().map(func(c): return String(c.id))
+
+
+static func note_color_labels() -> Array:
+	return Notes.color_choices().map(func(c): return String(c.label))
+
+
+## Index of `color` in note_color_ids() (the default colour when unknown).
+static func note_color_index(color: String) -> int:
+	var ids := note_color_ids()
+	var i := ids.find(color)
+	return i if i >= 0 else maxi(0, ids.find(Notes.DEFAULT_COLOR))
+
+
+static func note_color_at(index: int) -> String:
+	var ids := note_color_ids()
+	return String(ids[index]) if index >= 0 and index < ids.size() else Notes.DEFAULT_COLOR
+
+
+static func can_create_note(name: String, group_id: String) -> bool:
+	return group_id != "" and not name.strip_edges().is_empty()
+
+
+## New Sticky Note OK: adds the note to `group_id` and returns its id, or "" when the form is
+## invalid (blank title or no folder). `launch_group` > 0 puts it in that launch group.
+static func create_note(store: Object, group_id: String, name: String, text: String, color: String, launch_group: int = 0) -> String:
+	if not can_create_note(name, group_id):
+		return ""
+	var id := String(store.add_note(group_id, name.strip_edges(), text, color))
+	if id != "" and launch_group > 0:
+		store.update_item(group_id, id, {"launchGroup": launch_group})
+	return id
+
+
+## Note property sheet Apply/OK. fields: {name, color, launchGroup?, icon?}. Only these change; the
+## text, window and program fields are left alone. Returns false (nothing applied) for a blank title.
+static func apply_note_properties(store: Object, group_id: String, item_id: String, fields: Dictionary) -> bool:
+	var name := String(fields.get("name", "")).strip_edges()
+	if name.is_empty():
+		return false
+	var updates := {"name": name, "noteColor": note_color_at(note_color_index(String(fields.get("color", Notes.DEFAULT_COLOR))))}
+	if fields.has("launchGroup"):
+		updates["launchGroup"] = maxi(0, int(fields.launchGroup))
+	var icon := String(fields.get("icon", "")).strip_edges()
+	if icon != "":
+		updates["icon"] = icon
+	store.update_item(group_id, item_id, updates)
+	return true
 
 
 # ------------------------------------------------------------------ Properties

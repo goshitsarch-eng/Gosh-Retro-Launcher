@@ -472,6 +472,11 @@ func _menu_items(id: String) -> Array:
 						Win95Dialogs.open_wizard(shell, {"groupId": group_id})
 					else:
 						Win95Dialogs.open_new_folder(shell, {})},
+				{"id": "new-note", "label": "New S&ticky Note...", "onSelect": func():
+					if group_id != "":
+						Win95Dialogs.open_new_note(shell, {"groupId": group_id})
+					else:
+						Win95Dialogs.open_new_folder(shell, {"openNoteAfterCreate": true})},
 				{"id": "sep-1", "separator": true},
 				{"id": "delete", "label": "&Delete", "disabled": not has_selection, "onSelect": func(): _delete_selected()},
 				{"id": "properties", "label": "P&roperties", "onSelect": func():

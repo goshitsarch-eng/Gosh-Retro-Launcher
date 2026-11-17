@@ -338,7 +338,7 @@ func _draw_report_row(e: Dictionary, lay: Dictionary, p: Vector2, selected: bool
 	if focused:
 		Win95Draw.dotted_rect(self, box, fg)
 	var col2 := p.x + float(report_widths.name)
-	var type_text := "File Folder" if e.is_group else "Application"
+	var type_text := "File Folder" if e.is_group else Win95DialogLogic.item_type_label(e.data)
 	var loc_text := "My Computer" if e.is_group else String(group().get("name", ""))
 	Win95Draw.text(self, Vector2(col2 + 4, p.y + 4), Win95Draw.font().clip(type_text, int(report_widths.type) - 8), fg)
 	Win95Draw.text(self, Vector2(col2 + float(report_widths.type) + 4, p.y + 4), Win95Draw.font().clip(loc_text, int(report_widths.location) - 8), fg)
@@ -604,6 +604,7 @@ func _context_items(target_id: String) -> Array:
 		return [
 			{"id": "new-program", "label": "&New Program...", "icon": "new-shortcut", "onSelect": func(): Win95Dialogs.open_wizard(shell, {"groupId": group_id})},
 			{"id": "new-url", "label": "New &URL...", "onSelect": func(): Win95Dialogs.open_new_url(shell, {"groupId": group_id})},
+			{"id": "new-note", "label": "New S&ticky Note...", "icon": "note", "onSelect": func(): Win95Dialogs.open_new_note(shell, {"groupId": group_id})},
 			{"id": "sep", "separator": true},
 			{"id": "select-all", "label": "Select &All", "disabled": entries().is_empty(), "onSelect": select_all},
 		]

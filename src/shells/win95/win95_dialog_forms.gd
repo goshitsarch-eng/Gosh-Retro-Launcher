@@ -209,6 +209,19 @@ static func open_wizard(shell: Control, ctx: Dictionary) -> void:
 				state.name = applied.name
 				state.working_dir = applied.workingDir
 				state.icon = applied.icon)
+			# The launcher's third kind of item: a sticky note instead of a shortcut.
+			var note_y := y + 21 + 14
+			page.add_child(Win95Label.make("To keep a note on the desktop instead of a shortcut, click Sticky Note.",
+				Vector2(col_x, note_y + 1), {"wrap": int(col_w) - 75 - 12}))
+			var sn := _button("&Sticky Note...")
+			sn.position = Vector2(col_x + col_w - 75, note_y)
+			sn.set_meta("auto_id", "w95.wizard.button:sticky-note")
+			sn.add_to_group("pm_auto")
+			page.add_child(sn)
+			sn.pressed.connect(func():
+				var gid: String = state.group_id
+				m.close()
+				Win95Dialogs.open_new_note(shell, {"groupId": gid}))
 			command.focus_edit()
 		else:
 			page.add_child(Win95Label.make("Select a title and program group", Vector2(col_x, CY + 5), {"bold": true}))
@@ -292,14 +305,16 @@ static func open_new_folder(shell: Control, ctx: Dictionary) -> void:
 		if ctx.get("openItemAfterCreate", false):
 			Win95Dialogs.open_wizard(shell, {"groupId": id})
 		elif ctx.get("openUrlAfterCreate", false):
-			Win95Dialogs.open_new_url(shell, {"groupId": id}))
+			Win95Dialogs.open_new_url(shell, {"groupId": id})
+		elif ctx.get("openNoteAfterCreate", false):
+			Win95Dialogs.open_new_note(shell, {"groupId": id}))
 	edit.focus_edit()
 	edit.edit.select_all()
 
 
 static func open_new_url(shell: Control, ctx: Dictionary) -> void:
 	var m := Win95Modal.open(shell, "New Internet Shortcut", Vector2(390, 185))
-	var group_id := String(ctx.get("groupId", ProgramStore.groups[0].id if ProgramStore.groups.size() > 0 else ""))
+	var state := {"group_id": String(ctx.get("groupId", ProgramStore.groups[0].id if ProgramStore.groups.size() > 0 else ""))}
 	var name_edit := Win95TextInput.new()
 	name_edit.text = "New Internet Shortcut"
 	var url_edit := Win95TextInput.new()
@@ -307,7 +322,7 @@ static func open_new_url(shell: Control, ctx: Dictionary) -> void:
 	var group_select := Win95Select.new()
 	group_select.shell = shell
 	group_select.options = _group_names()
-	group_select.selected_index = _group_index(group_id)
+	group_select.selected_index = _group_index(state.group_id)
 	_form_row(m, "&Name:", CY + 5, name_edit)
 	_form_row(m, "Internet &address:", CY + 5 + 26, url_edit)
 	_form_row(m, "Program &group:", CY + 5 + 52, group_select)
@@ -316,14 +331,62 @@ static func open_new_url(shell: Control, ctx: Dictionary) -> void:
 	_row(m, [ok, cancel], CY + 5 + 78 + 21 + 12 - 5)
 	m.set_default(ok)
 	cancel.pressed.connect(m.close)
-	group_select.item_selected.connect(func(i): group_id = String(ProgramStore.groups[i].id))
+	group_select.item_selected.connect(func(i): state.group_id = String(ProgramStore.groups[i].id))
 	ok.pressed.connect(func():
-		var id := Win95DialogLogic.create_url_item(ProgramStore, group_id, name_edit.text, url_edit.text)
+		var id := Win95DialogLogic.create_url_item(ProgramStore, state.group_id, name_edit.text, url_edit.text)
 		if id == "":
 			return
 		m.close()
-		shell.windows.open_group(group_id))
+		shell.windows.open_group(state.group_id))
 	name_edit.focus_edit()
+
+
+# ------------------------------------------------------------ New Sticky Note
+
+## New Sticky Note (the launcher's New > Text Document): title, paper colour, folder and optional
+## text. OK adds the note to the folder (Win95DialogLogic.create_note) and opens its window.
+## ctx = {groupId?}. Automation: w95.new-note.title / .color / .group / .text, w95.dialog.button:OK.
+static func open_new_note(shell: Control, ctx: Dictionary) -> Win95Modal:
+	var m := Win95Modal.open(shell, "New Sticky Note", Vector2(390, 224), {
+		"help": "A sticky note keeps a few lines of text on the desktop. Double-click its icon to show it again after you close it."})
+	var state := {"group_id": String(ctx.get("groupId", ProgramStore.groups[0].id if ProgramStore.groups.size() > 0 else ""))}
+	var title_edit := Win95TextInput.new()
+	title_edit.text = Win95DialogLogic.NOTE_DEFAULT_TITLE
+	var color_select := Win95Select.new()
+	color_select.shell = shell
+	color_select.options = Win95DialogLogic.note_color_labels()
+	color_select.selected_index = Win95DialogLogic.note_color_index(Notes.DEFAULT_COLOR)
+	var group_select := Win95Select.new()
+	group_select.shell = shell
+	group_select.options = _group_names()
+	group_select.selected_index = _group_index(state.group_id)
+	var text_area := Win95TextArea.new()
+	text_area.label = "&Text:"
+	_form_row(m, "&Title:", CY + 5, title_edit)
+	_form_row(m, "Paper &color:", CY + 5 + 26, color_select)
+	_form_row(m, "Program &group:", CY + 5 + 52, group_select)
+	_form_row(m, "T&ext:", CY + 5 + 78, text_area)
+	text_area.size = Vector2(text_area.size.x, 62)
+	for pair in [[title_edit, "title"], [color_select, "color"], [group_select, "group"], [text_area, "text"]]:
+		pair[0].set_meta("auto_id", "w95.new-note." + pair[1])
+		pair[0].add_to_group("pm_auto")
+	var ok := _button("OK")
+	var cancel := _button("Cancel")
+	_row(m, [ok, cancel], m.body.size.y - 8 - 23)
+	m.set_default(ok)
+	cancel.pressed.connect(m.close)
+	title_edit.text_changed.connect(func(t): ok.disabled = not Win95DialogLogic.can_create_note(t, state.group_id))
+	group_select.item_selected.connect(func(i): state.group_id = String(ProgramStore.groups[i].id))
+	ok.pressed.connect(func():
+		var id := Win95DialogLogic.create_note(ProgramStore, state.group_id, title_edit.text, text_area.text,
+			Win95DialogLogic.note_color_at(color_select.selected_index))
+		if id == "":
+			return
+		m.close()
+		shell.open_note(id))
+	title_edit.focus_edit()
+	title_edit.edit.select_all()
+	return m
 
 
 # ---------------------------------------------------------------- Help / About
