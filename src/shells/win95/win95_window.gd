@@ -465,18 +465,18 @@ func _menu_items(id: String) -> Array:
 				]
 	match id:
 		"file":
-			return [
+			var file_items := [
 				{"id": "open", "label": "&Open", "disabled": not has_selection, "onSelect": func(): _open_selected()},
 				{"id": "new", "label": "&New Program...", "onSelect": func():
 					if group_id != "":
 						Win95Dialogs.open_wizard(shell, {"groupId": group_id})
 					else:
 						Win95Dialogs.open_new_folder(shell, {})},
-				{"id": "new-note", "label": "New S&ticky Note...", "onSelect": func():
-					if group_id != "":
-						Win95Dialogs.open_new_note(shell, {"groupId": group_id})
-					else:
-						Win95Dialogs.open_new_folder(shell, {"openNoteAfterCreate": true})},
+			]
+			if group_id != "":  # a note lives in a program group (My Computer only holds folders)
+				file_items.append({"id": "new-note", "label": "New S&ticky Note...", "onSelect": func():
+					Win95Dialogs.open_new_note(shell, {"groupId": group_id})})
+			return file_items + [
 				{"id": "sep-1", "separator": true},
 				{"id": "delete", "label": "&Delete", "disabled": not has_selection, "onSelect": func(): _delete_selected()},
 				{"id": "properties", "label": "P&roperties", "onSelect": func():

@@ -376,6 +376,9 @@ func test_every_new_item_menu_offers_a_sticky_note() -> void:
 	expect(ctx.find("new-note") == ctx.find("new-url") + 1, "folder background menu: after New URL")
 	var labels: Array = w.folder_view._context_items("").map(func(i): return String(i.get("label", "")))
 	expect_eq(Win95MenuState.mnemonic_index(labels, "t"), ctx.find("new-note"), "its access key is unique")
+	shell.windows.open_my_computer()
+	var mc: Array = ids.call(shell.desktop.window_for("my-computer")._menu_items("file"))
+	expect(mc.has("new") and not mc.has("new-note"), "My Computer holds only folders, so it offers no note")
 	await _unmount(shell)
 	_restore_store(saved)
 
