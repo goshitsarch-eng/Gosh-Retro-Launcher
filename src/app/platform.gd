@@ -185,10 +185,20 @@ func export_grp(group: Dictionary) -> Dictionary:
 
 ## (await) -> {success, error?}  JSON backup import (validated, replaces data, reloads store)
 func import_data() -> Dictionary:
-	var path := await pick_open_file("Import Settings", PlatformFilters.json_filters())
+	var path := await pick_open_file(DataTransfer.IMPORT_TITLE, PlatformFilters.json_filters())
 	if path == "":
 		return {"success": false, "error": "Canceled"}
 	return ProgramStore.import_from(path)
+
+
+## Export All: (await) -> {success, path?} | {success: false, canceled: true} | {success: false, error}.
+func export_all() -> Dictionary:
+	var path := await pick_save_file(DataTransfer.EXPORT_TITLE, DataTransfer.default_export_name(), PlatformFilters.json_filters())
+	if path == "":
+		return {"success": false, "canceled": true}
+	if not ProgramStore.export_to(path):
+		return {"success": false, "error": "Could not write %s." % path.get_file()}
+	return {"success": true, "path": path}
 
 
 ## (await) -> bool

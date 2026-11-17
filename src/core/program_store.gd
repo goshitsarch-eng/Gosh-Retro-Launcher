@@ -421,6 +421,106 @@ func copy_item(from_group_id: String, to_group_id: String, item_id: String) -> v
 	_dirty_groups()
 
 
+# ----------------------------------------------------------- launch groups
+# A launch group is a number (item.launchGroup) plus an optional name in settings.launchGroupNames.
+# A named group with no members still exists (that is how an empty group is created).
+
+func launch_group_names() -> Dictionary:
+	return LaunchGroups.names_from(settings)
+
+
+## Names group `number`; a blank name removes the name (the group then exists only while it has members).
+func set_launch_group_name(number: int, name: String) -> void:
+	if number <= 0:
+		return
+	var names := launch_group_names().duplicate()
+	var cleaned := LaunchGroups.clean_name(name)
+	if cleaned == "":
+		names.erase(str(number))
+	else:
+		names[str(number)] = cleaned
+	update_settings({"launchGroupNames": names})
+
+
+## Makes exactly the items in `keys` ("groupId:itemId") the members of group `number`: listed items
+## join it (leaving any other launch group) and current members that are not listed leave it.
+func set_launch_group_members(number: int, keys: Array) -> void:
+	if number <= 0:
+		return
+	var wanted := {}
+	for k in keys:
+		wanted[String(k)] = true
+	var changed := false
+	for g in groups:
+		for it in g.items:
+			var key := "%s:%s" % [g.id, it.id]
+			var current := int(it.get("launchGroup", 0))
+			if wanted.has(key) and current != number:
+				it["launchGroup"] = number
+				changed = true
+			elif not wanted.has(key) and current == number:
+				it["launchGroup"] = 0
+				changed = true
+	if changed:
+		_dirty_groups()
+
+
+## Creates a launch group on the lowest free number with `name` and the items in `keys`.
+## Returns the number, or 0 when every number from 1 to LaunchGroups.MAX_GROUP is taken or the
+## group would be empty and unnamed (and so would not exist).
+func create_launch_group(name: String, keys: Array = []) -> int:
+	var number := LaunchGroups.next_free_number(groups, launch_group_names())
+	if number == 0 or (LaunchGroups.clean_name(name) == "" and keys.is_empty()):
+		return 0
+	set_launch_group_name(number, name)
+	set_launch_group_members(number, keys)
+	return number
+
+
+## Removes group `number`: its members go back to no launch group and its name is forgotten.
+## The programs themselves are not touched.
+func delete_launch_group(number: int) -> void:
+	if number <= 0:
+		return
+	set_launch_group_members(number, [])
+	if launch_group_names().has(str(number)):
+		var names := launch_group_names().duplicate()
+		names.erase(str(number))
+		update_settings({"launchGroupNames": names})
+
+
+## Moves group `from` to number `to` (members and name). If `to` is already a group, the two swap,
+## so Launch All runs them in the new order. Returns false for an invalid or unchanged number.
+func renumber_launch_group(from: int, to: int) -> bool:
+	if from <= 0 or to <= 0 or from == to:
+		return false
+	var changed := false
+	for g in groups:
+		for it in g.items:
+			var current := int(it.get("launchGroup", 0))
+			if current == from:
+				it["launchGroup"] = to
+				changed = true
+			elif current == to:
+				it["launchGroup"] = from
+				changed = true
+	var names := launch_group_names().duplicate()
+	var name_from: Variant = names.get(str(from))
+	var name_to: Variant = names.get(str(to))
+	names.erase(str(from))
+	names.erase(str(to))
+	if name_from != null:
+		names[str(to)] = name_from
+	if name_to != null:
+		names[str(from)] = name_to
+	if not Jsonx.equal(names, launch_group_names()):
+		update_settings({"launchGroupNames": names})
+		changed = true
+	if changed:
+		_dirty_groups()
+	return true
+
+
 # ---------------------------------------------------------------- profiles
 
 func _now_iso() -> String:
@@ -581,6 +681,10 @@ static func _repair_import_values(d: Dictionary, ctx: Dictionary) -> void:
 		var s: Dictionary = d.settings
 		var defaults := Types.default_settings()
 		for k in s.keys():
+			if str(k) == "launchGroupNames" and Jsonx.is_obj(s[k]) and not Validators.is_launch_group_names(s[k]):
+				s[k] = Migration._normalize_launch_group_names(s[k])  # keep the usable names
+				Migration._bump(ctx)
+				continue
 			if defaults.has(k) and not Validators.is_valid_setting_value(str(k), s[k]):
 				s[k] = Jsonx.clone(defaults[k])
 				Migration._bump(ctx)

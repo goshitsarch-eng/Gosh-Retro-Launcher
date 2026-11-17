@@ -40,6 +40,7 @@ static func default_settings() -> Dictionary:
 		"labelDisplay": "wrap",
 		"shell": "win31",
 		"soundEnabled": true,
+		"launchGroupNames": {},
 	}
 
 

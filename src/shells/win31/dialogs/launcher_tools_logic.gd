@@ -95,15 +95,7 @@ static func import_grp(store: Node, result: Dictionary, info_fn: Callable) -> Di
 ## e.g. "2 stored values were repaired and 1 shortcut key was cleared (shortcut keys need Ctrl, Alt,
 ## Shift or Meta)."
 static func repair_summary(normalized: int, shortcuts_cleared: int) -> String:
-	var parts := []
-	if normalized > 0:
-		parts.append("%d stored %s repaired" % [normalized, "value was" if normalized == 1 else "values were"])
-	if shortcuts_cleared > 0:
-		parts.append("%d shortcut %s cleared (shortcut keys need Ctrl, Alt, Shift or Meta)" % [shortcuts_cleared,
-			"key was" if shortcuts_cleared == 1 else "keys were"])
-	if parts.is_empty():
-		return ""
-	return " and ".join(parts) + "."
+	return DataTransfer.repair_summary(normalized, shortcuts_cleared)
 
 
 static func export_grp_status(group_name: String, result: Dictionary) -> String:

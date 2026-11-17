@@ -242,7 +242,23 @@ static func normalize_settings(value: Variant, ctx: Dictionary = {}) -> Dictiona
 		"height": maxf(240.0, Jsonx.finite(b.get("height"), db.height)),
 	}
 	settings["win31ProgramManagerMinimized"] = raw.win31ProgramManagerMinimized if Jsonx.is_bool(raw.get("win31ProgramManagerMinimized")) else false
+	settings["launchGroupNames"] = _normalize_launch_group_names(raw.get("launchGroupNames"))
 	return settings
+
+
+## Keeps the valid entries of a launchGroupNames map (a whole-map default was already counted above
+## when the map as a whole was invalid). Names are cleaned like the editors clean them.
+static func _normalize_launch_group_names(value: Variant) -> Dictionary:
+	var out := {}
+	if not Jsonx.is_obj(value):
+		return out
+	for k in value:
+		var key := str(k)
+		if Jsonx.is_str(k) and Jsonx.is_str(value[k]):
+			var cleaned := LaunchGroups.clean_name(String(value[k]))
+			if Validators.is_launch_group_name_entry(key, cleaned):
+				out[key] = cleaned
+	return out
 
 
 ## Clears, in place, every item shortcutKey that has no modifier (Validators.is_safe_shortcut) and

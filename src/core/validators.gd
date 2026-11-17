@@ -142,6 +142,8 @@ static func is_valid_settings(settings: Variant) -> bool:
 		return false
 	if o.has("soundEnabled") and not Jsonx.is_bool(o.soundEnabled):
 		return false
+	if o.has("launchGroupNames") and not is_launch_group_names(o.launchGroupNames):
+		return false
 	return true
 
 
@@ -169,7 +171,27 @@ static func is_valid_setting_value(key: String, value: Variant) -> bool:
 			return Jsonx.is_str(value) and Types.LABEL_DISPLAYS.has(value)
 		"shell":
 			return Jsonx.is_str(value) and Types.SHELLS.has(value)
+		"launchGroupNames":
+			return is_launch_group_names(value)
 	return true
+
+
+## settings.launchGroupNames: {"3": "Morning"}. Keys are positive whole numbers written as strings,
+## values are non-empty strings of at most LaunchGroups.MAX_NAME_LENGTH characters.
+static func is_launch_group_names(value: Variant) -> bool:
+	if not Jsonx.is_obj(value):
+		return false
+	for k in value:
+		if not is_launch_group_name_entry(k, value[k]):
+			return false
+	return true
+
+
+static func is_launch_group_name_entry(key: Variant, name: Variant) -> bool:
+	if not Jsonx.is_str(key) or not String(key).is_valid_int() or String(key).to_int() <= 0 \
+			or str(String(key).to_int()) != String(key):
+		return false
+	return Jsonx.is_str(name) and String(name).strip_edges() != "" and String(name).length() <= LaunchGroups.MAX_NAME_LENGTH
 
 
 ## launchGroup as stored: an integer batch number, 0 meaning "None". Same rule as is_valid_item. The
