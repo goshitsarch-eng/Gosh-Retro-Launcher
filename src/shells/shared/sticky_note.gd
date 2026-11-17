@@ -79,9 +79,13 @@ func place(r: Rect2i) -> void:
 	size = Vector2(r.size)
 
 
+## Brings the note to the front and puts the caret after its text, so typing adds to the note.
 func focus_text() -> void:
 	move_to_front()
 	_edit.grab_focus()
+	var last := _edit.get_line_count() - 1
+	_edit.set_caret_line(last)
+	_edit.set_caret_column(_edit.get_line(last).length())
 
 
 func text() -> String:
@@ -255,9 +259,11 @@ func _area() -> Rect2:
 	return Rect2(Vector2.ZERO, p.size) if p else Rect2(Vector2.ZERO, size)
 
 
-## Automation: note:<id> (window), note.title:<id>, note.close:<id>, note.grip:<id>.
+## Automation: note:<id> (window), note.title:<id>, note.close:<id>, note.grip:<id>, note.text:<id>.
 func auto_lookup(id: String) -> Variant:
 	var gp := global_position
+	if id == "note.text:" + item_id:
+		return Rect2(gp + _edit.position, _edit.size)
 	if id == "note:" + item_id:
 		return Rect2(gp, size)
 	if id == "note.title:" + item_id:
