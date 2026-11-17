@@ -10,8 +10,11 @@ Item     { id, name, path, icon, win31Icon?, workingDir, arguments?, environment
            launchGroup?, shortcutKey?, runMinimized?, win31Position?, win95Position? }
 Settings { autoArrange, minimizeOnUse, saveSettingsOnExit, launchDelay, trayOnClose, groupChromeScale,
            win31Scale, win95Scale, macScale, beScale, win95DesktopIconPositions, win31DesktopMode,
-           win31ProgramManagerBounds, win31ProgramManagerMinimized, theme, labelDisplay, shell, soundEnabled }
+           win31ProgramManagerBounds, win31ProgramManagerMinimized, theme, labelDisplay, shell, soundEnabled,
+           launchGroupNames }
 ```
+`launchGroupNames` maps a launch group number, written as a string, to its name: `{"3": "Morning"}`. Names are one line,
+at most 40 characters. A launch group exists while any item uses its number or it has a name, so a named group can be empty.
 `src/core/types.gd` holds the defaults; `src/core/migration.gd` the normalization rules.
 
 ## Autoloads
@@ -23,6 +26,11 @@ Groups/items: `add_group`, `import_group`, `replace_groups`, `add_starter_worksp
 `update_group_window_state(id, updates, shell)`, `update_group_icon_position`, `add_item`, `update_item`,
 `update_item_position`, `update_win95_item_position`, `delete_item`, `move_item`, `copy_item`, `find_group`, `find_item`.
 Profiles: `save_workspace_profile`, `apply_workspace_profile`, `delete_workspace_profile`, `rename_workspace_profile`.
+Launch groups: `launch_group_names`, `create_launch_group(name, keys)` (lowest free number from 1 to 8, or 0 when all are
+taken or the group would be empty and unnamed), `set_launch_group_name(n, name)` (blank removes the name),
+`set_launch_group_members(n, keys)` (exactly these `"groupId:itemId"` items; they leave any other launch group),
+`renumber_launch_group(from, to)` (swaps with `to` when it is taken, which changes the Launch All order) and
+`delete_launch_group(n)` (members go back to None and the name is removed; the programs stay).
 Settings: `update_settings`, `apply_settings_transaction`. Data: `export_to`, `import_from`, `list_backups`,
 `create_backup`, `restore_backup`, `flush`.
 
@@ -34,8 +42,15 @@ Win31 group window stacking: `open_window`, `close_window`, `focus_window`, `cas
 
 ### `Platform`
 Launching (`launch`, `launch_batch`, `open_external`), native dialogs (`select_executable`, `select_icon`, `import_grp`,
-`export_grp`, `import_data`, `export_data`), `get_app_info`, window control, tray/shortcut signals
+`export_grp`, `import_data`, `export_all`, `export_data`), `get_app_info`, window control, tray/shortcut signals
 (`quick_search_requested`, `launcher_tools_requested`, `files_dropped`, `window_state_changed`).
+
+### `LaunchGroups` and `DataTransfer` (static helpers)
+`LaunchGroups`: `format_launch_group(n, names)` ("None", "Group 3", "Group 3: Morning"), `launch_label(n, count, names)`,
+`defined_groups(groups, names)` (`[{number, name, label, count}]`), `all_items(groups)`, `member_keys(groups, n)`,
+`next_free_number(groups, names)`, `clean_name(text)`, plus `collect_launch_groups` and `launch_group_buckets` for launching.
+`DataTransfer`: the wording every desktop uses for Export All / Import All (`IMPORT_CONFIRM`, `export_status(result)`,
+`import_status(result)`, `default_export_name()`). `Platform.export_all()` returns `{success, path}`, `{canceled}` or `{error}`.
 
 ### `Sounds`
 `Sounds.play(name)` for `startup_chime`, `window_open`, `window_close`, `menu_click`, `dialog_open`, `error_beep`,
