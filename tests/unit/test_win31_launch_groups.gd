@@ -484,3 +484,13 @@ func test_launcher_tools_rename_and_transfer_status() -> void:
 	expect_eq(LauncherToolsLogic.import_all_status({"success": false, "error": "Canceled"}), "")
 	expect(LauncherToolsLogic.import_all_status({"success": true}).begins_with("Imported everything."))
 	s.free()
+
+
+func test_editors_keep_a_launch_group_above_8() -> void:
+	var c := W31DialogLogic.launch_group_choices({}, 12)
+	expect_eq(c.values.back(), 12)
+	expect_eq(c.labels.back(), "Group 12")
+	expect_eq(W31DialogLogic.launch_group_choices({}, 3).values.size(), 9, "no extra choice for 0-8")
+	expect_eq(W31DialogLogic.item_values({"launchGroup": 12}).launchGroup, 12)
+	expect_eq(LauncherToolsLogic.batch_group_value(9, 12), 12)
+	expect_eq(LauncherToolsLogic.batch_group_value(4, 12), 4)

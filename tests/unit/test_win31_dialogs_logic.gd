@@ -160,7 +160,7 @@ func test_item_values_semantics() -> void:
 	expect_eq(v.arguments, "-x")
 	expect_eq(v.environment, "K=V")
 	expect_eq(v.shortcutKey, "Ctrl+A")
-	expect_eq(v.launchGroup, 8, "launchGroup clamps to 0-8")
+	expect_eq(v.launchGroup, 12, "a launchGroup above 8 is kept")
 	expect_eq(v.runMinimized, true)
 	expect_eq(W31DialogLogic.item_values({"launchGroup": -3, "runMode": "maximized"}).launchGroup, 0)
 	expect_eq(W31DialogLogic.item_values({"runMode": "maximized"}).runMinimized, false)

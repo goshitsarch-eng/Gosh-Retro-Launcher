@@ -700,11 +700,12 @@ func _build_profile_editor() -> void:
 	m_opt.item_selected.connect(func(i: int): mode = Types.RUN_MODES[i])
 	_labeled(box, "Run mode", m_opt)
 	var lg_opt := OptionButton.new()
-	for label in LauncherToolsLogic.batch_group_labels(ProgramStore.launch_group_names()):
+	var stored_lg := lg
+	for label in LauncherToolsLogic.batch_group_labels(ProgramStore.launch_group_names(), stored_lg):
 		lg_opt.add_item(label)
-	lg_opt.select(clampi(lg, 0, LaunchGroups.MAX_GROUP))
+	lg_opt.select(lg if lg <= LaunchGroups.MAX_GROUP else LaunchGroups.MAX_GROUP + 1)
 	lg_opt.set_meta("auto_id", "tools.batch-group")
-	lg_opt.item_selected.connect(func(i: int): lg = i)
+	lg_opt.item_selected.connect(func(i: int): lg = LauncherToolsLogic.batch_group_value(i, stored_lg))
 	_labeled(box, "Batch group", lg_opt)
 	ev = ev
 	var save := _button(s, "Save launch profile", func():

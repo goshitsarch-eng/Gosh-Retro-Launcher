@@ -173,8 +173,13 @@ static func launch_group_rows(groups: Array, names: Variant) -> Array:
 
 
 ## Labels for the per-item "Batch group" choice: None, Group 1, Group 2: Morning, ... Group 8.
-static func batch_group_labels(names: Variant) -> Array:
-	return W31DialogLogic.launch_group_choices(names).labels
+static func batch_group_labels(names: Variant, current: int = 0) -> Array:
+	return W31DialogLogic.launch_group_choices(names, current).labels
+
+
+## The launch group number shown at `index` of batch_group_labels(names, current).
+static func batch_group_value(index: int, current: int = 0) -> int:
+	return int(W31DialogLogic.launch_group_choices(null, current).values[index])
 
 
 static func new_launch_group(store: Node, name: String) -> String:
@@ -224,7 +229,7 @@ static func item_choices(groups: Array) -> Array:
 static func launch_profile_updates(args: String, working_dir: String, environment: String, run_mode: String, launch_group: Variant) -> Dictionary:
 	return {"arguments": args, "workingDir": working_dir, "environment": environment,
 		"runMode": run_mode if Types.RUN_MODES.has(run_mode) else "normal",
-		"launchGroup": clampi(int(launch_group), 0, 8)}
+		"launchGroup": maxi(0, int(launch_group))}
 
 
 static func save_launch_profile(store: Node, group_id: String, item_id: String, updates: Dictionary) -> String:

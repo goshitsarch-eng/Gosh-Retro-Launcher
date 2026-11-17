@@ -27,12 +27,16 @@ static func format_launch_group(value: int, names: Variant = null) -> String:
 	return LaunchGroups.format_launch_group(value, names)
 
 
-## Labels and values of the "Launch Group:" drop-downs (None, Group 1 .. Group 8, with names).
-static func launch_group_choices(names: Variant = null) -> Dictionary:
+## Labels and values of the "Launch Group:" drop-downs (None, Group 1 .. Group 8, with names). A
+## `current` number above 8 (stored or imported) is added as an extra choice, so OK keeps it.
+static func launch_group_choices(names: Variant = null, current: int = 0) -> Dictionary:
+	var values: Array = LAUNCH_GROUP_OPTIONS.duplicate()
+	if current > LaunchGroups.MAX_GROUP:
+		values.append(current)
 	var labels := []
-	for v in LAUNCH_GROUP_OPTIONS:
+	for v in values:
 		labels.append(format_launch_group(v, names))
-	return {"labels": labels, "values": LAUNCH_GROUP_OPTIONS.duplicate()}
+	return {"labels": labels, "values": values}
 
 
 # ------------------------------------------------------------------ URLs (NewUrlDialog)
@@ -221,7 +225,7 @@ static func item_form_valid(form: Dictionary, group_id: String) -> bool:
 
 
 ## The values ItemPropertiesDialog writes (trimmed strings, runMinimized derived from runMode,
-## launchGroup clamped to 0-8).
+## launchGroup never below 0; a number above 8 is kept).
 static func item_values(form: Dictionary) -> Dictionary:
 	var run_mode: String = form.get("runMode", "normal")
 	if not Types.RUN_MODES.has(run_mode):
@@ -235,7 +239,7 @@ static func item_values(form: Dictionary) -> Dictionary:
 		"runMode": run_mode,
 		"icon": form.get("icon", "default"),
 		"win31Icon": form.get("win31Icon", "default"),
-		"launchGroup": clampi(int(form.get("launchGroup", 0)), 0, 8),
+		"launchGroup": maxi(0, int(form.get("launchGroup", 0))),
 		"shortcutKey": String(form.get("shortcutKey", "")).strip_edges(),
 		"runMinimized": run_mode == "minimized",
 	}
