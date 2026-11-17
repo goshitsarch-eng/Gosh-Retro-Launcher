@@ -45,3 +45,15 @@ ships clean-room icons and fonts instead, so icon pixels and glyph shapes differ
 and positions match, and most views land at 0.7-3% differing pixels rather than under 0.5%. If you have the local packs,
 drop them in those folders and the Godot build uses them (icons and, for Windows 95, the MS Sans Serif atlas), which
 is the configuration the baselines were captured with.
+
+Features added after the Electron build change some views on purpose, so they will never match those baselines:
+
+* **Third item kind (sticky notes) and Web Site in New.** The WfW New Program Object dialog has more choices and is
+  taller (`new-dialog`), and the Windows 95 Create Shortcut wizard has a Sticky Note button (`win95-wizard`, about 0.5%).
+* **Launch groups.** Windows 95 Start > Programs ends with a Launch Groups folder (`win95-programs`,
+  `win95-program-items`), and Start > Settings has Launch Groups, Export All and Import All (`win95-settings`).
+  The BeOS Deskbar menu has the launch and transfer rows and scrolls at 640x480 (`be-deskbar`, `be-menu`).
+* **File menus.** WfW and Classic Mac OS File menus end with Export All and Import All; the Mac and BeOS menus offer
+  New Note.
+
+Judge these views by their layout and look, not by the percentage.

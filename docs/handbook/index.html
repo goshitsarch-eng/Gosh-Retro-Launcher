@@ -468,6 +468,21 @@ godot --path .</code></pre></div>
         <p><strong>Limits:</strong> nothing cancels a batch once it has started. A failed item does not stop the rest of the batch. Every item editor shows a group number above 8 as an extra choice and keeps it on OK. Windows 95 shows no progress during a batch apart from the busy cursor.</p>
       </article>
 
+      <article class="entry" id="um-notes" data-audience="user" data-topic="launch desktops data" data-platform="all" data-status="source runtime" data-severity="">
+        <h3>Sticky notes</h3>
+        <div class="entry-meta"><span class="tag status-source">Confirmed in source</span><span class="tag status-runtime">Captured in every desktop</span></div>
+        <p>A sticky note is the third kind of item, next to programs and web sites. It lives in a program group like any other item and opens as a small coloured note on the desktop.</p>
+        <ol>
+          <li><strong>Create one:</strong> Windows for Workgroups <strong>File &gt; New&hellip; &gt; Sticky Note</strong>; Windows 95 right-click <strong>New Sticky Note&hellip;</strong> on the desktop or in a program group window (also its File menu and the Create Shortcut wizard); Classic Mac OS <strong>File &gt; New Note&hellip;</strong> (also the folder and desktop context menus); BeOS <strong>New Note&hellip;</strong> in the Deskbar, folder and desktop menus. Give it a title, a paper colour (yellow, pink, blue, green, purple or gray) and, if you like, its text.</li>
+          <li><strong>Use it:</strong> open it like a program (double-click, Enter, Find, Quick Search). Type in it; drag the top strip to move it; drag the bottom-right corner to resize it; click the small box at the top left to close it. Right-click it for Close, Properties (Get Info) and Delete. Text, size and place are saved as you go, and notes left open come back the next time the program starts.</li>
+          <li><strong>Change it:</strong> Properties (Windows) or Get Info (Mac, BeOS) changes its title, colour, launch group and icon.</li>
+          <li><strong>Find it:</strong> Find and Quick Search search note text as well as titles, and Find has a sticky-note type.</li>
+          <li><strong>Launch groups:</strong> a note can be in a launch group; it opens when the group runs.</li>
+          <li><strong>Export and import:</strong> Export All includes notes. A Windows 3.x <code>.GRP</code> export leaves them out (the format has no place for them) and says how many were left out.</li>
+        </ol>
+        <p><strong>Limits:</strong> notes are plain text, at most 20000 characters. Windows 95 lists open notes on the taskbar; the other desktops do not.</p>
+      </article>
+
       <article class="entry" id="um-quick-search" data-audience="user" data-topic="launch shortcuts" data-platform="windows macos linux" data-status="source runtime" data-severity="">
         <h3>Quick Search and the global shortcut</h3>
         <div class="entry-meta"><span class="tag status-source">Confirmed in source</span><span class="tag status-blocked">Global hotkey not tested</span></div>
