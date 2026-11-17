@@ -200,7 +200,7 @@ func _draw() -> void:
 	BeFont.draw(self, Vector2(0, 44 + 6), BeDialogLogic.FIND_QUERY_LABEL, col)
 	if bool(shell.find_state.ran):
 		var rr := _results_rect()
-		BeFont.draw(self, Vector2(0, rr.end.y + 12 - 1), "%d file(s) found" % results.size(), col, BeGeometry.FONT_SMALL, false, 16)
+		BeFont.draw(self, Vector2(0, rr.end.y + 12 - 1), BeDialogLogic.found_text(results.size()), col, BeGeometry.FONT_SMALL, false, 16)
 
 
 func _draw_results(c: Control) -> void:

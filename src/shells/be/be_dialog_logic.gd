@@ -558,3 +558,8 @@ static func members_result(groups: Array, names: Variant, number: int, keys: Arr
 	if moved > 0:
 		text += " (%d moved from another group)" % moved
 	return text + "."
+
+
+## Find's status line: "1 item found" / "3 items found" (programs and notes, not files).
+static func found_text(count: int) -> String:
+	return "%d %s found" % [count, "item" if count == 1 else "items"]

@@ -210,3 +210,9 @@ func test_theme_tables_and_dark_flag() -> void:
 	expect_eq(BeTheme.b("123456"), Color("#123456"), "unmapped colours pass through")
 	BeTheme.dark = false
 	expect(BeTheme.is_dark({"theme": "dark"}) and not BeTheme.is_dark({"theme": "light"}) and not BeTheme.is_dark({}))
+
+
+func test_find_status_counts_items() -> void:
+	expect_eq(BeDialogLogic.found_text(1), "1 item found")
+	expect_eq(BeDialogLogic.found_text(0), "0 items found")
+	expect_eq(BeDialogLogic.found_text(3), "3 items found")
