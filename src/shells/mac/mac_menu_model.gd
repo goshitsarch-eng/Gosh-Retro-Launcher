@@ -125,6 +125,31 @@ static func folder_background_menu(is_computer: bool, view: String) -> Array:
 	return out
 
 
+## Contextual menu of an open sticky note (right-click or Control-click on it): Close, Get Info, the six paper
+## colours with the current one checked, and Move To Trash…. Colour rows are "note-color:<id>"; `swatches` maps a
+## colour id to a Texture2D drawn as the row's icon.
+static func note_menu(color: String, swatches: Dictionary = {}) -> Array:
+	var current := color if Notes.COLORS.has(color) else Notes.DEFAULT_COLOR
+	var out := [item("note-close", "Close"), item("note-info", "Get Info"), SEP]
+	for c in Notes.color_choices():
+		var opts := {"check": c.id == current}
+		if swatches.has(c.id):
+			opts["icon"] = swatches[c.id]
+		out.append(item("note-color:" + String(c.id), String(c.label), opts))
+	out.append_array([SEP, item("note-trash", "Move To Trash…")])
+	return out
+
+
+## Cmd-key commands that still run while a text box has the keyboard (a sticky note, the Find field): Close Window
+## (in a note it closes the note) and Find. Open, Get Info, Duplicate, Move To Trash, New Folder and Run would act on
+## the folder selection behind the text, so those keys are left to the text box.
+const TYPING_COMMANDS := ["close-window", "find"]
+
+
+static func allowed_while_typing(cmd: String) -> bool:
+	return TYPING_COMMANDS.has(cmd)
+
+
 ## Command id for a Ctrl/Cmd+<letter> accelerator, "" when none.
 static func accelerator(keycode: int) -> String:
 	match keycode:

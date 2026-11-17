@@ -256,10 +256,32 @@ static func label_lines(s: String, width: int, wrap: bool, max_lines: int = 2) -
 	return out
 
 
+## `s` cut to `width` px with a trailing ellipsis ("..." in the pixel font) when it does not fit; list cells use it.
+static func fit(s: String, width: int) -> String:
+	return _ellipsize(s, width) if width > 0 else s
+
+
+## A 16x16 menu-row icon: a `color` square with a dark 1px frame (the note menu's paper colours). Cached.
+static var _swatches := {}
+
+
+static func swatch_texture(color: Color) -> Texture2D:
+	var key := color.to_html()
+	if _swatches.has(key):
+		return _swatches[key]
+	var img := Image.create(16, 16, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	img.fill_rect(Rect2i(2, 2, 12, 12), Color8(68, 68, 68))
+	img.fill_rect(Rect2i(3, 3, 10, 10), color)
+	var tex := ImageTexture.create_from_image(img)
+	_swatches[key] = tex
+	return tex
+
+
 static func _ellipsize(s: String, width: int) -> String:
 	if measure(s) <= width:
 		return s
 	var t := s
 	while t.length() > 1 and measure(t + "...") > width:
 		t = t.substr(0, t.length() - 1)
-	return t + "..."
+	return t.strip_edges(false, true) + "..."
