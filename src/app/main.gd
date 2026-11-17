@@ -151,10 +151,15 @@ func _mount_shell() -> void:
 		Platform.quick_search_requested.connect(_on_quick_search)
 	if not Platform.launcher_tools_requested.is_connected(_open_launcher_tools_window):
 		Platform.launcher_tools_requested.connect(_open_launcher_tools_window)
+	if not Platform.note_open_requested.is_connected(_on_note_open_requested):
+		Platform.note_open_requested.connect(_on_note_open_requested)
+	if not Platform.import_finished.is_connected(_on_import_finished):
+		Platform.import_finished.connect(_on_import_finished)
 	add_child(shell)
 	_applied_shell = id
 	shell.on_activate()
 	shell.on_scale_changed(int(get_window().content_scale_factor))
+	shell.restore_open_notes.call_deferred()
 
 
 ## Preferred whole-UI scale for the active shell resolved against the usable screen (DIPs).
@@ -315,6 +320,8 @@ func _on_save_recovered(kind: String) -> void:
 
 
 func _on_data_normalized(source: String, report: Dictionary) -> void:
+	if source == "import":
+		return  # the Import All result (_on_import_finished) already reports the repairs
 	show_notice(data_normalized_notice(source, report))
 
 
@@ -355,6 +362,24 @@ func show_notice(n: Dictionary) -> void:
 		load(NOTICE_DIALOGS.be).message(shell, [String(n.text)], "warning" if alert else "information")
 	elif shell.has_method("show_notice"):
 		shell.show_notice(String(n.title), String(n.text))
+
+
+func _on_note_open_requested(item_id: String) -> void:
+	if is_instance_valid(shell) and shell.is_inside_tree():
+		shell.open_note(item_id)
+
+
+## Import All result. Shown by the host, after the (possibly new) shell is mounted, because an import
+## that switches the desktop frees the shell that started it.
+static func import_notice(result: Dictionary) -> Dictionary:
+	var text := DataTransfer.import_status(result)
+	if text == "":
+		return {}
+	return {"title": DataTransfer.IMPORT_TITLE, "text": text, "alert": not result.get("success", false)}
+
+
+func _on_import_finished(result: Dictionary) -> void:
+	show_notice.call_deferred(import_notice(result))
 
 
 func show_launcher_tools() -> void:

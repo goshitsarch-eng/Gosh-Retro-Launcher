@@ -123,7 +123,41 @@ static func _normalize_item(value: Variant, ctx: Dictionary = {}) -> Variant:
 	var p95: Variant = normalize_position(item.get("win95Position"))
 	if p95 != null:
 		out["win95Position"] = p95
+	_normalize_note_fields(item, out, ctx)
 	return out
+
+
+## Copies the sticky-note fields that are valid; an invalid one is dropped (or, for the text,
+## shortened) and counted. An unknown kind is dropped, so the item becomes a program again.
+static func _normalize_note_fields(item: Dictionary, out: Dictionary, ctx: Dictionary) -> void:
+	if item.has("kind"):
+		if Jsonx.is_str(item.kind) and String(item.kind) == Notes.KIND:
+			out["kind"] = Notes.KIND
+		else:
+			_bump(ctx)
+	if item.has("note"):
+		if Jsonx.is_str(item.note):
+			out["note"] = String(item.note).substr(0, Notes.MAX_TEXT)
+			if String(item.note).length() > Notes.MAX_TEXT:
+				_bump(ctx)
+		else:
+			_bump(ctx)
+	if item.has("noteColor"):
+		if Jsonx.is_str(item.noteColor) and Notes.COLORS.has(String(item.noteColor)):
+			out["noteColor"] = item.noteColor
+		else:
+			_bump(ctx)
+	if item.has("noteBounds"):
+		if Notes.is_bounds(item.noteBounds):
+			var b: Dictionary = item.noteBounds
+			out["noteBounds"] = {"x": b.x, "y": b.y, "width": b.width, "height": b.height}
+		else:
+			_bump(ctx)
+	if item.has("noteOpen"):
+		if Jsonx.is_bool(item.noteOpen):
+			out["noteOpen"] = item.noteOpen
+		else:
+			_bump(ctx)
 
 
 static func _normalize_shell_window_state(value: Variant, legacy: Dictionary, ctx: Dictionary = {}) -> Dictionary:

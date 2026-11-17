@@ -238,6 +238,15 @@ func find_group(id: String) -> Dictionary:
 	return {}
 
 
+## {"groupId", "item"} for the item with `item_id` in any group, or {} (item ids are unique).
+func locate_item(item_id: String) -> Dictionary:
+	for g in groups:
+		for it in g.items:
+			if it.id == item_id:
+				return {"groupId": g.id, "item": it}
+	return {}
+
+
 func find_item(group_id: String, item_id: String) -> Dictionary:
 	for it in find_group(group_id).get("items", []):
 		if it.id == item_id:
@@ -359,6 +368,24 @@ func add_item(group_id: String, item: Dictionary) -> String:
 			g.items.append(new_item)
 	_dirty_groups()
 	return new_item.id
+
+
+## Adds a sticky note to `group_id` and returns its id ("" when the group does not exist).
+func add_note(group_id: String, name: String, text: String = "", color: String = Notes.DEFAULT_COLOR) -> String:
+	if find_group(group_id).is_empty():
+		return ""
+	return add_item(group_id, Notes.make_note(name, text, color))
+
+
+## Changes a note without announcing it (typing, moving or resizing its window), so shells do not
+## rebuild their views on every keystroke. It is saved with the usual debounce.
+func update_note_quietly(item_id: String, updates: Dictionary) -> void:
+	var loc := locate_item(item_id)
+	if loc.is_empty() or not Notes.is_note(loc.item):
+		return
+	for k in updates:
+		loc.item[k] = updates[k]
+	_dirty_groups_quiet()
 
 
 func update_item(group_id: String, item_id: String, updates: Dictionary) -> void:

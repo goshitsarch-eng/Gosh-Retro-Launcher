@@ -49,6 +49,21 @@ static func is_valid_item(item: Variant) -> bool:
 		return false
 	if o.has("win95Position") and not is_position(o.win95Position):
 		return false
+	return has_valid_note_fields(o)
+
+
+## Optional sticky-note fields (see Notes): kind, note, noteColor, noteBounds, noteOpen.
+static func has_valid_note_fields(o: Dictionary) -> bool:
+	if o.has("kind") and not (Jsonx.is_str(o.kind) and String(o.kind) == Notes.KIND):
+		return false
+	if o.has("note") and not (Jsonx.is_str(o.note) and String(o.note).length() <= Notes.MAX_TEXT):
+		return false
+	if o.has("noteColor") and not (Jsonx.is_str(o.noteColor) and Notes.COLORS.has(String(o.noteColor))):
+		return false
+	if o.has("noteBounds") and not Notes.is_bounds(o.noteBounds):
+		return false
+	if o.has("noteOpen") and not Jsonx.is_bool(o.noteOpen):
+		return false
 	return true
 
 

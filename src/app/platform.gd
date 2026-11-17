@@ -12,6 +12,12 @@ signal files_dropped(files: PackedStringArray, logical_pos: Vector2)
 signal window_state_changed(state: Dictionary)    ## {focused, maximized, minimized, bounds: Rect2i}
 signal display_changed
 signal launcher_tools_requested
+## A sticky note was opened (double-click, Enter, Quick Search, Find, a launch group). The host
+## asks the active shell to show its window.
+signal note_open_requested(item_id: String)
+## Import All finished (successfully or not). The host shows the result, because an import that
+## switches the desktop frees the shell that started it before it could show anything.
+signal import_finished(result: Dictionary)
 
 const MAX_GRP_BYTES := 10 * 1024 * 1024
 const GRP_UNSAFE := "[<>:\"/\\\\|?*]+"
@@ -96,14 +102,26 @@ func file_exists(path: String) -> bool:
 # ------------------------------------------------------------------ launching
 
 func launch(item: Dictionary) -> Dictionary:
+	if _is_note(item):
+		note_open_requested.emit(String(item.get("id", "")))
+		return {"success": true}
 	if not Validators.is_launch_item(item):
 		return {"success": false, "error": "Invalid program item payload"}
 	return Launcher.launch_program(item)
 
 
-## (await) -> Array[{id, success, error?}]
+## A payload is a note when it says so or when the stored item with its id is one (a shell may pass
+## a trimmed copy of the item).
+func _is_note(item: Dictionary) -> bool:
+	if Notes.is_note(item):
+		return true
+	var id: Variant = item.get("id")
+	return Jsonx.is_str(id) and Notes.is_note(ProgramStore.locate_item(String(id)).get("item", {}))
+
+
+## (await) -> Array[{id, success, error?}]. Notes in the batch open their windows.
 func launch_batch(items: Array, delay_ms: Variant) -> Array:
-	return await LaunchGroups.launch_batch(self, items, delay_ms)
+	return await LaunchGroups.launch_batch(self, items, delay_ms, launch)
 
 
 # --------------------------------------------------------------- native dialogs
@@ -188,7 +206,9 @@ func import_data() -> Dictionary:
 	var path := await pick_open_file(DataTransfer.IMPORT_TITLE, PlatformFilters.json_filters())
 	if path == "":
 		return {"success": false, "error": "Canceled"}
-	return ProgramStore.import_from(path)
+	var result: Dictionary = ProgramStore.import_from(path)
+	import_finished.emit(result)
+	return result
 
 
 ## Export All: (await) -> {success, path?} | {success: false, canceled: true} | {success: false, error}.
