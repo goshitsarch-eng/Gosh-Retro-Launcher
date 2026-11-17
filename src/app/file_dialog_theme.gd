@@ -68,6 +68,11 @@ static func make(style: Dictionary = {}, palette: Dictionary = {}) -> Theme:
 		t.set_color("font_disabled_color", type, p.disabled)
 		for c in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_focus_color", "icon_hover_pressed_color"]:
 			t.set_color(c, type, p.text)
+		t.set_color("icon_disabled_color", type, p.disabled)  # Godot's default is 40% white: Back/Forward vanished
+	# Godot's folder and file glyphs are near-white by default: invisible on a light list. Optional palette keys.
+	t.set_color("folder_icon_color", "FileDialog", p.get("folder", p.shadow))
+	t.set_color("file_icon_color", "FileDialog", p.get("file", p.shadow))
+	t.set_color("file_disabled_color", "FileDialog", p.disabled)
 	for type in ["CheckBox", "CheckButton"]:
 		for s in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
 			t.set_stylebox(s, type, _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, 2))

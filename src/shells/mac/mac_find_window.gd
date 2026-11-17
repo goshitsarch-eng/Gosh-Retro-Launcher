@@ -130,10 +130,10 @@ func _draw_body(c: Dictionary, _st: Dictionary) -> void:
 			draw_rect(Rect2(rr.position.x, ry, rr.size.x, ROW_H), MacTheme.b("ccccff"))
 		Px.hline(self, rr.position.x, ry + ROW_H - 1, rr.size.x, MacTheme.b("eeeeee"))
 		draw_texture_rect(MacIconCatalog.texture(String(r.item.get("icon", "")), "small"), Rect2(rr.position.x + 8, ry + 2, 16, 16), false)
-		MacDraw.text_centered_y(self, rr.position.x + 30, ry, ROW_H - 1, String(r.item.name), fg, false, c0 - 36)
-		MacDraw.text_centered_y(self, rr.position.x + c0 + 10, ry, ROW_H - 1, String(r.group.name), fg, false, c1 - 14)
+		MacDraw.text_centered_y(self, rr.position.x + 30, ry, ROW_H - 1, MacDraw.fit(String(r.item.name), c0 - 36), fg)
+		MacDraw.text_centered_y(self, rr.position.x + c0 + 10, ry, ROW_H - 1, MacDraw.fit(String(r.group.name), c1 - 14), fg)
 		var last := MacDialogLogic.find_detail(r.item, batch, names)
-		MacDraw.text_centered_y(self, rr.position.x + c0 + c1 + 10, ry, ROW_H - 1, last, fg, false, int(rr.size.x) - c0 - c1 - 14)
+		MacDraw.text_centered_y(self, rr.position.x + c0 + c1 + 10, ry, ROW_H - 1, MacDraw.fit(last, int(rr.size.x) - c0 - c1 - 14), fg)
 	draw_rect(Rect2(rr.position.x, rr.position.y, rr.size.x, HEADER_H), MacTheme.b("dddddd"))
 	# The Name header shading marks a sorted column. Results are ranked by relevance, so shade it only when they really
 	# are in name order (the same rule as the folder list view).

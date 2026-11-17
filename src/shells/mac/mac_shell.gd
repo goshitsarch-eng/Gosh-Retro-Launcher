@@ -147,10 +147,61 @@ func note_style() -> Dictionary:
 	return {"font": MacDraw.font().font, "font_size": 11, "text_color": Color.BLACK}
 
 
-## Platinum grey with a light title bar and the lavender highlight, for the fallback file chooser.
+## Platinum grey with a light title bar and the lavender highlight, for the fallback file chooser; dark in the
+## dark theme (MacTheme.file_dialog_palette).
 func file_dialog_palette() -> Dictionary:
-	return {"face": Color8(221, 221, 221), "shadow": Color8(136, 136, 136), "select": Color8(204, 204, 255),
-		"select_text": Color.BLACK, "title": Color8(221, 221, 221), "title_text": Color.BLACK}
+	MacTheme.refresh_from_settings()
+	return MacTheme.file_dialog_palette()
+
+
+## The note's contextual menu (right-click or Control-click on an open note): Close, Get Info, the paper colours
+## (the current one checked) and Move To Trash…, at `global_pos`.
+func show_note_menu(item_id: String, global_pos: Vector2) -> void:
+	var loc := ProgramStore.locate_item(item_id)
+	if loc.is_empty() or not Notes.is_note(loc.item):
+		return
+	var n := note_window(item_id)
+	if n != null:
+		n.move_to_front()
+	var swatches := {}
+	for c in Notes.COLORS:
+		swatches[c] = MacDraw.swatch_texture(Notes.COLORS[c])
+	var items := MacMenuModel.note_menu(String(loc.item.get("noteColor", Notes.DEFAULT_COLOR)), swatches)
+	menu_bar.close_menu()
+	_close_popups()
+	var at := popup_layer.get_global_transform().affine_inverse() * global_pos
+	var m := MacPopupMenu.open(popup_layer, items, at, {"min_width": 150})
+	m.chosen.connect(func(id: String): run_note_command(id, item_id))
+
+
+## A command from the note menu: "note-close", "note-info", "note-color:<id>" or "note-trash".
+func run_note_command(id: String, item_id: String) -> void:
+	var loc := ProgramStore.locate_item(item_id)
+	if loc.is_empty() or not Notes.is_note(loc.item):
+		return
+	var n := note_window(item_id)
+	if n != null and id != "note-close":
+		ProgramStore.update_note_quietly(item_id, {"note": Notes.clean_text(n.text())})  # keep what was just typed
+	if id == "note-close":
+		close_note(item_id)
+	elif id == "note-info":
+		MacDialogs.get_info_item(self, String(loc.groupId), item_id)
+	elif id.begins_with("note-color:"):
+		MacDialogLogic.set_note_color(ProgramStore, item_id, id.substr(11))
+	elif id == "note-trash":
+		var gid := String(loc.groupId)
+		MacDialogs.confirm(self, MacDialogLogic.note_trash_prompt(String(loc.item.get("name", ""))),
+			func(): MacDialogLogic.trash_item(ProgramStore, gid, item_id), "caution", "Delete", "Cancel")
+
+
+## The topmost open note at `global_pos` (a mouse event's position in _input), or null.
+func _note_at(global_pos: Vector2) -> StickyNote:
+	var notes := open_notes()
+	for i in range(notes.size() - 1, -1, -1):
+		var n: StickyNote = notes[i]
+		if n.is_visible_in_tree() and n.get_global_rect().has_point(global_pos):
+			return n
+	return null
 
 
 ## The StickyNote that holds `node` (the note's text box, for instance), or null.
@@ -517,7 +568,15 @@ func restart() -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
-		_release_note_focus_outside()
+		var mb := event as InputEventMouseButton
+		var menu_note := _note_at(mb.position) if MacDialogLogic.is_context_click(mb.button_index, mb.ctrl_pressed) \
+			and not has_dialog() and _restart_overlay == null else null
+		if menu_note != null:
+			# Right-click or Control-click anywhere on a note (its text included) opens the note's menu.
+			get_viewport().set_input_as_handled()
+			show_note_menu(menu_note.item_id, mb.global_position)
+			return
+		_release_note_focus_outside(mb.position)
 		return
 	if not (event is InputEventKey) or not (event as InputEventKey).pressed:
 		return
@@ -544,9 +603,10 @@ func _input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 			return
 		var cmd := MacMenuModel.accelerator(k.keycode)
-		if cmd != "" and not (in_text and cmd in ["find", "run", "new-folder", "open", "close-window", "get-info", "duplicate", "trash"] and false):
-			_run_target_command(cmd)
-			get_viewport().set_input_as_handled()
+		if cmd == "" or (in_text and not MacMenuModel.allowed_while_typing(cmd)):
+			return  # Cmd-A/C/X/V/Z and the item commands stay with the text box (they must not trash the selection)
+		_run_target_command(cmd)
+		get_viewport().set_input_as_handled()
 		return
 	if in_text:
 		return
@@ -566,10 +626,10 @@ func _input(event: InputEvent) -> void:
 
 ## A press outside the note whose text has the keyboard gives the keyboard back to the desktop (arrow keys, Return
 ## and Delete then work on the folder windows again). The press itself is not consumed.
-func _release_note_focus_outside() -> void:
+func _release_note_focus_outside(global_pos: Vector2) -> void:
 	var focus := get_viewport().gui_get_focus_owner()
 	var note := _note_of(focus) if focus != null else null
-	if note != null and not note.get_global_rect().has_point(note.get_global_mouse_position()):
+	if note != null and not note.get_global_rect().has_point(global_pos):
 		focus.release_focus()
 
 

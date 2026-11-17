@@ -249,6 +249,25 @@ static func command_cell(item: Dictionary) -> String:
 
 # --------------------------------------------------------------- sticky notes
 
+## A press that opens a contextual menu: the right button, or Control-click (the one-button Mac way).
+static func is_context_click(button: int, ctrl: bool) -> bool:
+	return button == MOUSE_BUTTON_RIGHT or (button == MOUSE_BUTTON_LEFT and ctrl)
+
+
+## The note context menu's Move To Trash… alert.
+static func note_trash_prompt(name: String) -> String:
+	return "Delete the sticky note “%s”?" % name
+
+
+## The note context menu's colour rows: repaints note `item_id`. False (and no change) for an unknown colour or a
+## missing note.
+static func set_note_color(store: Object, item_id: String, color: String) -> bool:
+	var loc: Dictionary = store.locate_item(item_id)
+	if loc.is_empty() or not Notes.is_note(loc.item) or not Notes.COLORS.has(color):
+		return false
+	store.update_item(String(loc.groupId), item_id, {"noteColor": color})
+	return true
+
 ## The folder a new note goes in: the front folder window's group, else the first folder ("" when there are none).
 static func note_group(groups: Array, active_key: String) -> String:
 	if active_key.begins_with("g:"):
@@ -353,7 +372,15 @@ static func launch_group_options(names: Variant, current: int = 0) -> Array:
 	return out
 
 
-## Folder list view "Batch" column: the launch group label, or a dash when the item is in none.
+## Folder list view column headers. A folder's last column shows launch groups: "Launch Group" when that fits in
+## `last_text_w` px, else "Group". Launcher HD lists folders (Size, Type).
+static func list_headers(is_computer: bool, last_text_w: int) -> Array:
+	if is_computer:
+		return ["Name", "Size", "Type"]
+	return ["Name", "Command", "Launch Group" if MacDraw.measure("Launch Group") <= last_text_w else "Group"]
+
+
+## Folder list view "Launch Group" column: the launch group label, or a dash when the item is in none.
 static func launch_group_cell(number: int, names: Variant) -> String:
 	return LaunchGroups.format_launch_group(number, names) if number > 0 else "—"
 

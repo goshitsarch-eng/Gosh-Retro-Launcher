@@ -60,6 +60,17 @@ static func desktop() -> Color:
 	return b("6c6ca8")
 
 
+## FileDialogTheme palette for the fallback file chooser in the current theme: platinum (#ddd face, #444 frame,
+## lavender selection, a light title bar) or its dark-theme mapping, with the shell's lavender folders.
+static func file_dialog_palette() -> Dictionary:
+	return {
+		"face": b("dddddd"), "light": s("ffffff"), "shadow": b("888888"), "dark": b("444444"), "field": b("ffffff"),
+		"text": t("000000"), "disabled": t("999999"), "select": b("ccccff"), "select_text": t("000000"),
+		"title": b("dddddd"), "title_text": t("000000"),
+		"folder": Color8(153, 153, 255) if not dark else Color8(122, 122, 214), "file": t("888888"),
+	}
+
+
 ## Drop shadow of windows / menus (rgba(0,0,0,.3) / .45).
 static func shadow(alpha: float) -> Color:
 	return Color(0, 0, 0, alpha)

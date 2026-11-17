@@ -75,10 +75,12 @@ func _layout() -> void:
 	if align_right_to >= 0.0:
 		x = align_right_to - w
 	if x + w + 2 > vp.x:
-		x = maxf(0.0, vp.x - w - 2)
+		x = vp.x - w - 2
+	x = maxf(0.0, x)
 	var y := anchor.y
 	if y + h + 2 > vp.y:
-		y = maxf(0.0, vp.y - h - 2)
+		y = vp.y - h - 2
+	y = maxf(0.0, y)  # a pop-up button's menu opens above the button when its current item is far down
 	panel_rect = Rect2(x, y, w, h)
 	_rows.clear()
 	var ry := y + 1 + PAD_Y
