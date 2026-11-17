@@ -379,10 +379,8 @@ class NewUrl extends W31Dialog:
 		add_form_row(y, "Name:", name_field, cw - 111)
 		y += 24
 		launch_combo = W31Combo.new()
-		var labels := []
-		for v in W31DialogLogic.LAUNCH_GROUP_OPTIONS:
-			labels.append(W31DialogLogic.format_launch_group(v))
-		launch_combo.set_items(labels, W31DialogLogic.LAUNCH_GROUP_OPTIONS.duplicate())
+		var choices := W31DialogLogic.launch_group_choices(ProgramStore.launch_group_names())
+		launch_combo.set_items(choices.labels, choices.values)
 		launch_combo.selected = prev_launch
 		add_form_row(y, "Launch Group:", launch_combo, cw - 111)
 		y += 24

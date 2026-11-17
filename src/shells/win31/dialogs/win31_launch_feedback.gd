@@ -47,7 +47,7 @@ func _sync() -> void:
 
 ## {rect, title, detail, icon, progress, status} of the toast for the current state (no drawing).
 func layout(fb: Dictionary = UIState.launch_feedback) -> Dictionary:
-	var title := W31DialogLogic.feedback_status_text(fb)
+	var title := W31DialogLogic.feedback_status_text(fb, ProgramStore.launch_group_names())
 	var detail := W31DialogLogic.feedback_detail_text(fb)
 	var f := W31.font()
 	var text_w := maxi(f.measure(title), f.measure(detail))

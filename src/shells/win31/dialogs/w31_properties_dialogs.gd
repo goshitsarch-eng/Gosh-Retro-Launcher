@@ -158,10 +158,8 @@ class ItemProperties extends W31Dialog:
 		run.selection_changed.connect(func(_i): form.runMode = run.value())
 		add_form_row(168, "Run:", run, fw - 111)
 		var lg := W31Combo.new()
-		var labels := []
-		for v in W31DialogLogic.LAUNCH_GROUP_OPTIONS:
-			labels.append(W31DialogLogic.format_launch_group(v))
-		lg.set_items(labels, W31DialogLogic.LAUNCH_GROUP_OPTIONS.duplicate())
+		var choices := W31DialogLogic.launch_group_choices(ProgramStore.launch_group_names())
+		lg.set_items(choices.labels, choices.values)
 		lg.select_value(int(form.launchGroup))
 		lg.selection_changed.connect(func(_i): form.launchGroup = int(lg.value()))
 		add_form_row(192, "Launch Group:", lg, fw - 111)

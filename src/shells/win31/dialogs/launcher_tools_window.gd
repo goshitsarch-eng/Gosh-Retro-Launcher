@@ -2,8 +2,9 @@ class_name LauncherToolsWindow
 extends Window
 ## Separate native "Launcher Tools" window (port of components/LauncherTools/LauncherTools.tsx +
 ## styles/launcher-tools.css). A plain flat-gray form built from standard Godot controls:
-## shell/scale/desktop-mode/sound/tray (persist-first shell switch), .GRP and JSON import/export,
-## URL launcher, launch groups, per-item launch profile, workspace profiles and backups.
+## shell/scale/desktop-mode/sound/tray (persist-first shell switch), Export All / Import All, .GRP
+## import/export, URL launcher, launch groups (launch, new, rename, renumber, delete), per-item
+## launch profile, workspace profiles and backups.
 ## The shell calls LauncherToolsWindow.show_singleton(host).
 
 static var _instance: LauncherToolsWindow
@@ -31,6 +32,13 @@ var profile_confirm: ConfirmationDialog
 var profile_store: Node  # store profile Apply and backup Restore act on; null means ProgramStore (tests pass a scratch store)
 var _pending_restore := ""  # backup id waiting for the Restore confirmation
 var restore_confirm: ConfirmationDialog
+var import_confirm: ConfirmationDialog  # Import All replaces everything, so it asks first
+var _import_pending := false
+var group_delete_confirm: ConfirmationDialog
+var _pending_group_delete := 0  # launch group number waiting for the Delete confirmation
+var _new_group_name := ""
+var _new_group_button: Button
+var _group_names := {}  # launch group number -> name being typed in its row
 
 # widgets that tests/automation reach
 var shell_option: OptionButton
@@ -122,6 +130,8 @@ func _ready() -> void:
 		_rename_profile = ProgramStore.workspace_profiles[0].name
 	_ensure_profile_confirm()
 	_ensure_restore_confirm()
+	_ensure_import_confirm()
+	_ensure_group_delete_confirm()
 	ProgramStore.settings_changed.connect(_on_settings)
 	ProgramStore.groups_changed.connect(_rebuild)
 	ProgramStore.profiles_changed.connect(_rebuild)
@@ -323,6 +333,7 @@ func _rebuild() -> void:
 		_rename_profile = ProgramStore.workspace_profiles[0].name
 	_build_header()
 	_build_appearance()
+	_build_transfer()
 	_build_groups()
 	_build_url()
 	_build_launch()
@@ -394,8 +405,17 @@ func _build_groups() -> void:
 	_group_option(row, func(): pass)
 	_button(row, "Import .GRP...", func(): _import_grp(), false, "import-grp")
 	_button(row, "Export .GRP...", func(): _export_grp(), _selected_group == "", "export-grp")
-	_button(row, "Import JSON...", func(): _import_json(), false, "import-json")
-	_button(row, "Export JSON...", func(): _export_json(), false, "export-json")
+
+
+func _build_transfer() -> void:
+	var s := _section("Export and import everything")
+	var l := Label.new()
+	l.text = "One file with all program groups, programs, launch groups, settings and workspace profiles."
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	s.add_child(l)
+	var row := _row(s)
+	_button(row, "Export All...", func(): _export_all(), false, "export-all")
+	_button(row, "Import All...", _request_import_all, false, "import-all")
 
 
 func _import_grp() -> void:
@@ -428,17 +448,45 @@ func _export_grp() -> void:
 		set_status(st)
 
 
-func _import_json() -> void:
-	var result: Dictionary = await Platform.import_data()
-	var st := LauncherToolsLogic.import_json_status(result)
-	if st != "":
+func _export_all() -> void:
+	var result: Dictionary = await Platform.export_all()
+	var st := LauncherToolsLogic.export_all_status(result)
+	if st != "" and is_inside_tree():
 		set_status(st)
 
 
-func _export_json() -> void:
-	var saved: bool = await Platform.export_data()
-	if saved:
-		set_status("Launcher backup exported.")
+## Import All replaces everything (after an automatic backup), so it asks first; only OK imports.
+func _request_import_all() -> void:
+	_ensure_import_confirm()
+	_import_pending = true
+	import_confirm.dialog_text = DataTransfer.IMPORT_CONFIRM
+	if import_confirm.is_inside_tree():
+		import_confirm.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+		import_confirm.content_scale_factor = _ui_scale
+		import_confirm.reset_size()
+		import_confirm.popup_centered()
+
+
+func _ensure_import_confirm() -> void:
+	if import_confirm != null:
+		return
+	import_confirm = ConfirmationDialog.new()
+	import_confirm.title = DataTransfer.IMPORT_TITLE
+	import_confirm.ok_button_text = "OK"
+	import_confirm.cancel_button_text = "Cancel"
+	import_confirm.confirmed.connect(func(): _confirm_import_all())
+	import_confirm.canceled.connect(func(): _import_pending = false)
+	add_child(import_confirm)
+
+
+func _confirm_import_all() -> void:
+	if not _import_pending:
+		return
+	_import_pending = false
+	var result: Dictionary = await Platform.import_data()
+	var st := LauncherToolsLogic.import_all_status(result)
+	if st != "" and is_inside_tree():
+		set_status(st)
 
 
 func _build_url() -> void:
@@ -474,6 +522,7 @@ func _build_url() -> void:
 
 func _build_launch() -> void:
 	var s := _section("Launch groups")
+	var names: Dictionary = ProgramStore.launch_group_names()
 	var buckets := LaunchGroups.collect_launch_groups(ProgramStore.groups)
 	var row := _row(s)
 	var spin := SpinBox.new()
@@ -486,25 +535,112 @@ func _build_launch() -> void:
 	_labeled(row, "Delay between items", spin, false)
 	var all := _button(row, "Launching..." if _launching else "Launch All", func(): _launch(buckets), _launching or buckets.is_empty(), "launch-all")
 	all.size_flags_vertical = Control.SIZE_SHRINK_END
-	var flow := HFlowContainer.new()
-	flow.add_theme_constant_override("h_separation", 7)
-	flow.add_theme_constant_override("v_separation", 7)
-	s.add_child(flow)
-	for b in buckets:
-		var bucket: Dictionary = b
-		_button(flow, LauncherToolsLogic.launch_group_label(bucket), func(): _launch([bucket]), _launching, "launch-group-%d" % int(bucket.groupNumber))
-	if buckets.is_empty():
+	var rows := LauncherToolsLogic.launch_group_rows(ProgramStore.groups, names)
+	var grid := GridContainer.new()
+	grid.columns = 6
+	grid.add_theme_constant_override("h_separation", 7)
+	grid.add_theme_constant_override("v_separation", 5)
+	s.add_child(grid)
+	for r in rows:
+		_launch_group_row(grid, r, buckets)
+	if rows.is_empty():
 		var l := Label.new()
-		l.text = "No launch groups are assigned. Assign one to a program below."
+		l.text = "No launch groups yet. Name one below, then pick its programs with Batch group in the next section."
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.add_theme_color_override("font_color", Color("#555555"))
 		s.add_child(l)
+	var add_row := _row(s)
+	var name_edit := _line(_new_group_name, "New launch group name", func(t: String):
+		_new_group_name = t
+		if is_instance_valid(_new_group_button):
+			_new_group_button.disabled = LaunchGroups.clean_name(t) == "")
+	name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_edit.max_length = LaunchGroups.MAX_NAME_LENGTH
+	name_edit.accessibility_name = "New launch group name"
+	name_edit.set_meta("auto_id", "tools.launch-group-new-name")
+	add_row.add_child(name_edit)
+	_new_group_button = _button(add_row, "New launch group", func():
+		var st := LauncherToolsLogic.new_launch_group(ProgramStore, _new_group_name)
+		_new_group_name = ""
+		set_status(st)
+		_rebuild(), LaunchGroups.clean_name(_new_group_name) == "", "launch-group-new")
+
+
+## One launch group: number (choosing a taken one swaps), name + Rename, size, Launch, Delete.
+func _launch_group_row(grid: GridContainer, r: Dictionary, buckets: Array) -> void:
+	var n := int(r.number)
+	var num := OptionButton.new()
+	for v in range(1, LaunchGroups.MAX_GROUP + 1):
+		num.add_item("Group %d" % v)
+		num.set_item_metadata(num.item_count - 1, v)
+	num.select(clampi(n - 1, 0, LaunchGroups.MAX_GROUP - 1))
+	num.accessibility_name = "Number of group %d" % n
+	num.tooltip_text = "Choosing a number another group has swaps the two."
+	num.set_meta("auto_id", "tools.launch-group-number-%d" % n)
+	num.item_selected.connect(func(i: int):
+		set_status(LauncherToolsLogic.renumber_launch_group(ProgramStore, n, int(num.get_item_metadata(i))))
+		_rebuild())
+	grid.add_child(num)
+	var typed := String(_group_names.get(n, r.name))
+	var name_edit := _line(typed, "No name", func(t: String): _group_names[n] = t)
+	name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_edit.max_length = LaunchGroups.MAX_NAME_LENGTH
+	name_edit.accessibility_name = "Name of group %d" % n
+	name_edit.set_meta("auto_id", "tools.launch-group-name-%d" % n)
+	grid.add_child(name_edit)
+	_button(grid, "Rename", func():
+		set_status(LauncherToolsLogic.rename_launch_group(ProgramStore, n, String(_group_names.get(n, r.name))))
+		_group_names.erase(n)
+		_rebuild(), false, "launch-group-rename-%d" % n)
+	var count := Label.new()
+	count.text = String(r.right)
+	grid.add_child(count)
+	var bucket := []
+	for b in buckets:
+		if int(b.groupNumber) == n:
+			bucket = [b]
+	_button(grid, "Launch", func(): _launch(bucket), _launching or bucket.is_empty(), "launch-group-%d" % n)
+	_button(grid, "Delete", func(): _request_group_delete(n), false, "launch-group-delete-%d" % n)
+
+
+func _request_group_delete(number: int) -> void:
+	_ensure_group_delete_confirm()
+	_pending_group_delete = number
+	group_delete_confirm.dialog_text = LauncherToolsLogic.delete_launch_group_confirmation(
+		ProgramStore.groups, ProgramStore.launch_group_names(), number)
+	if group_delete_confirm.is_inside_tree():
+		group_delete_confirm.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+		group_delete_confirm.content_scale_factor = _ui_scale
+		group_delete_confirm.reset_size()
+		group_delete_confirm.popup_centered()
+
+
+func _ensure_group_delete_confirm() -> void:
+	if group_delete_confirm != null:
+		return
+	group_delete_confirm = ConfirmationDialog.new()
+	group_delete_confirm.title = "Delete Launch Group"
+	group_delete_confirm.ok_button_text = "Delete"
+	group_delete_confirm.cancel_button_text = "Cancel"
+	group_delete_confirm.confirmed.connect(_confirm_group_delete)
+	group_delete_confirm.canceled.connect(func(): _pending_group_delete = 0)
+	add_child(group_delete_confirm)
+
+
+func _confirm_group_delete() -> void:
+	var n := _pending_group_delete
+	_pending_group_delete = 0
+	if n > 0:
+		set_status(LauncherToolsLogic.delete_launch_group(ProgramStore, n))
+		_group_names.erase(n)
+		_rebuild()
 
 
 func _launch(buckets: Array) -> void:
 	if _launching or buckets.is_empty():
 		return
 	_launching = true
-	set_status(LauncherToolsLogic.launch_status_start(buckets))
+	set_status(LauncherToolsLogic.launch_status_start(buckets, ProgramStore.launch_group_names()))
 	_rebuild()
 	var results: Array = await LaunchGroups.launch_group_buckets(self, buckets, ProgramStore.settings.get("launchDelay", 500),
 		Callable(), func(items: Array, delay: Variant) -> Array: return await Platform.launch_batch(items, delay))
@@ -563,13 +699,13 @@ func _build_profile_editor() -> void:
 	m_opt.select(Types.RUN_MODES.find(mode))
 	m_opt.item_selected.connect(func(i: int): mode = Types.RUN_MODES[i])
 	_labeled(box, "Run mode", m_opt)
-	var spin := SpinBox.new()
-	spin.min_value = 0
-	spin.max_value = 8
-	spin.step = 1
-	spin.value = lg
-	spin.value_changed.connect(func(v: float): lg = int(v))
-	_labeled(box, "Batch group", spin)
+	var lg_opt := OptionButton.new()
+	for label in LauncherToolsLogic.batch_group_labels(ProgramStore.launch_group_names()):
+		lg_opt.add_item(label)
+	lg_opt.select(clampi(lg, 0, LaunchGroups.MAX_GROUP))
+	lg_opt.set_meta("auto_id", "tools.batch-group")
+	lg_opt.item_selected.connect(func(i: int): lg = i)
+	_labeled(box, "Batch group", lg_opt)
 	ev = ev
 	var save := _button(s, "Save launch profile", func():
 		var st := LauncherToolsLogic.save_launch_profile(ProgramStore, parts[0], parts[1],
