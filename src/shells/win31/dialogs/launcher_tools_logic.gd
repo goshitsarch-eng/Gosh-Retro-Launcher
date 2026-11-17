@@ -143,9 +143,9 @@ static func set_delay(store: Node, value: Variant) -> int:
 	return d
 
 
-static func launch_status_start(buckets: Array) -> String:
+static func launch_status_start(buckets: Array, names: Variant = null) -> String:
 	if buckets.size() == 1:
-		return "Launching Group %d..." % int(buckets[0].groupNumber)
+		return "Launching %s..." % LaunchGroups.format_launch_group(int(buckets[0].groupNumber), names)
 	return "Launching all groups..."
 
 
@@ -159,9 +159,57 @@ static func launch_status_done(results: Array) -> String:
 	return "Launched %d %s." % [results.size(), "item" if results.size() == 1 else "items"]
 
 
-static func launch_group_label(bucket: Dictionary) -> String:
-	var n: int = bucket.items.size()
-	return "Launch Group %d (%d %s)" % [int(bucket.groupNumber), n, "item" if n == 1 else "items"]
+static func launch_group_label(bucket: Dictionary, names: Variant = null) -> String:
+	return LaunchGroups.launch_label(int(bucket.groupNumber), bucket.items.size(), names)
+
+
+# -------------------------------------------------------- launch group editing
+# The "Launch groups" section edits groups in place; the wording and rules are the WfW manager's
+# (W31DialogLogic), so every surface says the same thing.
+
+## [{number, name, count, text, right}] of every launch group, named or with members.
+static func launch_group_rows(groups: Array, names: Variant) -> Array:
+	return W31DialogLogic.launch_group_rows(groups, names)
+
+
+## Labels for the per-item "Batch group" choice: None, Group 1, Group 2: Morning, ... Group 8.
+static func batch_group_labels(names: Variant) -> Array:
+	return W31DialogLogic.launch_group_choices(names).labels
+
+
+static func new_launch_group(store: Node, name: String) -> String:
+	if W31DialogLogic.new_launch_group_number(store.groups, store.launch_group_names()) == 0:
+		return W31DialogLogic.ALL_LAUNCH_GROUPS_IN_USE
+	return String(W31DialogLogic.apply_new_launch_group(store, name).status) + \
+		(" Pick its programs with Batch group below." if LaunchGroups.clean_name(name) != "" else "")
+
+
+static func rename_launch_group(store: Node, number: int, name: String) -> String:
+	return W31DialogLogic.apply_rename_launch_group(store, number, name)
+
+
+static func renumber_launch_group(store: Node, from: int, to: int) -> String:
+	return String(W31DialogLogic.apply_renumber_launch_group(store, from, to).status)
+
+
+static func delete_launch_group_confirmation(groups: Array, names: Variant, number: int) -> String:
+	return W31DialogLogic.delete_launch_group_message(groups, names, number)
+
+
+static func delete_launch_group(store: Node, number: int) -> String:
+	return W31DialogLogic.apply_delete_launch_group(store, number)
+
+
+# ------------------------------------------------------- Export All / Import All
+
+## Status line after Export All (Platform.export_all()); "" on Cancel.
+static func export_all_status(result: Dictionary) -> String:
+	return DataTransfer.export_status(result)
+
+
+## Status line after Import All (Platform.import_data()); "" on Cancel.
+static func import_all_status(result: Dictionary) -> String:
+	return DataTransfer.import_status(result)
 
 
 ## Items of every group as [{key "groupId:itemId", label "Group — Item"}].

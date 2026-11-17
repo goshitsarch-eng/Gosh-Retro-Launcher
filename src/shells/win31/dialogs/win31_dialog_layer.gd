@@ -71,6 +71,18 @@ static func create_dialog(type: String, data: Dictionary) -> W31Dialog:
 			return W31MessageDialogs.ExitWindows.new()
 		"unavailable":
 			return W31MessageDialogs.Unavailable.new(data)
+		"launchGroups":
+			return W31LaunchGroupDialogs.Manager.new(data)
+		"launchGroupName":
+			return W31LaunchGroupDialogs.NameDialog.new(data)
+		"launchGroupNumber":
+			if int(data.get("number", 0)) <= 0:
+				return null
+			return W31LaunchGroupDialogs.NumberDialog.new(data)
+		"launchGroupMembers":
+			if int(data.get("number", 0)) <= 0:
+				return null
+			return W31LaunchGroupDialogs.Members.new(data)
 	return null
 
 

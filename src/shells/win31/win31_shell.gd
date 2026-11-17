@@ -124,7 +124,12 @@ func on_files_dropped(files: PackedStringArray, logical_pos: Vector2) -> void:
 ## Host notice (a save failure or repaired data, see main.gd) shown as the OK message box. WfW has a
 ## single dialog slot, so a notice waits until no other dialog is open instead of replacing it.
 func show_notice(title: String, message: String) -> void:
-	_notices.append({"title": title, "message": message})
+	_queue_notice({"title": title, "message": message})
+
+
+## Queues an OK message box ({title, message, icon?}) behind any dialog that is open.
+func _queue_notice(notice: Dictionary) -> void:
+	_notices.append(notice)
 	if not UIState.dialog_changed.is_connected(_queue_next_notice):
 		UIState.dialog_changed.connect(_queue_next_notice)
 	_show_next_notice()
@@ -405,8 +410,14 @@ func run_command(command: String) -> void:
 			UIState.open_dialog("run")
 		"launch-all":
 			launch_buckets(LaunchGroups.collect_launch_groups(groups))
+		"launch-groups":
+			W31LaunchGroupDialogs.open_manager()
 		"launcher-tools":
 			LauncherToolsWindow.show_singleton(host if host != null else self)
+		"export-all":
+			export_all()
+		"import-all":
+			confirm_import_all()
 		"exit":
 			UIState.open_dialog("exitWindows")
 		"auto-arrange":
@@ -438,6 +449,36 @@ func run_command(command: String) -> void:
 				UIState.open_dialog("exitWindows")
 			else:
 				Platform.close_window()
+
+
+# ------------------------------------------------------- Export All / Import All
+
+## File > Export All...: the whole launcher to one JSON file; says where it went (nothing on Cancel).
+func export_all() -> void:
+	var result: Dictionary = await Platform.export_all()
+	var line := W31DialogLogic.wfw_text(DataTransfer.export_status(result))
+	if line == "" or not is_inside_tree():
+		return
+	_queue_notice({"title": DataTransfer.EXPORT_TITLE, "message": line,
+		"icon": "information" if result.get("success", false) else "warning"})
+
+
+## File > Import All...: asks first (it replaces everything after a backup), then imports.
+func confirm_import_all() -> void:
+	UIState.open_dialog("confirm", {"confirmOptions": {
+		"title": DataTransfer.IMPORT_TITLE, "message": W31DialogLogic.wfw_text(DataTransfer.IMPORT_CONFIRM), "width": 400,
+		"yesText": "OK", "noText": "Cancel", "icon": "warning",
+		"onConfirm": func() -> void: import_all.call_deferred(),
+	}})
+
+
+func import_all() -> void:
+	var result: Dictionary = await Platform.import_data()
+	var line := W31DialogLogic.wfw_text(DataTransfer.import_status(result))
+	if line == "" or not is_inside_tree():
+		return
+	var ok: bool = result.get("success", false)
+	_queue_notice({"title": DataTransfer.IMPORT_TITLE, "message": line, "icon": "information" if ok else "warning"})
 
 
 func _confirm_delete_item(group: Dictionary, item: Dictionary, message: String) -> void:

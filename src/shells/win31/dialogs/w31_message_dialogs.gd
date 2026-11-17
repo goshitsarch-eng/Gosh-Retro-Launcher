@@ -30,20 +30,22 @@ class About extends W31Dialog:
 		_finish(top + 4 + 22 + 8)
 
 
+## confirmOptions: {title, message, onConfirm, onCancel?, yesText? ("Yes"), noText? ("No"), width? (350),
+## icon? ("question")}.
 class Confirm extends W31Dialog:
 	var options: Dictionary
 
 	func _init(p_options: Dictionary) -> void:
 		options = p_options
-		super(String(p_options.get("title", "Program Manager")), 350)
+		super(String(p_options.get("title", "Program Manager")), int(p_options.get("width", 350)))
 		cancel_callable = _on_no
 
 	func _build(cw: int) -> void:
-		add_image(W31Icons.catalog_texture("question"), 10, 12)
+		add_image(W31Icons.catalog_texture(String(options.get("icon", "question"))), 10, 12)
 		var msg_h := add_paragraph(52, 12, String(options.get("message", "")), cw - 20 - 32 - 10, 15, 11)
 		var block := maxi(32, msg_h) + 20
-		var yes := make_button("Yes", true, _on_yes)
-		var no := make_button("No", false, _on_no)
+		var yes := make_button(String(options.get("yesText", "Yes")), true, _on_yes)
+		var no := make_button(String(options.get("noText", "No")), false, _on_no)
 		initial_focus = yes
 		add_button_row(block, [yes, no])
 		_finish(block + 4 + 22 + 8)
@@ -62,18 +64,28 @@ class Confirm extends W31Dialog:
 
 
 ## 'unavailable' (Win95 MessageDialog in the original; reachable only through UIState): OK-only message.
+## data: {title, message, icon? ("warning"; "information" for a plain notice), width? (350),
+## onClose? (Callable run instead of closing, e.g. to go back to the dialog that showed the message)}.
 class Unavailable extends W31Dialog:
 	var data: Dictionary
 
 	func _init(p_data: Dictionary) -> void:
 		data = p_data
-		super(String(p_data.get("title", "Program Manager")), 350)
+		super(String(p_data.get("title", "Program Manager")), int(p_data.get("width", 350)))
+		cancel_callable = _on_ok
+
+	func _on_ok() -> void:
+		var cb: Variant = data.get("onClose")
+		if cb is Callable and cb.is_valid():
+			cb.call()
+		else:
+			UIState.close_dialog()
 
 	func _build(cw: int) -> void:
-		add_image(W31Icons.catalog_texture("warning"), 10, 12)
+		add_image(W31Icons.catalog_texture(String(data.get("icon", "warning"))), 10, 12)
 		var msg_h := add_paragraph(52, 12, String(data.get("message", "This feature is not available.")), cw - 20 - 32 - 10, 15, 11)
 		var block := maxi(32, msg_h) + 20
-		var ok := make_button("OK", true, UIState.close_dialog)
+		var ok := make_button("OK", true, _on_ok)
 		initial_focus = ok
 		add_button_row(block, [ok])
 		_finish(block + 4 + 22 + 8)

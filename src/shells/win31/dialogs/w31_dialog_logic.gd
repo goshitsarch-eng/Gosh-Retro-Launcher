@@ -22,8 +22,17 @@ const HELP_BODY_CONTENTS := "Use Program Manager to organize programs into group
 const HELP_BODY_USING := "Choose a menu command or select an object, then choose Help for information about that operation. Press F10 to enter menu mode and use the arrow keys to move."
 
 
-static func format_launch_group(value: int) -> String:
-	return LaunchGroups.format_launch_group(value)
+## "None", "Group 3" or "Group 3: Morning" (`names` is settings.launchGroupNames).
+static func format_launch_group(value: int, names: Variant = null) -> String:
+	return LaunchGroups.format_launch_group(value, names)
+
+
+## Labels and values of the "Launch Group:" drop-downs (None, Group 1 .. Group 8, with names).
+static func launch_group_choices(names: Variant = null) -> Dictionary:
+	var labels := []
+	for v in LAUNCH_GROUP_OPTIONS:
+		labels.append(format_launch_group(v, names))
+	return {"labels": labels, "values": LAUNCH_GROUP_OPTIONS.duplicate()}
 
 
 # ------------------------------------------------------------------ URLs (NewUrlDialog)
@@ -449,7 +458,7 @@ static func feedback_progress(fb: Dictionary) -> int:
 	return mini(100, int(floorf(float(fb.get("completedGroups", 0)) / float(total) * 100.0 + 0.5)))
 
 
-static func feedback_status_text(fb: Dictionary) -> String:
+static func feedback_status_text(fb: Dictionary, names: Variant = null) -> String:
 	var status: String = fb.get("status", "idle")
 	if status == "complete":
 		var n := int(fb.get("totalItems", 0))
@@ -458,7 +467,7 @@ static func feedback_status_text(fb: Dictionary) -> String:
 		var f := int(fb.get("failures", 0))
 		return "%d launch%s failed" % [f, "" if f == 1 else "es"]
 	if fb.get("currentGroup") != null:
-		return "Launching Group %d" % int(fb.currentGroup)
+		return "Launching " + format_launch_group(int(fb.currentGroup), names)
 	return "Preparing launch groups"
 
 
@@ -482,3 +491,215 @@ static func platform_display_name(os_name: String) -> String:
 
 static func welcome_mod_key(os_name: String) -> String:
 	return "Cmd" if os_name == "darwin" else "Ctrl"
+
+
+# ---------------------------------------------------------- Launch groups
+# Rules of the Launch Groups manager and its New/Rename, Number and Members dialogs. A launch group
+# is a number on each item plus an optional name (settings.launchGroupNames); ProgramStore does the
+# editing, these turn it into rows, labels and messages.
+
+const ALL_LAUNCH_GROUPS_IN_USE := "All 8 launch group numbers are in use. Delete a launch group first, or add programs to one you already have."
+const NO_LAUNCH_GROUPS := "There are no launch groups yet. Choose New... to make one, then pick its programs."
+const MEMBERS_MOVE_NOTE := "Checking a program that is in another launch group moves it to this one."
+
+
+## Shared wording made drawable in the WfW font, which has no ">" glyph: "Launcher Tools > Backups"
+## becomes "Launcher Tools - Backups".
+static func wfw_text(text: String) -> String:
+	return text.replace(" > ", " - ").replace(">", "-")
+
+
+## "No programs", "1 program", "3 programs".
+static func program_count_text(n: int) -> String:
+	if n <= 0:
+		return "No programs"
+	return "1 program" if n == 1 else "%d programs" % n
+
+
+## Rows of the manager's list: [{number, name, count, text "Group 3: Morning", right "2 programs"}].
+static func launch_group_rows(groups: Array, names: Variant) -> Array:
+	var out := []
+	for d in LaunchGroups.defined_groups(groups, names):
+		out.append({"number": int(d.number), "name": String(d.name), "count": int(d.count),
+			"text": String(d.label), "right": program_count_text(int(d.count))})
+	return out
+
+
+## Index of launch group `number` in `rows`; 0 when it is not there, -1 when there are no rows.
+static func launch_group_row_index(rows: Array, number: int) -> int:
+	for i in rows.size():
+		if int(rows[i].number) == number:
+			return i
+	return 0 if not rows.is_empty() else -1
+
+
+## Which manager buttons are enabled for the selected row `index` ({new, rename, number, delete,
+## members, launch}). Launch needs members and no batch already running.
+static func launch_group_actions(rows: Array, index: int, launching: bool = false) -> Dictionary:
+	var has := index >= 0 and index < rows.size()
+	var count := int(rows[index].count) if has else 0
+	return {"new": true, "rename": has, "number": has, "delete": has, "members": has,
+		"launch": has and count > 0 and not launching}
+
+
+## The text under the manager's list: who is in the selected group (or how to start).
+static func launch_group_detail(groups: Array, names: Variant, number: int) -> String:
+	if number <= 0:
+		return NO_LAUNCH_GROUPS
+	var label := format_launch_group(number, names)
+	var members := []
+	for e in LaunchGroups.all_items(groups):
+		if int(e.launchGroup) == number:
+			members.append(String(e.name))
+	if members.is_empty():
+		return "%s has no programs yet. Choose Members... to add some." % label
+	return "%s starts %s." % [label, _join_names(members, 6)]
+
+
+## "A", "A and B", "A, B and C", "A, B, C, D, E and 3 more" (at most `limit` parts).
+static func _join_names(list: Array, limit: int) -> String:
+	if list.size() == 1:
+		return String(list[0])
+	if list.size() > limit:
+		var shown := list.slice(0, limit - 1)
+		return "%s and %d more" % [", ".join(shown), list.size() - shown.size()]
+	return "%s and %s" % [", ".join(list.slice(0, list.size() - 1)), list[list.size() - 1]]
+
+
+## The number New would use, or 0 when all of 1..8 are taken (then show ALL_LAUNCH_GROUPS_IN_USE).
+static func new_launch_group_number(groups: Array, names: Variant) -> int:
+	return LaunchGroups.next_free_number(groups, names)
+
+
+## Can the New / Rename name dialog's OK be pressed? New needs a name; a blank rename clears it.
+static func launch_group_name_ok(mode: String, text: String) -> bool:
+	return mode != "new" or LaunchGroups.clean_name(text) != ""
+
+
+## Creates a named, empty launch group. Returns {number, status}; number 0 when refused.
+static func apply_new_launch_group(store: Node, name: String) -> Dictionary:
+	if LaunchGroups.clean_name(name) == "":
+		return {"number": 0, "status": "Type a name for the new launch group."}
+	var n: int = store.create_launch_group(name)
+	if n == 0:
+		return {"number": 0, "status": ALL_LAUNCH_GROUPS_IN_USE}
+	return {"number": n, "status": "Created %s." % format_launch_group(n, store.launch_group_names())}
+
+
+## Renames group `number` (blank removes the name). Returns the status line.
+static func apply_rename_launch_group(store: Node, number: int, name: String) -> String:
+	if number <= 0:
+		return ""
+	store.set_launch_group_name(number, name)
+	var cleaned := LaunchGroups.clean_name(name)
+	if cleaned == "":
+		return "Group %d has no name now." % number
+	return "Group %d is now called “%s”." % [number, cleaned]
+
+
+## Choices of the Number dialog: [{value, label}] for 1..MAX_GROUP; a taken number says it swaps.
+static func launch_group_number_choices(groups: Array, names: Variant, current: int) -> Array:
+	var taken := {}
+	for d in LaunchGroups.defined_groups(groups, names):
+		taken[int(d.number)] = true
+	var out := []
+	for v in range(1, LaunchGroups.MAX_GROUP + 1):
+		var label := "%d" % v
+		if v == current:
+			label += " (current)"
+		elif taken.has(v):
+			label += " - swap with " + format_launch_group(v, names)
+		out.append({"value": v, "label": label})
+	return out
+
+
+## What moving group `from` to `to` will do, for the Number dialog ("" when nothing changes).
+static func renumber_note(groups: Array, names: Variant, from: int, to: int) -> String:
+	if from <= 0 or to <= 0 or from == to:
+		return ""
+	for d in LaunchGroups.defined_groups(groups, names):
+		if int(d.number) == to:
+			return "%s becomes Group %d: the two swap places in Launch All." % [String(d.label), from]
+	return "Launch All starts the groups in number order, lowest first."
+
+
+## Renumbers group `from` to `to` through the store. Returns {ok, number, status}.
+static func apply_renumber_launch_group(store: Node, from: int, to: int) -> Dictionary:
+	if from == to:
+		return {"ok": false, "number": from, "status": ""}
+	var names: Dictionary = store.launch_group_names().duplicate()
+	var before_from := format_launch_group(from, names)
+	var swapped := ""
+	for d in LaunchGroups.defined_groups(store.groups, names):
+		if int(d.number) == to:
+			swapped = String(d.label)
+	if not store.renumber_launch_group(from, to):
+		return {"ok": false, "number": from, "status": ""}
+	var status := "%s is now Group %d." % [before_from, to]
+	if swapped != "":
+		status += " %s is now Group %d." % [swapped, from]
+	return {"ok": true, "number": to, "status": status}
+
+
+## Delete confirmation text; says plainly that the programs are kept.
+static func delete_launch_group_message(groups: Array, names: Variant, number: int) -> String:
+	var label := format_launch_group(number, names)
+	var count := LaunchGroups.member_keys(groups, number).size()
+	if count == 0:
+		return "Delete %s? It has no programs." % label
+	return "Delete %s? Its %s will stay in their program groups; they just stop launching with this group." % [
+		label, program_count_text(count).to_lower()]
+
+
+static func apply_delete_launch_group(store: Node, number: int) -> String:
+	var label := format_launch_group(number, store.launch_group_names())
+	store.delete_launch_group(number)
+	return "Deleted %s. Its programs were kept." % label
+
+
+## "groupId:itemId" keys of the current members of `number`, as a set.
+static func member_check_set(groups: Array, number: int) -> Dictionary:
+	var out := {}
+	for k in LaunchGroups.member_keys(groups, number):
+		out[k] = true
+	return out
+
+
+## Rows of the Members checklist: a bold header per program group that has items, then its items
+## [{key, text, checked, indent}]; an item in another launch group says so: "Clock (Group 2: Evening)".
+static func member_rows(groups: Array, names: Variant, number: int, checked: Dictionary) -> Array:
+	var out := []
+	var last_group := ""
+	for e in LaunchGroups.all_items(groups):
+		if String(e.groupId) != last_group:
+			last_group = String(e.groupId)
+			out.append({"header": true, "text": String(e.groupName)})
+		var text := String(e.name)
+		var lg := int(e.launchGroup)
+		if lg > 0 and lg != number:
+			text += " (%s)" % format_launch_group(lg, names)
+		out.append({"key": String(e.key), "text": text, "checked": checked.has(String(e.key)), "indent": 10})
+	return out
+
+
+## Keys of the checked rows, in list order.
+static func checked_member_keys(rows: Array) -> Array:
+	var out := []
+	for r in rows:
+		if not r.get("header", false) and r.get("checked", false):
+			out.append(String(r.key))
+	return out
+
+
+## Applies the Members checklist. Returns the status line.
+static func apply_launch_group_members(store: Node, number: int, keys: Array) -> String:
+	store.set_launch_group_members(number, keys)
+	return "%s has %s." % [format_launch_group(number, store.launch_group_names()), program_count_text(keys.size()).to_lower()]
+
+
+## The bucket list Launch starts for group `number` ([] when it has no members).
+static func launch_group_bucket(groups: Array, number: int) -> Array:
+	for b in LaunchGroups.collect_launch_groups(groups):
+		if int(b.groupNumber) == number:
+			return [b]
+	return []

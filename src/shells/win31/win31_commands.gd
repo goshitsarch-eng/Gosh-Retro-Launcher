@@ -84,6 +84,13 @@ static func launch_group_counts(groups: Array) -> Array:
 	return out
 
 
+## Launcher menu row for a launch group, keeping the &N mnemonic:
+## "Launch Group &3: Morning (2 items)" (names is settings.launchGroupNames).
+static func launch_menu_label(number: int, count: int, names: Variant = null) -> String:
+	var name := LaunchGroups.name_of(names, number).replace("&", "&&")  # a name's own "&" is not a mnemonic
+	return "Launch Group &%d%s (%d %s)" % [number, (": " + name) if name != "" else "", count, "item" if count == 1 else "items"]
+
+
 static func _item(command: String, label: String, state: Dictionary = {}) -> Dictionary:
 	var d := {"command": command, "label": label}
 	d.merge(state, true)
@@ -114,15 +121,17 @@ static func build_menus(groups: Array, active_group_id: String, selection: Dicti
 				"checked": g.id == active_group_id,
 			})
 
+	var names := LaunchGroups.names_from(settings)
 	var launcher_items := [_item("launch-all", "Launch &All", {"disabled": launch.is_empty()})]
 	if not launch.is_empty():
 		launcher_items.append(_sep())
 		for pair in launch:
 			launcher_items.append({
 				"command": "launch-group:%d" % pair[0],
-				"label": "Launch Group &%d (%d %s)" % [pair[0], pair[1], "item" if pair[1] == 1 else "items"],
+				"label": launch_menu_label(int(pair[0]), int(pair[1]), names),
 			})
 	launcher_items.append(_sep())
+	launcher_items.append(_item("launch-groups", "Launch &Groups..."))
 	launcher_items.append(_item("launcher-tools", "Launcher &Tools..."))
 
 	return [
@@ -136,6 +145,9 @@ static func build_menus(groups: Array, active_group_id: String, selection: Dicti
 			_item("properties", "&Properties...", st.call("properties")),
 			_sep(),
 			_item("run", "&Run..."),
+			_sep(),
+			_item("import-all", "&Import All..."),
+			_item("export-all", "Export &All..."),
 			_sep(),
 			_item("exit", "E&xit Windows..."),
 		]},
