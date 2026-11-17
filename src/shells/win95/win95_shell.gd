@@ -7,9 +7,10 @@ extends ShellBase
 ##
 ## Launch groups: launch_group_row(row_id) / launch_buckets(buckets) (Win95LaunchGroupLogic rows);
 ## a batch shows Win95LaunchProgress while it runs.
-## Layers (back to front): desktop (windows inside) < notes_layer (sticky notes) < taskbar < Start menu
-## < dialog_layer < popup_layer. A sticky note's text owns the keyboard while it has focus (see
-## note_has_focus and Win95InputController.on_key); clicking one makes it the active "window".
+## Layers (back to front): desktop (windows inside) < notes_layer (sticky notes) < outline_layer
+## (Move/Size outline) < taskbar < Start menu < dialog_layer < popup_layer. A sticky note's text owns
+## the keyboard while it has focus (see note_has_focus and Win95InputController.on_key); clicking one
+## makes it the active "window", and each open note has a taskbar button and an Alt+Tab stop.
 ## Public surface used by the Win95* components: windows (Win95WindowStore), input, desktop, taskbar,
 ## popup_layer, dialog_layer, logical_size, desktop_size(), host_focused, dragging, launch_item().
 
@@ -23,6 +24,8 @@ var start_menu: Win95StartMenu
 var popup_layer: Control
 var dialog_layer: Control
 var notes_layer: Control
+## Holds the window Move/Size outline (Win95Desktop.set_outline) above the notes; clips like the desktop.
+var outline_layer: Control
 
 var logical_size := Vector2(640, 480)
 var host_focused := true
@@ -49,6 +52,10 @@ func _init() -> void:
 	notes_layer = _make_layer()
 	notes_layer.name = "NotesLayer"
 	add_child(notes_layer)
+	outline_layer = _make_layer()
+	outline_layer.name = "OutlineLayer"
+	outline_layer.clip_contents = true
+	add_child(outline_layer)
 	taskbar = Win95Taskbar.new()
 	add_child(taskbar)
 	start_menu = Win95StartMenu.new()
@@ -79,6 +86,7 @@ func _ready() -> void:
 			win.focus_exited.connect(func(): _set_host_focus(false))
 	desktop.setup(self)
 	taskbar.setup(self)
+	windows.changed.connect(_on_windows_changed)
 	start_menu.setup(self)
 	_layout()
 
@@ -112,8 +120,9 @@ func _layout() -> void:
 	desktop.size = Vector2(logical_size.x, maxf(1.0, h))
 	taskbar.position = Vector2(0, h)
 	taskbar.size = Vector2(logical_size.x, M.taskbarHeight)
-	notes_layer.position = Vector2.ZERO
-	notes_layer.size = desktop.size
+	for c in [notes_layer, outline_layer]:
+		c.position = Vector2.ZERO
+		c.size = desktop.size
 	for c in [start_menu, popup_layer, dialog_layer]:
 		c.position = Vector2.ZERO
 		c.size = logical_size
@@ -275,14 +284,66 @@ func open_note(item_id: String, focus: bool = true) -> StickyNote:
 	var n := super.open_note(item_id, focus)
 	if n != null and not n.closed.is_connected(_on_note_closed):
 		n.closed.connect(_on_note_closed)
+		n.activated.connect(_on_note_activated)
 	if n != null and focus:
 		input.close_start_menu()
-		windows.activate_note()
+		windows.activate_note(item_id)
 	return n
 
 
-func _on_note_closed(_id: String) -> void:
-	windows.note_closed()
+func _on_note_activated(item_id: String) -> void:
+	windows.activate_note(item_id)
+
+
+## The active note closed: the task that was active before it takes over (another note gets the
+## keyboard back; a window or the desktop is reactivated the usual way).
+func _on_note_closed(item_id: String) -> void:
+	if windows.active_note_id() != item_id:
+		return
+	var open_ids := task_stack().filter(func(t): return t != Win95TaskbarState.note_task_id(item_id))
+	var next := Win95TaskbarState.next_active(_recent_tasks, open_ids)
+	if Win95TaskbarState.is_note_task(next):
+		open_note(Win95TaskbarState.note_item_id(next))
+	else:
+		windows.note_closed(item_id)
+
+
+## Most recently active task ids first (window entry ids and Win95TaskbarState.note_task_id ids).
+var _recent_tasks: Array = []
+
+
+## A window (or the desktop) became active: the note text gives up the keyboard, and the active
+## task moves to the front of the recently-active list.
+func _on_windows_changed() -> void:
+	if windows.active_window_id != Win95WindowStore.NOTE_ACTIVE and note_has_focus():
+		get_viewport().gui_release_focus()
+	_recent_tasks = Win95TaskbarState.touch_recent(_recent_tasks, active_task_id())
+
+
+## Everything Alt+Tab switches between, bottom to top: the windows by z-order, then the open notes
+## (which sit above every window) in their own stacking order.
+func task_stack() -> Array:
+	var out: Array = windows.by_z().map(func(e): return String(e.id))
+	for n in open_notes():
+		out.append(Win95TaskbarState.note_task_id(n.item_id))
+	return out
+
+
+## The task id of the active window or note ("" while the desktop is active).
+func active_task_id() -> String:
+	var nid := windows.active_note_id()
+	return Win95TaskbarState.note_task_id(nid) if nid != "" else windows.active_window_id
+
+
+## Brings a window (restoring it when minimized) or a note to the front and gives it the keyboard.
+func activate_task(task_id: String) -> void:
+	if Win95TaskbarState.is_note_task(task_id):
+		open_note(Win95TaskbarState.note_item_id(task_id))
+		return
+	var entry := windows.find_entry(task_id)
+	if not entry.is_empty():
+		windows.unminimize(entry)
+		windows.focus_window(task_id)
 
 
 ## True while the text of a sticky note has the keyboard focus.
@@ -311,34 +372,80 @@ func note_at(pos: Vector2) -> StickyNote:
 	return null
 
 
-## A press outside the notes takes the keyboard back from a note's text (the windows and the
-## desktop do not take Godot focus themselves); a press on a note makes it the active window.
-## Right-click on a note opens its small menu. Returns true when the event was used here.
+## A press outside the notes (and off the taskbar, whose buttons decide for themselves) takes the
+## keyboard back from a note's text (the windows and the desktop do not take Godot focus
+## themselves). A left press on a note makes it the active window and goes on to the note. A
+## right press brings the note to the front and opens show_note_menu here, as the note's own
+## context_requested would: the note's text field takes right-clicks in its area before the note
+## sees them. Returns true when the event was used here.
 func _route_note_press(mb: InputEventMouseButton, pos: Vector2) -> bool:
 	var hit := note_at(pos)
 	if hit == null:
-		if note_has_focus():
+		if note_has_focus() and not Rect2(taskbar.position, taskbar.size).has_point(pos):
 			get_viewport().gui_release_focus()
 		return false
-	windows.activate_note()
+	windows.activate_note(hit.item_id)
 	if mb.button_index == MOUSE_BUTTON_RIGHT:
-		_open_note_menu(hit, pos)
+		hit.move_to_front()
+		show_note_menu(hit.item_id, global_position + pos)
 		return true
+	# A press on the title strip, close box or grip activates the note with the keyboard too (its
+	# caret stays where it was), so typing and Alt+F4 go to it as they would to a window.
+	var edit := _note_text(hit)
+	if edit != null and not edit.has_focus():
+		edit.grab_focus()
 	return false
 
 
-func _open_note_menu(n: StickyNote, at: Vector2) -> void:
-	var id := n.item_id
-	Win95Menu.open(self, [
-		{"id": "note-close", "label": "&Close", "defaultItem": true, "onSelect": func():
-			if is_instance_valid(n):
-				n.close()},
-		{"id": "sep", "separator": true},
+func _note_text(n: StickyNote) -> TextEdit:
+	for c in n.get_children():
+		if c is TextEdit:
+			return c
+	return null
+
+
+## Right-click on an open note (StickyNote.context_requested): its menu at the pointer.
+func show_note_menu(item_id: String, global_pos: Vector2) -> void:
+	open_note_menu(item_id, global_pos - global_position)
+
+
+## The note menu (Close, Properties, Delete) at `at` (shell logical pixels); `opts` as Win95Menu.open.
+## A right-click on the note or on its taskbar button and Shift+F10 / the Menu key in it open it.
+func open_note_menu(item_id: String, at: Vector2, opts: Dictionary = {}) -> Win95Menu:
+	return Win95Menu.open(self, note_menu_items(item_id), at, opts)
+
+
+func note_menu_items(item_id: String) -> Array:
+	return [
+		{"id": "note-close", "label": "&Close", "defaultItem": true, "onSelect": func(): close_note(item_id)},
 		{"id": "note-properties", "label": "P&roperties", "icon": "properties", "onSelect": func():
-			var loc := ProgramStore.locate_item(id)
+			var loc := ProgramStore.locate_item(item_id)
 			if not loc.is_empty():
 				Win95Dialogs.open_properties(self, {"kind": "item", "groupId": loc.groupId, "item": loc.item})},
-	], at)
+		{"id": "sep", "separator": true},
+		{"id": "note-delete", "label": "&Delete", "onSelect": func(): confirm_delete_note(item_id)},
+	]
+
+
+## Win95's delete question for note `item_id`: Yes deletes it (its window closes with it), No gives
+## the note the keyboard back.
+func confirm_delete_note(item_id: String) -> Win95Modal:
+	var loc := ProgramStore.locate_item(item_id)
+	if loc.is_empty():
+		return null
+	var gid := String(loc.groupId)
+	var message := Win95TaskbarState.delete_note_message(String(loc.item.get("name", "Note")))
+	return Win95Dialogs.confirm(self, "Confirm File Delete", message, func():
+		ProgramStore.delete_item(gid, item_id), func():
+		if note_window(item_id) != null:
+			open_note(item_id))
+
+
+## Shift+F10 / the Menu key while a note's text has the keyboard: the note menu inside its text.
+func open_focused_note_menu() -> void:
+	var n := focused_note()
+	if n != null:
+		open_note_menu(n.item_id, notes_layer.position + n.position + Vector2(8, n.title_h + 8))
 
 
 # ------------------------------------------------------------------ host events

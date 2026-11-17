@@ -44,14 +44,17 @@ static func route_shortcut(event: Dictionary) -> String:
 
 
 ## What a route_shortcut() command does while a sticky note's text has the focus: the system-wide
-## ones run as usual, "close-window" (Alt+F4) becomes "close-note", and the window commands
-## (system menu, context menu) and plain keys return "" so the note's text field gets the key.
+## ones run as usual, "close-window" (Alt+F4) becomes "close-note", "context-menu" (Shift+F10, the
+## Menu key) becomes "note-menu", and the system menu (Alt+Space) and plain keys return "" so the
+## note's text field gets the key.
 static func note_key_action(command: String) -> String:
 	match command:
 		"toggle-start", "open-run", "open-find", "open-explorer", "cycle-window", "cycle-window-reverse":
 			return command
 		"close-window":
 			return "close-note"
+		"context-menu":
+			return "note-menu"
 	return ""
 
 

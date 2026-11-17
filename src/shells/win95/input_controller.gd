@@ -146,24 +146,12 @@ func dispatch_layer(layer: String, event: Dictionary) -> bool:
 	return false
 
 
+## Alt+Tab: the next window or sticky note in z-order (Win95TaskbarState.cycle_target) comes to the
+## front with the keyboard; a minimized window is restored.
 func cycle_window(reverse: bool) -> void:
-	var windows: Win95WindowStore = shell.windows
-	var ordered := windows.by_z()
-	if ordered.is_empty():
-		return
-	var active := -1
-	for i in ordered.size():
-		if ordered[i].id == windows.active_window_id:
-			active = i
-	var delta := -1 if reverse else 1
-	var index: int
-	if active < 0:
-		index = (ordered.size() - 1) if reverse else 0
-	else:
-		index = (active + delta + ordered.size()) % ordered.size()
-	var entry: Dictionary = ordered[index]
-	windows.unminimize(entry)
-	windows.focus_window(entry.id)
+	var target := Win95TaskbarState.cycle_target(shell.task_stack(), shell.active_task_id(), reverse)
+	if target != "":
+		shell.activate_task(target)
 
 
 ## Returns true when the event was consumed.
@@ -213,8 +201,9 @@ func _note_focused() -> bool:
 
 
 ## Keys while a sticky note's text has the focus: an open menu still gets them first (and keeps
-## them); the system shortcuts (Start, Run, Find, Explorer, Alt+Tab) still work; Alt+F4 closes the
-## note; everything else is left to the note's text field (the windows and desktop never see it).
+## them); the system shortcuts (Start, Run, Find, Explorer, Alt+Tab) still work; Shift+F10 and the
+## Menu key open the note menu; Alt+F4 closes the note; everything else is left to the note's text
+## field (the windows and desktop never see it).
 func _note_key(command: String, dom: Dictionary) -> bool:
 	if menu_active():
 		dispatch_layer("menu", dom)
@@ -226,6 +215,7 @@ func _note_key(command: String, dom: Dictionary) -> bool:
 		"open-explorer": shell.windows.open_my_computer()
 		"cycle-window": cycle_window(false)
 		"cycle-window-reverse": cycle_window(true)
+		"note-menu": shell.open_focused_note_menu()
 		"close-note":
 			var n: Variant = shell.focused_note()
 			if n != null:
