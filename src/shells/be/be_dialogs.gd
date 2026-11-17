@@ -9,7 +9,7 @@ const TOPICS := [
 	["Starting programs", "Double-click an icon in a folder window to start it. Use the Deskbar menu to open Find, Run and Launcher Tools."],
 	["Creating folders and programs", "Right-click the desktop and choose New Folder, or open a folder and choose Add Program… from its File menu. You can also drag files into a folder window to add them quickly."],
 	["Batch launching", "Choose Launch Groups… in the Deskbar menu to make, name, renumber or delete launch groups and to pick their programs, or give a single program a group in Get Info. Launch Group starts one group and Launch All starts every group in number order, with the delay you set."],
-	["Sticky notes", "Choose New Note… in the Deskbar menu, a folder's File menu or a right-click menu to make a note with a title, a paper color and some text. It is kept in that folder; double-click it to open it again. Drag a note by its top strip, resize it from its bottom corner, and close it with the box at its top left. Get Info changes its color, and a note in a launch group opens when the group runs."],
+	["Sticky notes", "Choose New Note… in the Deskbar menu, a folder's File menu or a right-click menu to make a note with a title, a paper color and some text. It is kept in that folder; double-click it to open it again. Drag a note by its top strip, resize it from its bottom corner, and close it with the box at its top left. Right-click a note to close it, change its paper color, open Get Info or move it to the Trash. A note in a launch group opens when the group runs."],
 	["Export All and Import All", "Export All… in the Deskbar menu saves everything (folders, programs, launch groups and settings) to one file. Import All… replaces everything with a file's contents after backing up your current setup."],
 	["Importing .GRP files", "Open Launcher Tools and choose Import .GRP to bring in an original Windows 3.x program group. Export .GRP writes one back out."],
 	["Switching shells", "Press Ctrl+Alt+T to open Launcher Tools, pick a shell under Appearance, and click Apply."],
@@ -72,6 +72,16 @@ static func confirm_trash_item(shell: Control, gid: String, iid: String) -> void
 		BeDialogLogic.trash_item(ProgramStore, gid, iid)
 		shell.on_item_trashed(gid, iid)
 		return false)
+
+
+## The note menu's Move to Trash…: Delete / Cancel, then the note (and its open window) goes.
+static func confirm_trash_note(shell: Control, gid: String, iid: String) -> BeDialog:
+	var it: Dictionary = ProgramStore.find_item(gid, iid)
+	if it.is_empty() or not Notes.is_note(it):
+		return null
+	return confirm(shell, BeDialogLogic.note_trash_lines(it), "warning", "Delete", func():
+		BeDialogLogic.trash_item(ProgramStore, gid, iid)
+		shell.on_item_trashed(gid, iid), "be.dialog.note-trash")
 
 
 static func confirm_trash_group(shell: Control, gid: String) -> void:

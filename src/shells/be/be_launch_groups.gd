@@ -125,7 +125,8 @@ static func open(shell: Control, select_number: int = 0) -> BeDialog:
 	var sigs := [ProgramStore.groups_changed, ProgramStore.settings_changed, ProgramStore.data_reloaded]
 	for s in sigs:
 		(s as Signal).connect(on_store)
-	d.closed.connect(func():
+	# tree_exiting, not closed: the manager also goes when the whole shell is freed (a desktop switch)
+	d.tree_exiting.connect(func():
 		for s in sigs:
 			if (s as Signal).is_connected(on_store):
 				(s as Signal).disconnect(on_store))

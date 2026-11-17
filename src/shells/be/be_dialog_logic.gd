@@ -8,6 +8,9 @@ const MAX_LAUNCH_GROUP := 8
 const NOTE_KIND := "Sticky note"
 const NEW_NOTE_HELP := "Type a title and choose a paper color. The text is optional: you can also type it in the note."
 const NO_FOLDER_FOR_NOTE := "There are no folders yet. Make a folder first, then add notes to it."
+const LAUNCH_GROUP_HEADING := "Launch Group"
+## Label of the Find window's query field: it matches item names and the text of sticky notes.
+const FIND_QUERY_LABEL := "Name or text contains"
 
 
 static func plural(n: int, one: String, many: String) -> String:
@@ -35,6 +38,17 @@ static func command_text(item: Dictionary) -> String:
 ## "None", "Group 3" or "Group 3: Morning" (`names` = settings.launchGroupNames).
 static func batch_text(launch_group: int, names: Variant = null) -> String:
 	return LaunchGroups.format_launch_group(launch_group, names)
+
+
+## The List View / Find "Launch Group" cell of an item: "Group 3: Morning", or "—" when it is in none.
+static func launch_group_cell(item: Dictionary, names: Variant = null) -> String:
+	var lg := int(item.get("launchGroup", 0))
+	return batch_text(lg, names) if lg > 0 else "—"
+
+
+## List View column headings: the Program Manager window lists folders, a folder window lists its items.
+static func details_headings(is_computer: bool) -> Array:
+	return ["Name", "Size", "Type"] if is_computer else ["Name", "Command", LAUNCH_GROUP_HEADING]
 
 
 ## Get Info "Launch group" select options: None, then 1..8 with their names. A stored number above 8
@@ -186,6 +200,22 @@ static func new_note(store: Object, gid: String, title: String, text: String, co
 	return String(store.add_item(gid, Notes.make_note(title, text, color)))
 
 
+## The note menu's Color rows: gives note `iid` the paper colour `color`. False (and nothing changes) when the
+## item is not a note or the colour is not one of Notes.COLORS.
+static func set_note_color(store: Object, gid: String, iid: String, color: String) -> bool:
+	var item: Dictionary = store.find_item(gid, iid)
+	if item.is_empty() or not Notes.is_note(item) or not Notes.COLORS.has(color):
+		return false
+	if String(item.get("noteColor", Notes.DEFAULT_COLOR)) != color:
+		store.update_item(gid, iid, {"noteColor": color})
+	return true
+
+
+## Text of the note menu's Move to Trash… confirmation (BeDialogs.message lines).
+static func note_trash_lines(item: Dictionary) -> Array:
+	return ["Delete the sticky note “%s”?" % String(item.get("name", "Note")), "Its text is deleted with it."]
+
+
 ## Get Info OK/Apply for a note. fields: {name, noteColor, launchGroup, icon, groupId}. A blank title keeps
 ## the old one. Returns {ok, groupId}.
 static func apply_note_info(store: Object, gid: String, iid: String, fields: Dictionary) -> Dictionary:
@@ -289,9 +319,10 @@ static func find(groups: Array, query: String, where: String, type: String, text
 	return out
 
 
+## Find window title (and its Deskbar task): the query matches names, and the text of notes.
 static func find_title(query: String) -> String:
 	var q := query.strip_edges()
-	return "Find: Programs named " + q if q != "" else "Find: All Programs"
+	return "Find: “%s” in names and notes" % q if q != "" else "Find: All Programs"
 
 
 # ------------------------------------------------------------------- misc
@@ -359,9 +390,8 @@ static func entries_for(key: String, groups: Array, names: Variant = null) -> Ar
 		if g.id != gid:
 			continue
 		for it in g.items:
-			var lg := int(it.get("launchGroup", 0))
 			out.append({"id": String(it.id), "name": String(it.name), "icon": String(it.get("icon", "default")), "is_group": false,
-				"c2": command_text(it), "c3": batch_text(lg, names) if lg > 0 else "—", "is_note": Notes.is_note(it)})
+				"c2": command_text(it), "c3": launch_group_cell(it, names), "is_note": Notes.is_note(it)})
 	return out
 
 

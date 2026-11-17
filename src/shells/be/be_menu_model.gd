@@ -8,6 +8,8 @@ const VIEWS := [["large", "Icon View"], ["small", "Mini Icon View"], ["details",
 
 const SEP := {"sep": true}
 const NEW_NOTE := "New Note…"
+const NOTE_COLOR := "Color"
+const NOTE_TRASH := "Move to Trash…"
 
 
 static func row(label: String, action: String, args: Dictionary = {}, opts: Dictionary = {}) -> Dictionary:
@@ -113,6 +115,22 @@ static func deskbar_menu(buckets: Variant = null, names: Variant = null) -> Arra
 	return out
 
 
-## Right-click on the Deskbar logo button.
+## Right-click on the Deskbar logo button: the Deskbar menu's commands that open a window or a dialog (no
+## launching, Restart or Shut Down).
 static func deskbar_context_menu() -> Array:
-	return [row("About Program Manager…", "about.open"), row("Launcher Tools…", "tools.open")]
+	return [row("About Program Manager…", "about.open"), SEP, row(NEW_NOTE, "note.new"), SEP,
+		row("Launcher Tools…", "tools.open"), row("Launch Groups…", "launchgroups.open"), SEP,
+		row("Export All…", "data.export"), row("Import All…", "data.import")]
+
+
+## Right-click on an open sticky note (`color` = its noteColor): Close, Get Info, a Color submenu (a sample of each
+## paper, with a dot on the current one), and Move to Trash… (which asks first).
+static func note_menu(gid: String, iid: String, color: String) -> Array:
+	var a := {"gid": gid, "iid": iid}
+	var current := color if Notes.COLORS.has(color) else Notes.DEFAULT_COLOR
+	var colors := []
+	for c in Notes.color_choices():
+		colors.append(row(String(c.label), "note.color", {"gid": gid, "iid": iid, "color": String(c.id)},
+			{"dot": String(c.id) == current, "swatch": Notes.COLORS[c.id]}))
+	return [row("Close", "note.close", a), row("Get Info", "item.info", a),
+		row(NOTE_COLOR, "none", {}, {"children": colors}), SEP, row(NOTE_TRASH, "note.trash", a)]

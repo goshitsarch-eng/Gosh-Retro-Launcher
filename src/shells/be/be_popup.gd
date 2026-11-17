@@ -3,7 +3,8 @@ extends Control
 ## A popup menu: context menus, folder menu-bar dropdowns, select lists and the Deskbar menu with its group
 ## submenus. It covers the whole shell (so it can see motion and outside presses); a press outside closes it and is
 ## replayed to whatever lies below (the design closes menus on pointerdown and lets the click through).
-## Rows: {label, bold?, disabled?, dot?, icon?: Texture2D, children?: Array, sep?}. Row picks emit `picked(row)`.
+## Rows: {label, bold?, disabled?, dot?, icon?: Texture2D, swatch?: Color, children?: Array, sep?}. Row picks emit
+## `picked(row)`. A swatch is a small colour sample at the right end of the row (the note menu's paper colours).
 ## A menu taller than the shell is cut to fit and scrolls: arrow strips at its top and bottom scroll while the pointer
 ## rests on them, and the wheel and the arrow keys scroll too.
 
@@ -14,11 +15,14 @@ signal sibling_hover(index: int)  ## pointer moved over one of `siblings` (menu-
 const PAD_Y := 3
 const ARROW_H := 16.0
 const SCROLL_STEP := 6.0
+const SWATCH_ROOM := 18.0   ## room right of the label for a submenu caret or a colour swatch
+const SWATCH := Vector2(14, 10)
 
 var rows: Array = []
 var at := Vector2.ZERO
 var item_h := BeGeometry.MENU_ITEM_H
 var min_w := 200.0
+var child_min_w := 220.0    ## minimum width of a submenu
 var pad_left := 26.0        ## text x inset (dot / icon sits in the gutter)
 var icons := false          ## rows carry 16px icons
 var submenu_left := false   ## children open to the left (Deskbar menu)
@@ -91,8 +95,8 @@ func _measure(list: Array, p_min_w: float) -> Vector2:
 		if r.get("sep", false):
 			continue
 		widest = maxf(widest, _text_w(r))
-		if r.has("children"):
-			arrow = 18.0
+		if r.has("children") or r.has("swatch"):
+			arrow = SWATCH_ROOM
 	return BeGeometry.menu_size(list, widest, item_h, p_min_w, pad_left, 16.0 + arrow)
 
 
@@ -185,7 +189,7 @@ func _on_arrow_tick() -> void:
 func _child_frame(index: int) -> Rect2:
 	var kids: Array = rows[index].get("children", [])
 	var list := kids if not kids.is_empty() else [{"label": "(empty)", "disabled": true}]
-	var s := _measure(list, 220.0)
+	var s := _measure(list, child_min_w)
 	var rr := _row_rect(_rect, rows, index, _scroll_main)
 	var x := rr.position.x - s.x - 2 + 1 if submenu_left else _rect.end.x + 2
 	var view := size if size.x > 0 else get_viewport_rect().size
@@ -227,6 +231,10 @@ func _draw_list(frame: Rect2, list: Array, hover_i: int, sc: float = 0.0) -> voi
 			String(r.get("label", "")), col, BeGeometry.FONT, bool(r.get("bold", false)))
 		if r.has("children"):
 			BeDraw.caret_right(self, rr.end.x - 14, rr.position.y + (item_h - 8) / 2.0, BeTheme.b("000000"))
+		elif r.get("swatch") is Color:
+			var sw := Rect2(Vector2(rr.end.x - 10 - SWATCH.x, rr.position.y + floorf((item_h - SWATCH.y) / 2.0)), SWATCH)
+			BeDraw.fill(self, sw, r.swatch)
+			BeDraw.border(self, sw, BeTheme.t("808080"))
 		y += item_h
 	if over:
 		_draw_arrows(frame, band, sc > 0.0, sc < _max_scroll(frame, list))

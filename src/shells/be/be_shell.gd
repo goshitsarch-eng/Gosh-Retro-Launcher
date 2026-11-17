@@ -7,7 +7,9 @@ extends ShellBase
 ## dropdowns, context and Deskbar menus) < dialog_layer < popup_layer (select lists) < toast.
 ## Window geometry and selection are session-only; folders, items and settings.theme live in the ProgramStore.
 
-const NOTE_FONT := BeGeometry.FONT_SMALL  ## sticky note text (the notes' 13 px title strip fits the small size)
+const NOTE_FONT := BeGeometry.FONT  ## sticky note text and title, at the main UI size (the title strip grows to fit)
+const NOTE_INSET := 6               ## gap between the note's side edges and its text (room for the 15 px type)
+const NOTE_MENU_W := 170.0          ## minimum width of the note menu and of its Color submenu
 
 var windows: BeWindowStore
 var desktop: BeDesktop
@@ -90,10 +92,19 @@ func note_layer() -> Control:
 	return notes
 
 
-## Notes use the shell's Helvetica-style font at the small UI size. The paper stays light in dark mode, so the
+## Notes use the shell's Helvetica-style font at the main UI size. The paper stays light in dark mode, so the
 ## text stays black.
 func note_style() -> Dictionary:
-	return {"font": BeFont.font(), "font_size": NOTE_FONT, "text_color": Color.BLACK}
+	return {"font": BeFont.font(), "font_size": NOTE_FONT, "text_color": Color.BLACK, "text_inset": NOTE_INSET}
+
+
+## Right-click on an open note: Close, Get Info, Color ▸ and Move to Trash… at the click.
+func show_note_menu(item_id: String, global_pos: Vector2) -> void:
+	var loc := ProgramStore.locate_item(item_id)
+	if loc.is_empty() or not Notes.is_note(loc.item):
+		return
+	open_menu(BeMenuModel.note_menu(String(loc.groupId), item_id, String(loc.item.get("noteColor", Notes.DEFAULT_COLOR))),
+		global_pos - global_position, {"min_w": NOTE_MENU_W, "child_min_w": NOTE_MENU_W})
 
 
 ## BeOS grey with the yellow window tab, for the fallback file chooser.
@@ -356,6 +367,12 @@ func do_action(action: String, args: Dictionary) -> void:
 			BeDialogs.new_website(self, BeWindowStore.group_id_of(key))
 		"note.new":
 			BeDialogs.new_note(self, BeDialogLogic.note_group_for(key, windows.active(), ProgramStore.groups))
+		"note.close":
+			close_note(iid)
+		"note.color":
+			BeDialogLogic.set_note_color(ProgramStore, gid, iid, String(args.get("color", "")))
+		"note.trash":
+			BeDialogs.confirm_trash_note(self, gid, iid)
 		"find.open":
 			open_find()
 		"tools.open":

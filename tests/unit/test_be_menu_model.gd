@@ -97,4 +97,13 @@ func test_deskbar_menu_matches_the_design_items() -> void:
 	expect_eq(d[4].action, "note.new")
 	expect_eq(d[4].icon, "note")
 	expect_eq(d[5].action, "tools.open")
-	expect_eq(_labels(BeMenuModel.deskbar_context_menu()), ["About Program Manager…", "Launcher Tools…"])
+	var ctx := BeMenuModel.deskbar_context_menu()
+	expect_eq(_labels(ctx), ["About Program Manager…", "-", "New Note…", "-", "Launcher Tools…", "Launch Groups…", "-",
+		"Export All…", "Import All…"])
+	# every command of the logo's right-click menu does what the same row of the Deskbar menu does
+	for r in ctx:
+		if r.get("sep", false):
+			continue
+		var same: Array = d.filter(func(x): return String(x.get("label", "")) == String(r.label))
+		expect_eq(same.size(), 1, r.label)
+		expect_eq(r.action, same[0].action, r.label)

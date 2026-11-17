@@ -190,15 +190,35 @@ const DETAILS_HEAD_H := 27
 const DETAILS_ROW_H := 24
 
 
-## Details columns [x0, w0, x1, w1, x2, w2] for a view `w` wide (min 520): 2fr / 3fr / 110px, each >= 180 / 200.
+## Width of List View's last column (Launch Group / Type): room for the bold "Launch Group" heading clear of the
+## slim vertical scrollbar that overlays the view's right edge.
+const DETAILS_LAST_W := 130.0
+## Find results columns: minimum widths of Name, Group, Launch Group and Command (which takes the rest).
+const FIND_NAME_MIN_W := 140.0
+const FIND_GROUP_MIN_W := 76.0
+const FIND_LAUNCH_MIN_W := 116.0
+const FIND_COMMAND_MIN_W := 90.0
+
+
+## Details columns [x0, w0, x1, w1, x2, w2] for a view `w` wide (min 520): 2fr / 3fr / 130px, each >= 180 / 200.
 static func details_columns(w: float) -> Array:
 	var total := maxf(w, DETAILS_MIN_W)
-	var free := total - 110.0
+	var free := total - DETAILS_LAST_W
 	var c0 := maxf(180.0, free * 2.0 / 5.0)
 	var c1 := maxf(200.0, free - c0)
 	if c0 + c1 > free:
 		c0 = maxf(180.0, free - c1)
 	return [0.0, c0, c0, c1, c0 + c1, total - c0 - c1]
+
+
+## Find results columns [x0, w0, ... x3, w3] (Name, Group, Launch Group, Command) for a list `w` wide:
+## 32% / 16% / 22% / the rest, each at least its minimum, so at 640x480 every heading still fits.
+static func find_columns(w: float) -> Array:
+	var c0 := maxf(FIND_NAME_MIN_W, floorf(w * 0.32))
+	var c1 := maxf(FIND_GROUP_MIN_W, floorf(w * 0.16))
+	var c2 := maxf(FIND_LAUNCH_MIN_W, floorf(w * 0.22))
+	var c3 := maxf(FIND_COMMAND_MIN_W, w - c0 - c1 - c2)
+	return [0.0, c0, c0, c1, c0 + c1, c2, c0 + c1 + c2, c3]
 
 
 ## Slim scrollbars of a folder view (the design's `overflow:auto`). `min_w` = the content's minimum width
