@@ -39,6 +39,10 @@ def write(family: str, name: str, base: Image.Image) -> None:
         img.save(os.path.join(out, f"{name}-{n * factor}.png"), optimize=True)
 
 
+# The design's "note" is the alert speech balloon; assets/mac/*/note.png is the sticky-note icon.
+MAC_RENAMES = {"note": "info"}
+
+
 def import_mac(design: str) -> int:
     """iconsmac/<id>-64.png -> assets/mac/large/<id>.png (32px native), <id>-32.png -> small/<id>.png (16px)."""
     count = 0
@@ -51,7 +55,8 @@ def import_mac(design: str) -> int:
         fam = "large" if size == 64 else "small"
         out = os.path.join(ROOT, "..", "mac", fam)
         os.makedirs(out, exist_ok=True)
-        native(os.path.join(src, f), size).save(os.path.join(out, stem + ".png"), optimize=True)
+        name = MAC_RENAMES.get(stem, stem)
+        native(os.path.join(src, f), size).save(os.path.join(out, name + ".png"), optimize=True)
         count += 1
     return count
 
