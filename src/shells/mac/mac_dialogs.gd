@@ -4,6 +4,7 @@ extends RefCounted
 ##   alert / confirm            untitled message boxes (icons: note | caution | stop)
 ##   about, help, run, find via shell, desktop_pictures, shutdown
 ##   new_folder, rename, new_program, get_info_item, get_info_group, change_icon, browse_programs
+##   (the Launch Groups manager is MacLaunchGroups)
 ## `shell` is the MacShell (dialog_layer, popup_layer, logical_size, launch_item, ...).
 
 const LABEL_W := 92.0   ## right edge of the label column inside forms
@@ -63,11 +64,8 @@ static func confirm(shell: Control, text: String, on_yes: Callable, icon: String
 
 
 static func about(shell: Control) -> MacDialog:
-	var n := 0
-	for g in ProgramStore.groups:
-		n += g.items.size()
 	return alert(shell, [{"t": "Program Manager", "w": 700}, "Version " + Platform.version(),
-		"A retro desktop launcher inspired by Windows 3.1.", "%d folders, %d programs" % [ProgramStore.groups.size(), n]], "note")
+		"A retro desktop launcher inspired by Windows 3.1.", MacDialogLogic.stats_line(ProgramStore.groups, ProgramStore.launch_group_names())], "note")
 
 
 static func about_computer(shell: Control) -> MacDialog:
@@ -440,9 +438,7 @@ static func get_info_item(shell: Control, group_id: String, item_id: String) -> 
 	y += 26
 	var lg := MacSelect.new("mac.dialog.select:Launch group")
 	lg.host = shell.select_layer
-	lg.options.append({"id": "0", "label": "None"})
-	for n in range(1, MacDialogLogic.LAUNCH_GROUP_MAX + 1):
-		lg.options.append({"id": str(n), "label": "Group %d" % n})
+	lg.options = MacDialogLogic.launch_group_options(ProgramStore.launch_group_names(), int(item.get("launchGroup", 0)))
 	lg.select_id(str(int(item.get("launchGroup", 0))))
 	_field_row(d, "Launch group:", y, lg)
 	y += 26

@@ -3,7 +3,8 @@ extends RefCounted
 ## Pure menu definitions for the Mac shell (menu bar menus, context menus). An item is
 ## {id, label, disabled?, check?, key?} or {sep: true}; `id` is a command string the shell dispatches
 ## ("new-folder", "open-group:<gid>", "launch-group:<n>", ...). `key` is the Ctrl/Cmd+<letter> accelerator.
-## ctx for menu_bar(): {groups, active_key, view, selected: {kind: ""|"item"|"group", groupId, itemId}, buckets}.
+## ctx for menu_bar(): {groups, active_key, view, selected: {kind: ""|"item"|"group", groupId, itemId}, buckets,
+## launch_names (settings.launchGroupNames, so the Launch rows show group names)}.
 
 const SEP := {"sep": true}
 
@@ -37,12 +38,7 @@ static func menu_bar(ctx: Dictionary) -> Array:
 	]
 	for g in ctx.get("groups", []):
 		logo_items.append(item("open-group:" + String(g.id), String(g.name)))
-	var special := [item("launch-all", "Launch All", {"disabled": buckets.is_empty()})]
-	for b in buckets:
-		var n := int(b.groupNumber)
-		var c: int = b.items.size()
-		special.append(item("launch-group:%d" % n, "Launch Group %d (%d %s)" % [n, c, "item" if c == 1 else "items"]))
-	special.append_array([SEP, item("run", "Run…", {"key": "R"}), SEP, item("restart", "Restart"), item("shutdown", "Shut Down")])
+	var special := special_menu(buckets, ctx.get("launch_names", {}))
 	return [
 		{"id": "logo", "label": "", "items": logo_items},
 		{"id": "file", "label": "File", "items": [
@@ -54,7 +50,8 @@ static func menu_bar(ctx: Dictionary) -> Array:
 			item("get-info", "Get Info", {"disabled": not has_sel, "key": "I"}),
 			item("duplicate", "Duplicate", {"disabled": not is_item, "key": "D"}),
 			item("trash", "Move To Trash", {"disabled": not has_sel, "key": "T"}), SEP,
-			item("find", "Find…", {"key": "F"})]},
+			item("find", "Find…", {"key": "F"}), SEP,
+			item("export-all", "Export All…"), item("import-all", "Import All…")]},
 		{"id": "edit", "label": "Edit", "items": [
 			item("undo", "Undo", {"disabled": true}), SEP,
 			item("cut", "Cut", {"disabled": true}), item("copy", "Copy", {"disabled": true}),
@@ -67,6 +64,18 @@ static func menu_bar(ctx: Dictionary) -> Array:
 		{"id": "help", "label": "Help", "items": [
 			item("help", "Program Manager Help"), item("balloons", "Show Balloons", {"disabled": true})]},
 	]
+
+
+## Special menu: Launch All, one row per launch group in use ("Launch Group 3: Morning (2 items)"), the
+## Launch Groups… manager, then Run…, Restart and Shut Down. `buckets` is LaunchGroups.collect_launch_groups().
+static func special_menu(buckets: Array, names: Variant = {}) -> Array:
+	var out := [item("launch-all", "Launch All", {"disabled": buckets.is_empty()})]
+	for b in buckets:
+		var n := int(b.groupNumber)
+		out.append(item("launch-group:%d" % n, LaunchGroups.launch_label(n, b.items.size(), names)))
+	out.append_array([SEP, item("launch-groups", "Launch Groups…"), SEP, item("run", "Run…", {"key": "R"}), SEP,
+		item("restart", "Restart"), item("shutdown", "Shut Down")])
+	return out
 
 
 static func _is_folder_view(key: String) -> bool:
