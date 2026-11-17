@@ -7,7 +7,7 @@ extends RefCounted
 
 const EXPORT_TITLE := "Export All Programs"
 const IMPORT_TITLE := "Import All Programs"
-const IMPORT_CONFIRM := "Importing replaces all your program groups, programs, launch groups and settings with the contents of the file.\n\nYour current setup is backed up first, so you can get it back from Launcher Tools > Backups."
+const IMPORT_CONFIRM := "Importing replaces all your program groups, programs, launch groups and settings with the contents of the file.\n\nYour current setup is backed up first, so you can get it back from Backups in Launcher Tools."
 
 
 ## "program-manager-export-2026-11-17.json" for `date` ({year, month, day}, default today).
