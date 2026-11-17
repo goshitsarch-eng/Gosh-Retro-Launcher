@@ -10,6 +10,8 @@ extends RefCounted
 ##   open_properties(shell, target)   # {kind: "item", groupId, item} | {kind: "group", group}  (Win95Properties)
 ##   open_new_folder(shell, ctx)      # ctx = {openItemAfterCreate?, openUrlAfterCreate?}
 ##   open_new_url(shell, ctx)         # ctx = {groupId?}
+##   open_new_note(shell, ctx)        # New Sticky Note; ctx = {groupId?}
+##   open_change_icon(shell, current, on_pick)   # Change Icon (Win95IconCatalog.PICKABLE_IDS)
 ##   open_help(shell) / open_about(shell)
 ##   build_find_view(shell, window)   # the Find client Control hosted by Win95Window
 ##   open_launch_groups(shell)        # Launch Groups manager (Win95LaunchGroups)
@@ -49,6 +51,16 @@ static func open_new_url(shell: Control, ctx: Dictionary) -> void:
 	Win95DialogForms.open_new_url(shell, ctx)
 
 
+## New Sticky Note dialog; ctx = {groupId?}. OK creates the note in that folder and opens it.
+static func open_new_note(shell: Control, ctx: Dictionary) -> void:
+	Win95DialogForms.open_new_note(shell, ctx)
+
+
+## Change Icon: picks one of Win95IconCatalog.PICKABLE_IDS; on_pick(icon_id) on OK.
+static func open_change_icon(shell: Control, current: String, on_pick: Callable) -> void:
+	Win95Properties.open_change_icon(shell, current, on_pick)
+
+
 static func open_help(shell: Control) -> void:
 	Win95DialogForms.open_help(shell)
 
@@ -76,14 +88,10 @@ static func export_all(shell: Control) -> void:
 	show_message(shell, DataTransfer.EXPORT_TITLE, text.replace("&", "&&"), "information" if result.get("success", false) else "critical")
 
 
-## Start > Settings > Import All...: OK / Cancel warning, then the file chooser, then the result.
-static func import_all(shell: Control) -> void:
-	confirm_ok_cancel(shell, DataTransfer.IMPORT_TITLE, DataTransfer.IMPORT_CONFIRM, func():
-		var result: Dictionary = await Platform.import_data()
-		var text := DataTransfer.import_status(result)
-		if text == "" or not is_instance_valid(shell) or not shell.is_inside_tree():
-			return
-		show_message(shell, DataTransfer.IMPORT_TITLE, text.replace("&", "&&"), "information" if result.get("success", false) else "critical"), "warning")
+## Start > Settings > Import All...: OK / Cancel warning, then the file chooser. The result is shown
+## by the host (Platform.import_finished), because an import that switches the desktop frees this shell.
+static func import_all(shell: Control) -> Win95Modal:
+	return confirm_ok_cancel(shell, DataTransfer.IMPORT_TITLE, DataTransfer.IMPORT_CONFIRM, func(): Platform.import_data(), "warning")
 
 
 ## Height of a message box frame for `text`: the classic 145 px, taller when the text needs it.

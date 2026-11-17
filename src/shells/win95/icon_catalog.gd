@@ -13,7 +13,14 @@ const ICON_IDS := [
 	"folder", "folder-open", "programs", "documents", "settings",
 	"control-panel", "find", "help", "run", "shutdown", "windows-logo",
 	"application", "url", "drive", "printers", "taskbar", "warning",
-	"information", "question", "critical", "new-shortcut", "properties",
+	"information", "question", "critical", "new-shortcut", "properties", "note",
+]
+
+## Icons offered by Change Icon (Win95Properties note sheet): everything an item can sensibly use.
+const PICKABLE_IDS := [
+	"note", "application", "documents", "url", "folder", "programs", "settings", "control-panel",
+	"find", "help", "run", "drive", "printers", "my-computer", "network-neighborhood", "recycle-empty",
+	"information", "question", "warning", "critical", "properties", "new-shortcut", "windows-logo",
 ]
 
 const ALIASES := {
@@ -46,6 +53,7 @@ const ALIASES := {
 	"web": "url",
 	"globe": "url",
 	"link": "url",
+	"sticky-note": "note",
 	"program-manager.png": "application",
 	"file-manager": "drive",
 	"control-panel": "control-panel",

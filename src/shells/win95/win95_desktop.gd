@@ -376,6 +376,11 @@ func _desktop_menu() -> Array:
 				Win95Dialogs.open_wizard(shell, {"groupId": ProgramStore.groups[0].id})
 			else:
 				Win95Dialogs.open_new_folder(shell, {"openItemAfterCreate": true})},
+		{"id": "new-note", "label": "New S&ticky Note...", "icon": "note", "onSelect": func():
+			if ProgramStore.groups.size() > 0:
+				Win95Dialogs.open_new_note(shell, {"groupId": ProgramStore.groups[0].id})
+			else:
+				Win95Dialogs.open_new_folder(shell, {"openNoteAfterCreate": true})},
 		{"id": "sep-3", "separator": true},
 		{"id": "properties", "label": "P&roperties", "icon": "properties", "onSelect": func(): shell.request_show_launcher_tools.emit()},
 	]

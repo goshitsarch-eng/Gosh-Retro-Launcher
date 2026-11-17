@@ -183,6 +183,8 @@ func on_key(event: InputEventKey) -> bool:
 	if modal_active():
 		return dispatch_layer("modal", dom)
 	var command := Win95ShellInput.route_shortcut(dom)
+	if _note_focused():
+		return _note_key(command, dom)
 	if command != "":
 		var handled := true
 		match command:
@@ -204,6 +206,32 @@ func on_key(event: InputEventKey) -> bool:
 		return handled
 	var menu_is_open := menu_active()
 	return (menu_is_open and dispatch_layer("menu", dom)) or dispatch_layer("window", dom) or dispatch_layer("desktop", dom)
+
+
+func _note_focused() -> bool:
+	return shell != null and shell.has_method("note_has_focus") and shell.note_has_focus()
+
+
+## Keys while a sticky note's text has the focus: an open menu still gets them first (and keeps
+## them); the system shortcuts (Start, Run, Find, Explorer, Alt+Tab) still work; Alt+F4 closes the
+## note; everything else is left to the note's text field (the windows and desktop never see it).
+func _note_key(command: String, dom: Dictionary) -> bool:
+	if menu_active():
+		dispatch_layer("menu", dom)
+		return true
+	match Win95ShellInput.note_key_action(command):
+		"toggle-start": toggle_start_menu()
+		"open-run": Win95Dialogs.open_run(shell)
+		"open-find": Win95Dialogs.open_find(shell)
+		"open-explorer": shell.windows.open_my_computer()
+		"cycle-window": cycle_window(false)
+		"cycle-window-reverse": cycle_window(true)
+		"close-note":
+			var n: Variant = shell.focused_note()
+			if n != null:
+				n.close()
+		_: return false
+	return true
 
 
 func _key_up(event: InputEventKey, _dom: Dictionary) -> bool:

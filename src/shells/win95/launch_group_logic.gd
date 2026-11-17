@@ -71,6 +71,68 @@ static func launch_title(buckets: Array, names: Variant = null) -> String:
 	return "Launch All"
 
 
+## The launch delay in ms from settings.launchDelay: a number, floored and clamped to
+## 0..LaunchGroups.MAX_LAUNCH_DELAY_MS (anything else means no pause), as LaunchGroups.launch_batch.
+static func clamp_delay(value: Variant) -> int:
+	if not Jsonx.is_num(value):
+		return 0
+	return clampi(int(floorf(float(value))), 0, LaunchGroups.MAX_LAUNCH_DELAY_MS)
+
+
+## The batch as one flat list of steps, in launch order, for the progress window:
+## [{bucket, groupNumber, index, total, item, pauseAfter}]. `index` counts across all buckets;
+## pauseAfter is true between two items of the same bucket (no pause between buckets, as
+## LaunchGroups.launch_group_buckets). A bucket over LaunchGroups.MAX_BATCH_ITEMS contributes
+## no steps (it is refused, see batch_refusals).
+static func batch_steps(buckets: Array) -> Array:
+	var out := []
+	for b in buckets.size():
+		var items: Array = buckets[b].items
+		if items.size() > LaunchGroups.MAX_BATCH_ITEMS:
+			continue
+		for i in items.size():
+			out.append({"bucket": b, "groupNumber": int(buckets[b].groupNumber), "item": items[i],
+				"pauseAfter": i < items.size() - 1})
+	for i in out.size():
+		out[i]["index"] = i
+		out[i]["total"] = out.size()
+	return out
+
+
+## Failure results for buckets too big to launch ({id: "unknown", success: false, error}).
+static func batch_refusals(buckets: Array) -> Array:
+	var out := []
+	for b in buckets:
+		if b.items.size() > LaunchGroups.MAX_BATCH_ITEMS:
+			out.append({"id": "unknown", "success": false, "error": "Batch size exceeds %d items" % LaunchGroups.MAX_BATCH_ITEMS})
+	return out
+
+
+## Caption of the progress window while group `number` runs: "Launching Group 1: Morning".
+static func progress_title(number: int, names: Variant = null) -> String:
+	return "Launching %s" % LaunchGroups.format_launch_group(number, names)
+
+
+## The line naming the item being started: "Starting Notepad..." (a note: "Opening Shopping...").
+static func progress_line(item: Dictionary) -> String:
+	var name := String(item.get("name", ""))
+	return ("Opening %s..." if Notes.is_note(item) else "Starting %s...") % name
+
+
+## "3 of 5": the item being started (1-based) of the whole batch.
+static func progress_count(index: int, total: int) -> String:
+	return "%d of %d" % [mini(index + 1, total), total]
+
+
+## Lit blocks of a Win95 progress bar `inner_width` px wide (blocks `block` px + `gap` px apart)
+## for `done` of `total`. Win95 rounds down, so the bar is only full when everything is done.
+static func progress_blocks(done: int, total: int, inner_width: int, block: int, gap: int) -> int:
+	if total <= 0 or inner_width <= 0:
+		return 0
+	var capacity := maxi(1, (inner_width + gap) / (block + gap))
+	return clampi(capacity * clampi(done, 0, total) / total, 0, capacity)
+
+
 ## Text of the warning box after a batch launch, or "" when every program started.
 ## `results` are LaunchGroups.launch_group_buckets results ({id, success, error?}); the program
 ## names come from the buckets' items.
