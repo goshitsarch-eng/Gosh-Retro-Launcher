@@ -44,6 +44,10 @@ func test_file_menu_offers_new_program_and_website_in_a_group_window() -> void:
 	expect(not _find_item(in_group, "new-website").get("disabled", false))
 	var on_computer := _find_menu(MacMenuModel.menu_bar(_ctx({"active_key": "computer"})), "file")
 	expect(_find_item(on_computer, "new-website").get("disabled", false), "needs a folder window")
+	expect(not _find_item(on_computer, "new-note").get("disabled", false), "a note goes in the first folder")
+	expect_eq(_find_item(in_group, "new-note").label, "New Note…")
+	var no_folders := _find_menu(MacMenuModel.menu_bar(_ctx({"groups": []})), "file")
+	expect(_find_item(no_folders, "new-note").get("disabled", false), "a note needs a folder")
 
 
 func test_file_menu_enables_by_selection() -> void:
@@ -82,13 +86,15 @@ func test_context_menus_follow_the_design() -> void:
 		return items.map(func(i): return "-" if MacMenuModel.is_sep(i) else i.label)
 	expect_eq(labels.call(MacMenuModel.item_menu()), ["Help", "-", "Open", "Get Info", "Move To Trash", "-", "Duplicate", "Make Alias", "Rename"])
 	expect_eq(labels.call(MacMenuModel.group_menu()), ["Help", "-", "Open", "Get Info", "Move To Trash", "-", "Rename"])
-	expect_eq(labels.call(MacMenuModel.desktop_menu()), ["Help", "-", "New Folder", "Clean Up", "-", "Change Desktop Background…"])
+	expect_eq(labels.call(MacMenuModel.desktop_menu()), ["Help", "-", "New Folder", "New Note…", "Clean Up", "-", "Change Desktop Background…"])
 	expect_eq(labels.call(MacMenuModel.desk_icon_menu("trash")), ["Open", "Empty Trash…"])
 	expect(MacMenuModel.desk_icon_menu("trash")[1].disabled)
 	var bg := MacMenuModel.folder_background_menu(false, "large")
 	expect_eq(bg[2].label, "New Program…")
 	expect_eq(bg[3].label, "New Website…")
-	expect(bg[6].check and not bg[7].check)
+	expect_eq(bg[4].label, "New Note…")
+	expect_eq(bg[4].id, "new-note")
+	expect(bg[7].check and not bg[8].check)
 	expect_eq(MacMenuModel.folder_background_menu(true, "large")[2].label, "New Folder")
 
 

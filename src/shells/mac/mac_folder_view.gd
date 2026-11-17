@@ -40,7 +40,7 @@ func entries() -> Array:
 		var g := ProgramStore.find_group(group_id())
 		var names := ProgramStore.launch_group_names()
 		for it in g.get("items", []):
-			out.append({"id": String(it.id), "name": String(it.name), "icon": String(it.get("icon", "")), "c2": String(it.path),
+			out.append({"id": String(it.id), "name": String(it.name), "icon": String(it.get("icon", "")), "c2": MacDialogLogic.command_cell(it),
 				"c3": MacDialogLogic.launch_group_cell(int(it.get("launchGroup", 0)), names)})
 	return out
 

@@ -1,17 +1,18 @@
 class_name MacIconCatalog
 extends RefCounted
-## Mac icon catalog: maps the launcher's catalog/legacy icon ids onto the twelve classic-Mac icons
-## (MACMAP in the design). Built-in ids resolve to assets/mac/{large,small}/<id>.png; user icons (data: / file
+## Mac icon catalog: maps the launcher's catalog/legacy icon ids onto the classic-Mac icons (MACMAP in the
+## design). "note" is the sticky note (Notes.ICON, a Stickies-style pad); the alert "note" icon of message boxes
+## is "info" (see alert_icon()). Built-in ids resolve to assets/mac/{large,small}/<id>.png; user icons (data: / file
 ## URLs / absolute or Windows paths) pass through to the shared external-icon loader like Win95IconCatalog.
 
-const MAC_IDS := ["folder", "volume", "trash", "application", "doc", "url", "terminal", "find", "tools", "stop", "note", "caution"]
+const MAC_IDS := ["folder", "volume", "trash", "application", "doc", "url", "terminal", "find", "tools", "stop", "info", "caution", "note"]
 
 const MACMAP := {
 	"folder": "folder", "folder-open": "folder", "programs": "folder", "group": "folder", "accessories": "folder",
 	"games": "folder", "startup": "folder", "my-computer": "volume", "drive": "volume", "url": "url",
 	"network": "url", "terminal": "terminal", "dos": "terminal", "run": "terminal", "readme": "doc",
 	"documents": "doc", "clipbook": "doc", "find": "find", "settings": "tools", "control-panel": "tools",
-	"setup": "tools", "information": "note", "help": "note", "question": "note", "warning": "caution",
+	"setup": "tools", "information": "info", "help": "info", "question": "info", "warning": "caution",
 	"critical": "stop", "recycle-empty": "trash",
 }
 
@@ -29,6 +30,12 @@ static func get_icon_id(icon: String) -> String:
 	if MAC_IDS.has(icon):
 		return icon
 	return String(MACMAP.get(icon, "application"))
+
+
+## Icon id for a message-box kind: the classic alert kinds are note | caution | stop, and the alert "note" (a
+## speech balloon) is the "info" icon, because "note" itself is the sticky-note icon.
+static func alert_icon(kind: String) -> String:
+	return "info" if kind == "note" else kind
 
 
 static func path_for(id: String, size: String) -> String:

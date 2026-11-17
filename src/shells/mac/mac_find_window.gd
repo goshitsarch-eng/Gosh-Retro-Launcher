@@ -3,6 +3,7 @@ extends MacWindow
 ## The Find window (design "Find items [in all groups] whose [name] contains [____]  [Find]" + results list).
 ## Results are ProgramSearch matches; double-click launches, right-click opens the item context menu. Searching
 ## "name (launch groups)" also matches launch group names, and the last column then shows each item's launch group.
+## Sticky notes match by title and text ("name" and "name or text (notes)"); their last column is the note's first line.
 
 const PAD := 12
 const ROW_H := 20
@@ -25,7 +26,8 @@ func _init() -> void:
 	where_sel = MacSelect.new("mac.find.where")
 	type_sel = MacSelect.new("mac.find.type")
 	type_sel.options = [{"id": "all", "label": "name"}, {"id": "app", "label": "name (programs)"},
-		{"id": "url", "label": "name (URLs)"}, {"id": "batch", "label": "name (launch groups)"}]
+		{"id": "url", "label": "name (URLs)"}, {"id": "note", "label": "name or text (notes)"},
+		{"id": "batch", "label": "name (launch groups)"}]
 	query = MacTextField.new("mac.find.query")
 	find_btn = MacButton.new("Find", 70)
 	find_btn.is_default = true
@@ -130,7 +132,7 @@ func _draw_body(c: Dictionary, _st: Dictionary) -> void:
 		draw_texture_rect(MacIconCatalog.texture(String(r.item.get("icon", "")), "small"), Rect2(rr.position.x + 8, ry + 2, 16, 16), false)
 		MacDraw.text_centered_y(self, rr.position.x + 30, ry, ROW_H - 1, String(r.item.name), fg, false, c0 - 36)
 		MacDraw.text_centered_y(self, rr.position.x + c0 + 10, ry, ROW_H - 1, String(r.group.name), fg, false, c1 - 14)
-		var last := MacDialogLogic.launch_group_cell(int(r.item.get("launchGroup", 0)), names) if batch else String(r.item.path)
+		var last := MacDialogLogic.find_detail(r.item, batch, names)
 		MacDraw.text_centered_y(self, rr.position.x + c0 + c1 + 10, ry, ROW_H - 1, last, fg, false, int(rr.size.x) - c0 - c1 - 14)
 	draw_rect(Rect2(rr.position.x, rr.position.y, rr.size.x, HEADER_H), MacTheme.b("dddddd"))
 	# The Name header shading marks a sorted column. Results are ranked by relevance, so shade it only when they really
@@ -140,7 +142,7 @@ func _draw_body(c: Dictionary, _st: Dictionary) -> void:
 	Px.hline(self, rr.position.x, rr.position.y + HEADER_H - 1, rr.size.x, MacTheme.b("888888"))
 	MacDraw.text_centered_y(self, rr.position.x + 10, rr.position.y, HEADER_H - 1, "Name", fg)
 	MacDraw.text_centered_y(self, rr.position.x + c0 + 10, rr.position.y, HEADER_H - 1, "Group", fg)
-	MacDraw.text_centered_y(self, rr.position.x + c0 + c1 + 10, rr.position.y, HEADER_H - 1, "Launch Group" if batch else "Command", fg)
+	MacDraw.text_centered_y(self, rr.position.x + c0 + c1 + 10, rr.position.y, HEADER_H - 1, MacDialogLogic.find_detail_header(ran_kind), fg)
 	Px.vline(self, rr.position.x + c0 - 1, rr.position.y, HEADER_H - 1, MacTheme.b("888888"))
 	Px.vline(self, rr.position.x + c0 + c1 - 1, rr.position.y, HEADER_H - 1, MacTheme.b("888888"))
 	Px.outline(self, rr, MacTheme.b("888888"))

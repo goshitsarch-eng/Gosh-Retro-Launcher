@@ -2,7 +2,8 @@ class_name MacMenuModel
 extends RefCounted
 ## Pure menu definitions for the Mac shell (menu bar menus, context menus). An item is
 ## {id, label, disabled?, check?, key?} or {sep: true}; `id` is a command string the shell dispatches
-## ("new-folder", "open-group:<gid>", "launch-group:<n>", ...). `key` is the Ctrl/Cmd+<letter> accelerator.
+## ("new-folder", "new-note", "open-group:<gid>", "launch-group:<n>", ...). New Note… (a sticky note, like the
+## Stickies desk accessory) goes in the front folder, or the first folder when no folder window is in front. `key` is the Ctrl/Cmd+<letter> accelerator.
 ## ctx for menu_bar(): {groups, active_key, view, selected: {kind: ""|"item"|"group", groupId, itemId}, buckets,
 ## launch_names (settings.launchGroupNames, so the Launch rows show group names)}.
 
@@ -45,6 +46,7 @@ static func menu_bar(ctx: Dictionary) -> Array:
 			item("new-folder", "New Folder", {"key": "N"}),
 			item("new-program", "New Program…", {"disabled": not active.begins_with("g:")}),
 			item("new-website", "New Website…", {"disabled": not active.begins_with("g:")}),
+			item("new-note", "New Note…", {"disabled": ctx.get("groups", []).is_empty()}),
 			item("open", "Open", {"disabled": not has_sel, "key": "O"}),
 			item("close-window", "Close Window", {"disabled": active == "", "key": "W"}), SEP,
 			item("get-info", "Get Info", {"disabled": not has_sel, "key": "I"}),
@@ -101,7 +103,7 @@ static func group_menu() -> Array:
 
 
 static func desktop_menu() -> Array:
-	return [item("help", "Help"), SEP, item("new-folder", "New Folder"), item("clean-up", "Clean Up"), SEP,
+	return [item("help", "Help"), SEP, item("new-folder", "New Folder"), item("new-note", "New Note…"), item("clean-up", "Clean Up"), SEP,
 		item("desktop-pictures", "Change Desktop Background…")]
 
 
@@ -116,6 +118,7 @@ static func folder_background_menu(is_computer: bool, view: String) -> Array:
 		item("new-folder" if is_computer else "new-program", "New Folder" if is_computer else "New Program…")]
 	if not is_computer:
 		out.append(item("new-website", "New Website…"))
+		out.append(item("new-note", "New Note…"))
 	out.append_array([item("close-window", "Close Window"), SEP,
 		item("view:large", "as Icons", {"check": view == "large"}), item("view:details", "as List", {"check": view == "details"}),
 		item("clean-up", "Clean Up"), SEP, item("get-info", "Get Info")])
