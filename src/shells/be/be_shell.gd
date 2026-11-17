@@ -3,12 +3,15 @@ extends ShellBase
 ## The BeOS-style shell (design: isBe markup + script): a desktop of folder icons, tabbed yellow folder windows, a
 ## Deskbar on the right edge, menus and dialogs, all drawn in logical pixels (the host owns the integer scale).
 ##
-## Layers (back to front): desktop (windows inside) < deskbar < menu_layer (menu-bar dropdowns, context and
-## Deskbar menus) < dialog_layer < popup_layer (select lists) < toast.
+## Layers (back to front): desktop (windows inside) < notes (sticky note windows) < deskbar < menu_layer (menu-bar
+## dropdowns, context and Deskbar menus) < dialog_layer < popup_layer (select lists) < toast.
 ## Window geometry and selection are session-only; folders, items and settings.theme live in the ProgramStore.
+
+const NOTE_FONT := BeGeometry.FONT_SMALL  ## sticky note text (the notes' 13 px title strip fits the small size)
 
 var windows: BeWindowStore
 var desktop: BeDesktop
+var notes: Control  ## sticky note windows (ShellBase.open_note): above the folder windows, below the Deskbar
 var deskbar: BeDeskbar
 var menu_layer: Control
 var dialog_layer: Control
@@ -36,6 +39,7 @@ func _init() -> void:
 	windows = BeWindowStore.new()
 	desktop = BeDesktop.new()
 	add_child(desktop)
+	notes = _make_layer()
 	deskbar = BeDeskbar.new()
 	add_child(deskbar)
 	menu_layer = _make_layer()
@@ -80,6 +84,16 @@ func _exit_tree() -> void:
 			[UIState.launch_feedback_changed, _on_launch_feedback]]:
 		if (pair[0] as Signal).is_connected(pair[1]):
 			(pair[0] as Signal).disconnect(pair[1])
+
+
+func note_layer() -> Control:
+	return notes
+
+
+## Notes use the shell's Helvetica-style font at the small UI size. The paper stays light in dark mode, so the
+## text stays black.
+func note_style() -> Dictionary:
+	return {"font": BeFont.font(), "font_size": NOTE_FONT, "text_color": Color.BLACK}
 
 
 func on_activate() -> void:
@@ -334,6 +348,8 @@ func do_action(action: String, args: Dictionary) -> void:
 			BeDialogs.new_program(self, BeWindowStore.group_id_of(key))
 		"website.new":
 			BeDialogs.new_website(self, BeWindowStore.group_id_of(key))
+		"note.new":
+			BeDialogs.new_note(self, BeDialogLogic.note_group_for(key, windows.active(), ProgramStore.groups))
 		"find.open":
 			open_find()
 		"tools.open":
@@ -393,6 +409,9 @@ func on_item_trashed(_gid: String, iid: String) -> void:
 
 func launch_item(item: Dictionary) -> void:
 	close_all_menus()
+	if Notes.is_note(item):
+		Platform.launch(item)  # the host opens the note window (Platform.note_open_requested, then open_note)
+		return
 	var result: Dictionary = Platform.launch(item)
 	if not bool(result.get("success", false)):
 		BeDialogs.message(self, [{"t": String(item.name), "w": 700}, BeDialogLogic.launch_error(result, item)], "warning")
@@ -431,12 +450,14 @@ func export_all() -> void:
 
 
 ## Import All… (Deskbar menu): confirm, then replace everything from a file (the store backs up first).
+## The host reports the result (Platform.import_finished), because an import that switches the desktop
+## frees this shell before it could show anything.
 func confirm_import_all() -> void:
 	BeDialogs.confirm(self, BeDialogLogic.import_confirm_lines(), "warning", "OK", import_all, "be.dialog.import-confirm")
 
 
 func import_all() -> void:
-	_report_transfer("import", await Platform.import_data())
+	await Platform.import_data()
 
 
 func _report_transfer(kind: String, result: Dictionary) -> void:
@@ -473,6 +494,9 @@ func on_files_dropped(files: PackedStringArray, logical_pos: Vector2) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		_release_note_focus((event as InputEventMouseButton).position)
+		return
 	if not (event is InputEventKey) or not event.pressed:
 		return
 	var k := event as InputEventKey
@@ -481,13 +505,30 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if (k.keycode == KEY_ENTER or k.keycode == KEY_KP_ENTER) and dialog_layer.get_child_count() == 0 \
-			and menu_layer.get_child_count() == 0 and not (get_viewport().gui_get_focus_owner() is LineEdit):
+			and menu_layer.get_child_count() == 0 and not _typing():
 		if selection.key != "":
 			open_entry(String(selection.key), String(selection.id)) if selection.key != BeWindowStore.FIND else _open_find_selection()
 			get_viewport().set_input_as_handled()
 		elif desk_sel != "":
 			open_desktop_icon(desk_sel)
 			get_viewport().set_input_as_handled()
+
+
+## True while a text field (a dialog or Find field, or a sticky note) has the keyboard.
+func _typing() -> bool:
+	var f := get_viewport().gui_get_focus_owner()
+	return f is LineEdit or f is TextEdit
+
+
+## A press outside the sticky note being typed in takes the keyboard away from it, so Enter opens the
+## selected icon again instead of typing a new line into the note.
+func _release_note_focus(at: Vector2) -> void:
+	var f := get_viewport().gui_get_focus_owner()
+	if f == null or not notes.is_ancestor_of(f):
+		return
+	var n := f.get_parent() as Control
+	if n != null and not n.get_global_rect().has_point(at):
+		f.release_focus()
 
 
 func _open_find_selection() -> void:

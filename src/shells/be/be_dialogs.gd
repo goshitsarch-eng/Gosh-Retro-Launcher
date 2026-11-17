@@ -9,6 +9,7 @@ const TOPICS := [
 	["Starting programs", "Double-click an icon in a folder window to start it. Use the Deskbar menu to open Find, Run and Launcher Tools."],
 	["Creating folders and programs", "Right-click the desktop and choose New Folder, or open a folder and choose Add Program… from its File menu. You can also drag files into a folder window to add them quickly."],
 	["Batch launching", "Choose Launch Groups… in the Deskbar menu to make, name, renumber or delete launch groups and to pick their programs, or give a single program a group in Get Info. Launch Group starts one group and Launch All starts every group in number order, with the delay you set."],
+	["Sticky notes", "Choose New Note… in the Deskbar menu, a folder's File menu or a right-click menu to make a note with a title, a paper color and some text. It is kept in that folder; double-click it to open it again. Drag a note by its top strip, resize it from its bottom corner, and close it with the box at its top left. Get Info changes its color, and a note in a launch group opens when the group runs."],
 	["Export All and Import All", "Export All… in the Deskbar menu saves everything (folders, programs, launch groups and settings) to one file. Import All… replaces everything with a file's contents after backing up your current setup."],
 	["Importing .GRP files", "Open Launcher Tools and choose Import .GRP to bring in an original Windows 3.x program group. Export .GRP writes one back out."],
 	["Switching shells", "Press Ctrl+Alt+T to open Launcher Tools, pick a shell under Appearance, and click Apply."],
@@ -163,6 +164,9 @@ static func item_info(shell: Control, gid: String, iid: String) -> void:
 	var item: Dictionary = ProgramStore.find_item(gid, iid)
 	if item.is_empty():
 		return
+	if Notes.is_note(item):
+		note_info(shell, gid, iid)
+		return
 	var v := BeDialogLogic.info_fields(item, gid)
 	var d := _form(shell, "%s info" % item.name, 480, "be.dialog.item-info")
 	var head := HBoxContainer.new()
@@ -281,6 +285,93 @@ static func new_website(shell: Control, gid: String) -> void:
 		{"label": "Cancel"}])
 	d.finish()
 	url.grab_text_focus.call_deferred()
+
+
+static func _group_options() -> Array:
+	var opts := []
+	for g in ProgramStore.groups:
+		opts.append([String(g.id), String(g.name)])
+	return opts
+
+
+## New Note… : title, paper colour, folder and optional text; OK makes the note and opens its window.
+static func new_note(shell: Control, gid: String) -> void:
+	if gid == "" or ProgramStore.find_group(gid).is_empty():
+		message(shell, [{"t": BeMenuModel.NEW_NOTE.trim_suffix("…"), "w": 700}, BeDialogLogic.NO_FOLDER_FOR_NOTE], "information")
+		return
+	var d := _form(shell, "New Note", 520, "be.dialog.new-note")
+	d.add_row(BeLabel.make(BeDialogLogic.NEW_NOTE_HELP, false, d.content_width()))
+	var title_f := BeField.make("", "be.dialog.field:name")
+	var color := BeSelect.make(BeDialogLogic.note_color_options(), Notes.DEFAULT_COLOR, "be.dialog.select:noteColor", 120)
+	var sel := BeSelect.make(_group_options(), gid, "be.dialog.select:group", 160)
+	var body := BeTextBox.make("", "be.dialog.field:noteText", 90)
+	var g := d.row_grid([["Title:", title_f], ["Color:", color], ["Group:", sel], ["Text:", body]], 110)
+	for c in g.get_children():
+		if c is BeSelect:
+			c.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	title_f.text_submitted.connect(func(_t): d.default_button.pressed.emit())
+	d.set_buttons([
+		{"label": "OK", "default": true, "cb": func():
+			var id := BeDialogLogic.new_note(ProgramStore, sel.value, title_f.text, body.text, color.value)
+			if id != "":
+				shell.open_note.call_deferred(id)
+			return false},
+		{"label": "Cancel"}])
+	d.finish()
+	title_f.grab_text_focus.call_deferred()
+
+
+## Get Info for a sticky note: title, kind, folder, paper colour, launch group and icon (no command fields).
+static func note_info(shell: Control, gid: String, iid: String) -> void:
+	var item: Dictionary = ProgramStore.find_item(gid, iid)
+	var v := BeDialogLogic.info_fields(item, gid)
+	var d := _form(shell, "%s info" % item.name, 480, "be.dialog.item-info")
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 14)
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var icon_box := BeIconBox.new()
+	icon_box.icon = String(v.icon)
+	icon_box.item_name = String(v.name)
+	head.add_child(icon_box)
+	var name_f := BeField.make(String(v.name), "be.dialog.field:name", true)
+	head.add_child(name_f)
+	d.add_row(head)
+	var color := BeSelect.make(BeDialogLogic.note_color_options(), String(v.noteColor), "be.dialog.select:noteColor", 120)
+	var batch := BeSelect.make(BeDialogLogic.launch_group_options(ProgramStore.launch_group_names(), int(v.launchGroup)),
+		str(v.launchGroup), "be.dialog.select:launchGroup", 140)
+	var group_sel := BeSelect.make(_group_options(), gid, "be.dialog.select:group", 160)
+	var grid := d.row_grid([
+		["Kind:", BeLabel.make(BeDialogLogic.kind_of(item))],
+		["Group:", group_sel],
+		["Color:", color],
+		["Launch group:", batch]], 100, Vector2(12, 10), true)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for c in grid.get_children():
+		if c is BeSelect:
+			c.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	var preview := Notes.preview(item, 60)
+	if preview != "":
+		d.add_row(BeLabel.make("“%s”" % preview, false, d.content_width()))
+	var state := {"icon": String(v.icon), "gid": gid}
+	var apply := func() -> bool:
+		var res := BeDialogLogic.apply_note_info(ProgramStore, String(state.gid), iid, {
+			"name": name_f.text, "noteColor": color.value, "launchGroup": int(batch.value), "icon": state.icon,
+			"groupId": group_sel.value})
+		if res.ok:
+			state.gid = res.groupId
+		return bool(res.ok)
+	d.set_buttons([
+		{"label": "Change Icon...", "cb": func():
+			change_icon(shell, String(state.icon), func(id: String):
+				state.icon = id
+				icon_box.icon = id)
+			return true},
+		{"label": "OK", "default": true, "cb": func(): return not apply.call()},
+		{"label": "Cancel"},
+		{"label": "Apply", "cb": func():
+			apply.call()
+			return true}])
+	d.finish()
 
 
 ## Native file picker; fills the command (and an empty name) from the chosen file.

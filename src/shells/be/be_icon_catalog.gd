@@ -1,11 +1,11 @@
 class_name BeIconCatalog
 extends RefCounted
-## Be icon catalog (port of BEK / BEMAP / BE() in the design). Catalog icon ids map onto the 64px smooth icons in
+## Be icon catalog (port of BEK / BEMAP / BE() in the design; "note" is the sticky note, see Notes). Catalog icon ids map onto the 64px smooth icons in
 ## assets/be; any other id gets one of six generic application icons chosen by a string hash of the item name.
 ## data: URLs and file paths pass through like Win95IconCatalog.
 
 const ROOT := "res://assets/be"
-const KEYS := ["folder", "volume", "logo", "url", "terminal", "doc", "find", "tools", "info", "question", "critical", "warning"]
+const KEYS := ["folder", "volume", "logo", "url", "terminal", "doc", "find", "tools", "info", "question", "critical", "warning", "note"]
 const APP_VARIANTS := 6
 const MAP := {
 	"folder": "folder", "folder-open": "folder", "programs": "folder", "group": "folder", "accessories": "folder",
@@ -13,7 +13,7 @@ const MAP := {
 	"terminal": "terminal", "dos": "terminal", "run": "terminal", "readme": "doc", "documents": "doc",
 	"clipbook": "doc", "find": "find", "settings": "tools", "control-panel": "tools", "setup": "tools",
 	"information": "info", "help": "question", "warning": "warning", "critical": "critical",
-	"launcher-logo": "logo", "windows-logo": "logo", "program-manager": "logo",
+	"launcher-logo": "logo", "windows-logo": "logo", "program-manager": "logo", "sticky-note": "note",
 }
 
 
@@ -70,7 +70,7 @@ static func texture(icon: String, name: String = "") -> Texture2D:
 ## Icon ids offered by the Change Icon dialog: the distinct catalog images for the design's icon list.
 const PICKER_IDS := ["default", "file-manager", "control-panel", "print-manager", "clipbook", "dos", "setup", "pif",
 	"readme", "terminal", "calculator", "clock", "paint", "cardfile", "network", "accessories", "games", "startup",
-	"program-manager"]
+	"program-manager", "note"]
 
 
 static func picker_options() -> Array:

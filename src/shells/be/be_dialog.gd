@@ -206,7 +206,7 @@ func _input(event: InputEvent) -> void:
 		vp.set_input_as_handled()
 	elif (k.keycode == KEY_ENTER or k.keycode == KEY_KP_ENTER) and default_button != null:
 		var f := vp.gui_get_focus_owner()
-		if f is BeButton and f != default_button:
-			return
+		if (f is BeButton and f != default_button) or f is TextEdit:
+			return  # a focused button activates itself; a text box types a new line
 		default_button.pressed.emit()
 		vp.set_input_as_handled()
