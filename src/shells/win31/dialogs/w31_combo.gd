@@ -30,7 +30,7 @@ var _popup: Control
 ## text, and a drop-down's entries never have access keys).
 static func fit_label(label: String, width: int) -> String:
 	var f := W31.font()
-	return f.clip(label.replace("&", "&&"), width).replace("&", "&&")
+	return f.clip(W31.drawable(label).replace("&", "&&"), width).replace("&", "&&")
 
 
 func _init() -> void:

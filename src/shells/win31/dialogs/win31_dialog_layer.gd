@@ -41,12 +41,16 @@ static func create_dialog(type: String, data: Dictionary) -> W31Dialog:
 		"newItem", "itemProperties":
 			if type == "itemProperties" and Notes.is_note(data.get("item", {})):
 				return W31NoteDialogs.NoteProperties.new(data, groups)
+			if type == "itemProperties" and W31DialogLogic.is_web_item(data.get("item", {})):
+				return W31PropertiesDialogs.WebSiteProperties.new(data, groups)
 			return W31PropertiesDialogs.ItemProperties.new(data, groups)
 		"newNote":
 			if groups.is_empty():
 				return null
 			return W31NoteDialogs.NewNote.new(data, groups)
 		"newUrl":
+			if groups.is_empty():
+				return null
 			return W31FormDialogs.NewUrl.new(data, groups)
 		"settings":
 			return W31SettingsDialog.new()

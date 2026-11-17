@@ -121,7 +121,7 @@ func _draw() -> void:
 		var right_w := f.measure(right) if right != "" else 0
 		var avail := int(rr.end.x) - 2 - x - (right_w + 12 if right != "" else 0)
 		# Row text is literal: "&" is doubled so the font's access-key parsing keeps it.
-		var label := f.clip(String(row.get("text", "")).replace("&", "&&"), avail, header).replace("&", "&&")
+		var label := f.clip(W31.drawable(String(row.get("text", "")), header).replace("&", "&&"), avail, header).replace("&", "&&")
 		f.draw(self, Vector2(x, rr.position.y + 1), label, ink, {"bold": header, "show_access": false})
 		if right != "":
 			f.draw(self, Vector2(rr.end.x - 3 - right_w, rr.position.y + 1), right, ink, {"show_access": false})

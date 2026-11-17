@@ -117,7 +117,7 @@ static func build_menus(groups: Array, active_group_id: String, selection: Dicti
 			var g: Dictionary = groups[i]
 			window_items.append({
 				"command": "group:" + String(g.id),
-				"label": "%s%s" % [("&%d " % (i + 1)) if i < 9 else "", g.name],
+				"label": "%s%s" % [("&%d " % (i + 1)) if i < 9 else "", String(g.name).replace("&", "&&")],
 				"checked": g.id == active_group_id,
 			})
 
@@ -168,6 +168,29 @@ static func build_menus(groups: Array, active_group_id: String, selection: Dicti
 			_item("about", "&About Program Manager..."),
 		]},
 	]
+
+
+## Right-click menu of an open sticky note.
+static func note_menu_items() -> Array:
+	return [
+		_item("note-close", "&Close"),
+		_item("note-properties", "&Properties..."),
+		_sep(),
+		_item("note-delete", "&Delete..."),
+	]
+
+
+## Top-left of a popup of `menu_size` opened at `click` inside an area of `area` (all logical
+## pixels, same origin): below and right of the pointer like Windows, moved left / flipped above
+## the pointer when it would run off the right / bottom edge, never above or left of the area.
+static func popup_origin(click: Vector2, menu_size: Vector2, area: Vector2) -> Vector2:
+	var x := floorf(click.x)
+	var y := floorf(click.y)
+	if x + menu_size.x > area.x:
+		x = area.x - menu_size.x
+	if y + menu_size.y > area.y:
+		y = y - menu_size.y if y - menu_size.y >= 0 else area.y - menu_size.y
+	return Vector2(maxf(0, x), maxf(0, y))
 
 
 ## Control menu shared by the outer frame ("outer-") and group windows ("child-").

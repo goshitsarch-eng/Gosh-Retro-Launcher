@@ -127,9 +127,27 @@ def information(d):
     d.ellipse((3,3,29,29),fill=PAL["b"],outline=PAL["k"])
     d.rectangle((15,13,17,24),fill=PAL["w"]); d.rectangle((15,8,17,10),fill=PAL["w"])
 
+QUESTION_MARK=[
+    "..#####..",
+    ".#######.",
+    "###...###",
+    "###...###",
+    "......###",
+    ".....###.",
+    "....###..",
+    "...###...",
+    "...###...",
+    ".........",
+    "...###...",
+    "...###...",
+]
+
 def question(d):
+    # White balloon with a bold blue question mark (drawn pixel by pixel: no font involved).
     d.ellipse((3,3,29,29),fill=PAL["w"],outline=PAL["k"])
-    d.text((10,5),"?",fill=PAL["b"],stroke_width=1,stroke_fill=PAL["b"])
+    for y,row in enumerate(QUESTION_MARK):
+        for x,ch in enumerate(row):
+            if ch=="#": d.point((12+x,10+y),fill=PAL["b"])
 
 def terminal(d):
     dos(d)
@@ -161,6 +179,21 @@ def note(d):
     d.ellipse((12,1,18,7),fill=PAL["r"],outline=PAL["k"])
     d.point((14,3),fill=PAL["w"])
 
+def web(d):
+    # Web site: a blue globe with green land, white meridian and equator lines and a highlight,
+    # over a sheet of paper (the WfW document shape) so it still reads as "a page".
+    d.polygon(((9,2),(24,2),(30,8),(30,30),(9,30)),fill=PAL["w"],outline=PAL["k"])
+    d.line((24,2,24,8,30,8),fill=PAL["g"])
+    d.ellipse((1,7,23,29),fill=PAL["b"],outline=PAL["k"])
+    for poly in (((5,12),(10,10),(13,13),(11,17),(7,19),(4,16)),
+                 ((14,19),(19,17),(21,21),(17,26),(14,24)),
+                 ((15,10),(18,11),(17,13))):
+        d.polygon(poly,fill=PAL["l"],outline=PAL["o"])
+    d.arc((7,8,17,28),90,270,fill=PAL["a"])
+    d.arc((7,8,17,28),270,90,fill=PAL["a"])
+    d.line((2,18,22,18),fill=PAL["a"])
+    d.point((6,11),fill=PAL["w"]); d.point((7,10),fill=PAL["w"])
+
 ICONS={
  "group":group,"default":default,"file-manager":file_manager,"control-panel":control_panel,
  "print-manager":printer,"clipbook":clipboard,"dos":dos,"setup":setup,
@@ -168,7 +201,7 @@ ICONS={
  "accessories":accessories,"network":network,"games":games,"startup":startup,
  "program-manager":progman,"warning":warning,"information":information,"question":question,
  "terminal":terminal,"calculator":calculator,"clock":clock,"paint":paint,"cardfile":cardfile,
- "note":note
+ "note":note,"web":web
 }
 
 # `generate_wfw_assets.py note` regenerates only the named icons (the others stay byte-identical).

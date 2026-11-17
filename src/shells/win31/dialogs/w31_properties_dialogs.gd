@@ -242,3 +242,77 @@ class ItemProperties extends W31Dialog:
 	func _submit() -> void:
 		if W31DialogLogic.apply_item_properties(ProgramStore, form, existing, resolved_group_id, selected_group_id) != "":
 			UIState.close_dialog()
+
+
+## Properties of a web site item (see W31DialogLogic.is_web_item): description, URL, shortcut key,
+## launch group and icon. A web site has no working directory, arguments, environment or window
+## style, so those program fields are left out. Rules: web_form / web_values / apply_web_properties.
+class WebSiteProperties extends W31Dialog:
+	var data: Dictionary
+	var existing: Dictionary
+	var group_id := ""
+	var form: Dictionary
+	var ok: W31Button
+	var _fields := {}  ## key -> W31TextField
+
+	func _init(p_data: Dictionary, groups: Array) -> void:
+		super("Web Site Properties", 430)
+		set_auto_id("wfw.dialog.web-properties")
+		data = p_data
+		existing = p_data.get("item", {})
+		group_id = W31DialogLogic.resolve_item_group(groups, data)
+		form = W31DialogLogic.web_form(existing)
+
+	func _text_row(y: int, label: String, key: String, fw: int, auto_id: String) -> W31TextField:
+		var tf := W31TextField.new()
+		tf.set_field_size(fw - 111, 19)
+		tf.text = String(form[key])
+		tf.set_auto_id(auto_id)
+		tf.text_changed.connect(func(t: String):
+			form[key] = t
+			_sync())
+		add_form_row(y, label, tf, fw - 111)
+		_fields[key] = tf
+		return tf
+
+	func _build(cw: int) -> void:
+		var fw := cw - BUTTON_COL_W - 4 - COL_GAP
+		_fields.clear()
+		initial_focus = _text_row(0, "Description:", "name", fw, "wfw.dialog.web-name")
+		_text_row(24, "URL:", "url", fw, "wfw.dialog.web-url")
+		_text_row(48, "Shortcut Key:", "shortcutKey", fw, "wfw.dialog.web-shortcut")
+		var lg := W31Combo.new()
+		var choices := W31DialogLogic.launch_group_choices(ProgramStore.launch_group_names(), int(form.launchGroup))
+		lg.set_items(choices.labels, choices.values)
+		lg.select_value(int(form.launchGroup))
+		lg.set_auto_id("wfw.dialog.web-launch-group")
+		lg.selection_changed.connect(func(_i): form.launchGroup = int(lg.value()))
+		add_form_row(72, "Launch Group:", lg, fw - 111)
+		add_label(0, 96, "Icon:")
+		add_widget(W31IconWell.new(String(form.win31Icon)), 111, 96)
+		ok = make_button("OK", true, _submit)
+		var col_h := W31PropertiesDialogs._button_column(self, fw + COL_GAP, [
+			ok, make_button("Cancel", false, UIState.close_dialog), make_button("Change Icon...", false, _change_icon),
+			make_button("Help", false, W31FormDialogs.open_help)])
+		_sync()
+		_finish(maxi(96 + 42 + 5, col_h))
+
+	func _sync() -> void:
+		if ok:
+			ok.disabled = not W31DialogLogic.url_form_valid(String(form.url), group_id)
+
+	## Change Icon returns here with a copy of the item, so what was typed so far goes with it.
+	func _change_icon() -> void:
+		var item: Dictionary = existing.duplicate(true)
+		var url := W31DialogLogic.normalize_url(String(form.url))
+		item["name"] = form.name
+		if W31DialogLogic.is_web_item({"path": url}):
+			item["path"] = url
+		item["shortcutKey"] = form.shortcutKey
+		item["launchGroup"] = form.launchGroup
+		item["win31Icon"] = form.win31Icon
+		UIState.open_dialog("changeIcon", {"groupId": group_id, "item": item})
+
+	func _submit() -> void:
+		if W31DialogLogic.apply_web_properties(ProgramStore, group_id, String(existing.get("id", "")), form):
+			UIState.close_dialog()

@@ -11,6 +11,7 @@ const MIN_H := 240
 var pm: Win31ProgramManager
 var desktop_icon: Win31DesktopIcon
 var notes: Control                ## sticky note windows (see note_layer)
+var note_menus: Control           ## the right-click menu of a note (above the notes, see show_note_menu)
 var feedback: Win31LaunchFeedback
 var dialogs: Win31DialogLayer
 var quick: Win31QuickSearch
@@ -27,6 +28,10 @@ var _kb_op := {}                 ## active outer keyboard Move/Size: {mode, kind
 var _activated := false
 var _notices: Array = []          ## host notices ({title, message}) waiting for the dialog slot
 var _notices_live := false        ## true between on_activate and _exit_tree
+var _note_menu: Win31PopupMenu    ## open note menu, or null
+var _note_menu_id := ""           ## the note it belongs to
+
+const NOTE_MENU_W := 120
 
 
 const Z_MENUS := 1     ## menu bar, Control-menu and group window popups (above the notes)
@@ -68,6 +73,10 @@ func _init() -> void:
 	add_child(desktop_icon)
 	notes = Win31Shell.make_note_layer()
 	add_child(notes)
+	note_menus = Win31Shell.make_note_layer()
+	note_menus.name = "NoteMenus"
+	note_menus.z_index = Win31Shell.Z_MENUS
+	add_child(note_menus)
 	feedback = Win31LaunchFeedback.new()
 	add_child(feedback)
 	dialogs = Win31DialogLayer.new()
@@ -102,6 +111,7 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	close_note_menu()
 	_notices_live = false
 	if UIState.dialog_changed.is_connected(_queue_next_notice):
 		UIState.dialog_changed.disconnect(_queue_next_notice)
@@ -275,6 +285,8 @@ func _on_selection_changed() -> void:
 func _update_menus() -> void:
 	if pm == null:
 		return
+	if UIState.active_dialog != "":
+		close_note_menu()  # a dialog (or a queued notice) takes over, like the other WfW menus
 	pm.menu_bar.disabled = UIState.active_dialog != ""
 	pm.menu_bar.set_menus(Win31Commands.build_menus(ProgramStore.groups, MdiState.active_window_id,
 		UIState.win31_selection, ProgramStore.settings))
@@ -443,7 +455,7 @@ func run_command(command: String) -> void:
 					"groupId": group.id, "item": item, "copyMode": command == "copy"})
 		"delete":
 			if not item.is_empty() and not group.is_empty():
-				_confirm_delete_item(group, item, "Delete the program item “%s”?" % item.name)
+				_confirm_delete_item(group, item)
 			elif not group.is_empty():
 				_confirm_delete_group(group, "Delete the program group “%s” and all its items?" % group.name)
 		"properties":
@@ -501,7 +513,7 @@ func run_command(command: String) -> void:
 ## File > Export All...: the whole launcher to one JSON file; says where it went (nothing on Cancel).
 func export_all() -> void:
 	var result: Dictionary = await Platform.export_all()
-	var line := W31DialogLogic.wfw_text(DataTransfer.export_status(result))
+	var line := DataTransfer.export_status(result)
 	if line == "" or not is_inside_tree():
 		return
 	_queue_notice({"title": DataTransfer.EXPORT_TITLE, "message": line,
@@ -513,7 +525,7 @@ func export_all() -> void:
 ## frees this shell before it could show anything.
 func confirm_import_all() -> void:
 	UIState.open_dialog("confirm", {"confirmOptions": {
-		"title": DataTransfer.IMPORT_TITLE, "message": W31DialogLogic.wfw_text(DataTransfer.IMPORT_CONFIRM), "width": 400,
+		"title": DataTransfer.IMPORT_TITLE, "message": DataTransfer.IMPORT_CONFIRM, "width": 400,
 		"yesText": "OK", "noText": "Cancel", "icon": "warning",
 		"onConfirm": func() -> void: import_all.call_deferred(),
 	}})
@@ -523,11 +535,14 @@ func import_all() -> Dictionary:
 	return await Platform.import_data()
 
 
-func _confirm_delete_item(group: Dictionary, item: Dictionary, message: String) -> void:
+## Asks before deleting `item` (a program, web site or sticky note; see W31DialogLogic.delete_item_prompt).
+## A deleted note's window closes by itself.
+func _confirm_delete_item(group: Dictionary, item: Dictionary) -> void:
 	var gid: String = group.id
 	var iid: String = item.id
+	var prompt := W31DialogLogic.delete_item_prompt(item)
 	UIState.open_dialog("confirm", {"confirmOptions": {
-		"title": "Delete Program Item", "message": message,
+		"title": prompt.title, "message": prompt.message,
 		"onConfirm": func() -> void: ProgramStore.delete_item(gid, iid),
 	}})
 
@@ -540,9 +555,116 @@ func _confirm_delete_group(group: Dictionary, message: String) -> void:
 	}})
 
 
+# --------------------------------------------------------- sticky note menu
+
+## Right-click on an open note: a WfW popup with Close, Properties... and Delete... at the pointer,
+## drawn above the notes. It works like the other WfW menus (arrows, Enter, access keys, Esc); a
+## click anywhere else closes it.
+func show_note_menu(item_id: String, global_pos: Vector2) -> void:
+	close_note_menu()
+	if UIState.active_dialog != "" or ProgramStore.locate_item(item_id).is_empty():
+		return
+	pm.close_all_menus()
+	var m := Win31PopupMenu.new()
+	m.a11y_name = "Sticky Note"
+	m.min_width = NOTE_MENU_W
+	m.set_meta("auto_id", "wfw.note-menu")
+	m.add_to_group("pm_auto")
+	m.command_chosen.connect(_on_note_menu_command)
+	m.dismissed.connect(close_note_menu)
+	note_menus.add_child(m)
+	m.set_items(Win31Commands.note_menu_items(), false)
+	var local := note_menus.get_global_transform().affine_inverse() * global_pos
+	m.position = Win31Commands.popup_origin(local, m.size, note_menus.size)
+	_note_menu = m
+	_note_menu_id = item_id
+
+
+## A note's text box keeps right-clicks to itself (StickyNote hears them only on its title strip and
+## edge), so the shell listens to the text box too: right-click anywhere on a note opens its menu.
+func open_note(item_id: String, focus: bool = true) -> StickyNote:
+	var n := super(item_id, focus)
+	if n != null:
+		for c in n.get_children():
+			if c is TextEdit and not c.has_meta("w31_note_menu"):
+				c.set_meta("w31_note_menu", true)
+				c.gui_input.connect(_on_note_text_input.bind(item_id, c))
+	return n
+
+
+func _on_note_text_input(event: InputEvent, item_id: String, edit: TextEdit) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+		edit.accept_event()
+		var n := note_window(item_id)
+		if n:
+			n.move_to_front()
+		show_note_menu(item_id, event.global_position)
+
+
+func close_note_menu() -> void:
+	if _note_menu != null:
+		if is_instance_valid(_note_menu):
+			if _note_menu.get_parent():
+				_note_menu.get_parent().remove_child(_note_menu)
+			_note_menu.queue_free()
+		_note_menu = null
+		_note_menu_id = ""
+
+
+func is_note_menu_open() -> bool:
+	return _note_menu != null
+
+
+func _on_note_menu_command(command: String) -> void:
+	var id := _note_menu_id
+	close_note_menu()
+	run_note_command(command, id)
+
+
+## "note-close", "note-properties" or "note-delete" for note `item_id` (the note menu's commands).
+func run_note_command(command: String, item_id: String) -> void:
+	var loc := ProgramStore.locate_item(item_id)
+	if loc.is_empty():
+		return
+	match command:
+		"note-close":
+			close_note(item_id)
+		"note-properties":
+			UIState.open_dialog("itemProperties", {"groupId": String(loc.groupId), "item": loc.item})
+		"note-delete":
+			_confirm_delete_item(ProgramStore.find_group(String(loc.groupId)), loc.item)
+
+
+## While the note menu is open, a press outside it closes it (a left press is used up, as in WfW; a
+## right press goes on, so right-clicking another note opens that note's menu) and keys the menu does
+## not use do nothing. Returns true when the event was used.
+func _note_menu_input(event: InputEvent) -> bool:
+	if event is InputEventMouseButton and event.pressed and event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE]:
+		if _note_menu.get_global_rect().has_point(event.position):
+			return false
+		close_note_menu()
+		if event.button_index != MOUSE_BUTTON_RIGHT:
+			get_viewport().set_input_as_handled()
+			return true
+		return false
+	if event is InputEventKey and event.pressed:
+		get_viewport().set_input_as_handled()
+		return true
+	return false
+
+
+## Automation: wfw.popup-item:<label> finds a row of the open note menu.
+func auto_lookup(id: String) -> Variant:
+	if _note_menu != null and id.begins_with("wfw.popup-item:"):
+		return _note_menu.auto_row(id.substr(15))
+	return null
+
+
 # ----------------------------------------------------------------- keyboard
 
 func _input(event: InputEvent) -> void:
+	if _note_menu != null and _note_menu_input(event):
+		return
 	if not (event is InputEventKey and event.pressed):
 		return
 	var key := Win31Commands.key_name(event)
@@ -618,7 +740,7 @@ func _shell_shortcuts(ev: InputEventKey, key: String) -> void:
 	if key == "delete" and not group.is_empty():
 		accepted.call()
 		if not item.is_empty():
-			_confirm_delete_item(group, item, "Delete the program item “%s”?" % item.name)
+			_confirm_delete_item(group, item)
 		else:
 			_confirm_delete_group(group, "Delete the program group “%s”?" % group.name)
 		return

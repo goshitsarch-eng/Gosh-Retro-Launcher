@@ -24,12 +24,13 @@ static func font() -> RetroFont:
 
 ## Draws literal text (no "&" access parsing) with the line box top-left at `pos`.
 static func text(ci: CanvasItem, pos: Vector2, s: String, color: Color = Color.BLACK, opts: Dictionary = {}) -> Vector2:
-	return font().draw(ci, pos, s.replace("&", "&&"), color, opts)
+	return font().draw(ci, pos, W31.drawable(s, bool(opts.get("bold", false))).replace("&", "&&"), color, opts)
 
 
 ## Draws an "&Label" with its access underline (underline drawn like text-decoration, offset 1px).
 static func access_text(ci: CanvasItem, pos: Vector2, label: String, color: Color, line_height: int, disabled: bool = false) -> void:
 	var f := font()
+	label = W31.drawable(label)
 	var parsed := RetroFont.parse_access(label)
 	var opts := {"line_height": line_height, "show_access": false, "disabled": disabled}
 	f.draw(ci, pos, label, color, opts)
@@ -86,7 +87,7 @@ static func caption(ci: CanvasItem, r: Rect2, title: String, active: bool) -> vo
 	var box_w := int(r.size.x) - 74
 	if box_w <= 0:
 		return
-	var shown := f.clip(title.replace("&", "&&"), box_w, true)
+	var shown := f.clip(W31.drawable(title, true).replace("&", "&&"), box_w, true)
 	var w := f.measure(shown.replace("&", "&&"), true)
 	var x := r.position.x + 37 + (floorf((box_w - w) / 2.0) if w < box_w else 0.0)
 	f.draw(ci, Vector2(x, r.position.y), shown.replace("&", "&&"), Pal.WHITE if active else Pal.FACE,
