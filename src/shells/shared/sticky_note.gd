@@ -33,6 +33,13 @@ var text_inset := TEXT_MARGIN
 
 var _edit: TextEdit
 var _save_timer: Timer
+## The note holding the keyboard is drawn with a stronger title strip, the others quieter (like
+## Stickies), so it is clear where typing goes. Follows the text box's focus; shells may also set it.
+var active := false:
+	set(v):
+		if active != v:
+			active = v
+			queue_redraw()
 var _drag := ""  ## "", "move", "resize" or "close"
 var _press_at := Vector2.ZERO
 var _start := Rect2()
@@ -66,8 +73,10 @@ func _init(id: String = "", style: Dictionary = {}) -> void:
 	_edit.add_theme_constant_override("line_spacing", 1)
 	_edit.text_changed.connect(_on_text_changed)
 	_edit.focus_entered.connect(func():
+		active = true
 		move_to_front()
 		activated.emit(item_id))
+	_edit.focus_exited.connect(func(): active = false)
 	add_child(_edit)
 	_save_timer = Timer.new()
 	_save_timer.one_shot = true
@@ -195,7 +204,8 @@ func _draw() -> void:
 	var w := floorf(size.x)
 	var h := floorf(size.y)
 	var edge := paper.darkened(0.55)
-	var strip := paper.darkened(0.1)
+	var strip := paper.darkened(0.16) if active else paper.darkened(0.05)
+	var title_color := text_color if active else text_color.lerp(paper, 0.4)
 	Px.fill(self, 0, 0, w, h, paper)
 	Px.fill(self, 0, 0, w, title_h, strip)
 	Px.hline(self, 0, title_h, w, paper.darkened(0.3))
@@ -207,12 +217,12 @@ func _draw() -> void:
 	var room := w - (cr.end.x + 6) * 2
 	if room > 8 and font:
 		var t := title
-		while t.length() > 1 and font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > room:
-			t = t.substr(0, t.length() - 2) + "…"
+		while t.length() > 3 and font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > room:
+			t = t.substr(0, maxi(0, t.length() - 4)) + "..."  # the pixel fonts have no "…" glyph
 		var tw := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 		var asc := font.get_ascent(font_size)
 		draw_string(font, Vector2(floorf((w - tw) / 2.0), floorf((title_h - font.get_height(font_size)) / 2.0 + asc)),
-			t, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, text_color)
+			t, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, title_color)
 	var g := _grip_rect()
 	for i in 3:
 		var o := 2 + i * 3

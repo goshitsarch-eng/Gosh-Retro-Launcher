@@ -157,3 +157,26 @@ func test_host_import_notice() -> void:
 	expect(String(ok.text).contains("2 stored values were repaired"))
 	expect_eq(ok.alert, false)
 	expect_eq(MAIN_SCRIPT.import_notice({"success": false, "error": "Invalid file format"}).alert, true)
+
+
+func test_note_shows_which_one_has_the_keyboard() -> void:
+	var saved := _use_scratch_store()
+	var g: String = ProgramStore.add_group("Desk")
+	var a: String = ProgramStore.add_note(g, "A very long title that will never fit in a narrow note", "x")
+	var b: String = ProgramStore.add_note(g, "B", "y")
+	var shell := ShellBase.new()
+	shell.size = Vector2(640, 480)
+	(Engine.get_main_loop() as SceneTree).root.add_child(shell)
+	var na := shell.open_note(a, false)
+	var nb := shell.open_note(b, false)
+	na.size = Vector2(Notes.MIN_SIZE)
+	await (Engine.get_main_loop() as SceneTree).process_frame  # a narrow note with a long title draws (no endless shortening)
+	expect(not na.active and not nb.active, "nothing has the keyboard yet")
+	na.focus_text()
+	await (Engine.get_main_loop() as SceneTree).process_frame
+	expect(na.active and not nb.active, "the focused note is the active one")
+	nb.focus_text()
+	await (Engine.get_main_loop() as SceneTree).process_frame
+	expect(nb.active and not na.active, "focus moves the active look with it")
+	shell.free()
+	_restore_store(saved)
