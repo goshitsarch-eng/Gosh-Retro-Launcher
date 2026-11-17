@@ -7,7 +7,8 @@ The persisted document (`program-manager-data.json`) is unchanged from 1.x:
 { schemaVersion: 5, groups: [Group], settings: Settings, workspaceProfiles: [Profile] }
 Group    { id, name, icon, windowState, shellWindowState:{win31,win95}, win31IconPosition?, items:[Item] }
 Item     { id, name, path, icon, win31Icon?, workingDir, arguments?, environment?, runMode?,
-           launchGroup?, shortcutKey?, runMinimized?, win31Position?, win95Position? }
+           launchGroup?, shortcutKey?, runMinimized?, win31Position?, win95Position?,
+           kind?, note?, noteColor?, noteBounds?, noteOpen? }
 Settings { autoArrange, minimizeOnUse, saveSettingsOnExit, launchDelay, trayOnClose, groupChromeScale,
            win31Scale, win95Scale, macScale, beScale, win95DesktopIconPositions, win31DesktopMode,
            win31ProgramManagerBounds, win31ProgramManagerMinimized, theme, labelDisplay, shell, soundEnabled,
@@ -44,6 +45,13 @@ Win31 group window stacking: `open_window`, `close_window`, `focus_window`, `cas
 Launching (`launch`, `launch_batch`, `open_external`), native dialogs (`select_executable`, `select_icon`, `import_grp`,
 `export_grp`, `import_data`, `export_all`, `export_data`), `get_app_info`, window control, tray/shortcut signals
 (`quick_search_requested`, `launcher_tools_requested`, `files_dropped`, `window_state_changed`).
+
+A sticky note is an item with `kind: "note"`, an empty `path`, its text in `note` (at most 20000 characters), `noteColor`
+(`yellow`, `pink`, `blue`, `green`, `purple`, `gray`), `noteBounds` `{x, y, width, height}` and `noteOpen`. See `src/core/notes.gd`.
+`Platform.launch` opens a note instead of starting it: it emits `Platform.note_open_requested(item_id)`, the host calls the
+shell's `open_note`, and `ShellBase` shows a `StickyNote` (`src/shells/shared/sticky_note.gd`) in the layer the shell's
+`note_layer()` returns. `ProgramStore.add_note`, `locate_item` and `update_note_quietly` support it.
+`Platform.import_data` emits `Platform.import_finished(result)`; the host shows the result once the shell is mounted.
 
 ### `LaunchGroups` and `DataTransfer` (static helpers)
 `LaunchGroups`: `format_launch_group(n, names)` ("None", "Group 3", "Group 3: Morning"), `launch_label(n, count, names)`,

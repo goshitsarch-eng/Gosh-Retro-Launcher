@@ -52,3 +52,8 @@ Ids resolve through `Automation` (`src/app/automation.gd`): nodes in group `pm_a
 | `be.dialog.import-confirm` | Import All confirmation |
 
 Deskbar menus taller than the shell scroll; looking up a menu row scrolls it into view first.
+
+## Sticky notes
+
+`be.dialog.new-note`, `be.dialog.select:noteColor`, `be.dialog.field:noteText`, the popup row "New Note…" and the Find type
+"Sticky notes". Note windows use the shared `note:<itemId>` ids (see AUTOMATION_IDS.md).

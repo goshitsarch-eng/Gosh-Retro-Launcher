@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A stored or imported `launchGroup` above 8 is kept and launched in order. Only a negative number, a fraction or a string becomes 0, and that counts as a repair.
 - Every item editor keeps a launch group above 8 when the item is saved; the WfW Properties dialog and Launcher Tools used to save it as 8.
 - The BeOS launch message no longer shows the group number as its position in the batch (BE-01).
+- An Import All that switches to another desktop now shows its result; the host reports it after the new desktop is up. A successful import shows an information icon in Windows for Workgroups, not a warning.
+- Windows for Workgroups drop-downs show "&" in launch group names instead of dropping it.
+- Launcher Tools fits its window: rows wrap and long names are clipped, so nothing runs off the right edge.
+- Windows 95 New Internet Shortcut uses the program group chosen in it, not always the first one.
 - Saves no longer skip silently. A failed groups, settings or workspace-profile write shows a notice, logs an error and stays pending. Groups and settings are retried by the next save of the same kind, profiles by the next save of any kind, and all of them on exit (CORE-01).
 - Restoring a backup writes one safety backup, not two.
 - A JSON import is refused, and nothing is replaced, when its safety backup cannot be written.
@@ -30,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Windows 95 supports launch groups: a Launch group field in Properties and the Create Shortcut wizard, a Launch Groups cascade in Start > Programs, and an "In a launch group" Find filter.
 - Export All... and Import All... in every desktop (WfW File menu, Windows 95 Start > Settings, Mac File menu, BeOS Deskbar, Launcher Tools) save or load the whole launcher in one file. Import asks first and backs up the current data. In Launcher Tools they replace Import JSON... and Export JSON....
 - BeOS menus taller than the screen scroll, so the longer Deskbar menu fits at 640x480.
+- Sticky notes, a third kind of item next to programs and web sites, in every desktop. A note has a title, a paper colour and text, opens as a sticky note on the desktop that saves as you type, and reopens after a restart if it was left open. Find and Quick Search search note text, and a note in a launch group opens when the group runs. Export All includes notes; .GRP export leaves them out and says so.
+- Windows 95 shows a progress window while a launch group runs, with a Cancel button that stops the remaining items.
+- End-to-end tests for Export All / Import All in every desktop, driven through the real menus and confirmation dialog.
 - Screenshots of the four desktops in `docs/screenshots/`, shown in the README.
 - `tools/capture_screenshots.sh`, which regenerates the screenshots from the running app with a temporary data folder.
 - `PM_CAPTURE_NOTICE=1` (opt-in, capture runs only) shows store notices. Every capture run with it set then posts one sample save-failure notice, so the shell's message box can be checked. The `wfw-settings` view captures the settings dialog.

@@ -83,3 +83,14 @@ The `wfw-settings` scenario opens Options > Settings... with `wfw.menu:1` and `w
 `tools.export-all`, `tools.import-all`, `tools.launch-group-number-<n>`, `tools.launch-group-name-<n>`,
 `tools.launch-group-rename-<n>`, `tools.launch-group-delete-<n>`, `tools.launch-group-new-name`,
 `tools.launch-group-new`, `tools.batch-group`. (`tools.import-json` and `tools.export-json` were removed.)
+
+## Sticky notes (every shell)
+
+A open note window (`StickyNote`) answers `note:<itemId>` (window), `note.title:<itemId>` (drag strip),
+`note.close:<itemId>`, `note.grip:<itemId>` (resize) and `note.text:<itemId>` (text area).
+
+Windows for Workgroups: `wfw.dialog.new-note`, `wfw.dialog.note-properties`, `wfw.dialog.note-group`, `wfw.dialog.note-title`,
+`wfw.dialog.note-color`, `wfw.dialog.note-text`, `wfw.dialog.note-launch-group`; Launcher Tools `tools.launch-group-row-<n>`.
+
+Windows 95: `w95.new-note.*`, `w95.note-props.*`, `w95.change-icon.*`, `w95.launch-progress.*` (batch progress window),
+`w95.wizard.button:sticky-note` (see the class comments in `src/shells/win95/` for each control).

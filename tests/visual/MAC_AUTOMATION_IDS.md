@@ -49,3 +49,9 @@ unreliable injected input and stale PNGs.
 
 Export All… and Import All… are File menu rows (`mac.popup-item:Export All…`). Every mac dialog now also cancels on
 Cmd/Ctrl-period.
+
+## Sticky notes
+
+New Note dialog: `mac.dialog.field:Title`, `mac.dialog.field:Text`, `mac.dialog.select:Color`, `mac.dialog.select:Folder`,
+`mac.dialog.swatch:Color`. The notes layer is `mac.notes-layer`; note windows use the shared `note:<itemId>` ids
+(see AUTOMATION_IDS.md).
