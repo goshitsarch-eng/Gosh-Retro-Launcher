@@ -29,7 +29,7 @@ func _store(dir: String) -> Node:
 # ------------------------------------------------------------------ icon picker
 
 func test_icon_catalog_and_aliases() -> void:
-	expect_eq(W31Icons.IDS.size(), 24)
+	expect_eq(W31Icons.IDS.size(), 25)
 	expect_eq(W31Icons.icon_id("folder"), "group")
 	expect_eq(W31Icons.icon_id("trash"), "default")
 	expect_eq(W31Icons.icon_id("nonsense"), "default")
@@ -40,7 +40,7 @@ func test_icon_catalog_and_aliases() -> void:
 
 
 func test_icon_picker_filter() -> void:
-	expect_eq(W31Icons.filter_ids("").size(), 24)
+	expect_eq(W31Icons.filter_ids("").size(), 25)
 	expect_eq(W31Icons.filter_ids("MAN"), ["file-manager", "print-manager", "program-manager"])
 	expect_eq(W31Icons.filter_ids("zzz"), [])
 	expect_eq(W31Icons.filter_ids("clo"), ["clock"])
@@ -518,7 +518,7 @@ func test_icon_grid_geometry() -> void:
 	for id in W31Icons.IDS:
 		entries.append({"id": id})
 	g.set_entries(entries)
-	expect_eq(g.fit_height(), 124, "3 rows of 36px with 2px gaps + padding + frame")
+	expect_eq(g.fit_height(), 162, "4 rows of 36px with 2px gaps + padding + frame")
 	expect_eq(g.cell_rect(0).position, Vector2(6, 6))
 	expect_eq(g.cell_rect(9).position, Vector2(6 + 38, 6 + 38))
 	g.free()

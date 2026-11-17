@@ -135,6 +135,69 @@ static func url_item(url: String, name: String, launch_group: int, group_id: Str
 	return {"name": final_name, "path": normalized, "icon": "web", "workingDir": "", "launchGroup": launch_group}
 
 
+## A web site item: its command line is a URL (a scheme of two or more letters, "https:", "mailto:",
+## ...), not a file. Its Properties show the URL instead of the program fields.
+static func is_web_item(item: Dictionary) -> bool:
+	if item.is_empty() or Notes.is_note(item):
+		return false
+	var p := String(item.get("path", "")).strip_edges()
+	return Launcher.has_uri_scheme(p) and not p.to_lower().begins_with("file:")
+
+
+## Initial values of the Web Site Properties form.
+static func web_form(existing: Dictionary) -> Dictionary:
+	var icon := String(existing.get("win31Icon", ""))
+	if icon == "":
+		icon = String(existing.get("icon", ""))
+	return {
+		"name": String(existing.get("name", "")), "url": String(existing.get("path", "")),
+		"launchGroup": int(existing.get("launchGroup", 0)), "shortcutKey": String(existing.get("shortcutKey", "")),
+		"win31Icon": icon if icon != "" else "web",
+	}
+
+
+## The values Web Site Properties writes ({} when the URL is not valid). An empty description
+## becomes the site's host, like New Web Site.
+static func web_values(form: Dictionary) -> Dictionary:
+	var url := String(form.get("url", ""))
+	if url.strip_edges().is_empty() or not is_valid_url(url):
+		return {}
+	var normalized := normalize_url(url)
+	var name := String(form.get("name", "")).strip_edges()
+	var icon := String(form.get("win31Icon", ""))
+	return {
+		"name": name if name != "" else derive_name(normalized), "path": normalized,
+		"launchGroup": maxi(0, int(form.get("launchGroup", 0))),
+		"shortcutKey": String(form.get("shortcutKey", "")).strip_edges(),
+		"win31Icon": icon if icon != "" else "web",
+	}
+
+
+static func apply_web_properties(store: Node, group_id: String, item_id: String, form: Dictionary) -> bool:
+	var values := web_values(form)
+	if values.is_empty() or store.find_item(group_id, item_id).is_empty():
+		return false
+	store.update_item(group_id, item_id, values)
+	return true
+
+
+## New Web Site OK: adds the site to `group_id`; returns its id or "".
+static func apply_new_url(store: Node, group_id: String, url: String, name: String, launch_group: int) -> String:
+	var item := url_item(url, name, launch_group, group_id)
+	if item.is_empty() or store.find_group(group_id).is_empty():
+		return ""
+	return String(store.add_item(group_id, item))
+
+
+## {title, message} of the File > Delete / note menu confirmation for `item`. The name is shown as
+## written (message box text is literal, so an "&" in it is not an access key).
+static func delete_item_prompt(item: Dictionary) -> Dictionary:
+	var name := String(item.get("name", ""))
+	if Notes.is_note(item):
+		return {"title": "Delete Sticky Note", "message": "Delete the sticky note “%s”?" % name}
+	return {"title": "Delete Program Item", "message": "Delete the program item “%s”?" % name}
+
+
 # ------------------------------------------------------------- groups
 
 static func group_file_name(name: String) -> String:
@@ -181,15 +244,28 @@ static func new_group_followup(data: Dictionary) -> String:
 	return ""
 
 
-## NewProgramObjectDialog OK: which dialog opens next -> {type, data}. `kind` is "group", "item"
-## or "note" (Sticky Note).
+## The New Program Object choices, in order: [kind, radio label]. Programs, web sites and sticky
+## notes are the three kinds of item; a group holds them.
+const NEW_OBJECT_KINDS := [
+	["group", "Program &Group"], ["item", "Program &Item"], ["url", "&Web Site"], ["note", "Sticky &Note"],
+]
+const NEW_OBJECT_DIALOGS := {"item": "newItem", "url": "newUrl", "note": "newNote"}
+
+
+## NewProgramObjectDialog OK: which dialog opens next -> {type, data}. `kind` is "group", "item",
+## "url" (Web Site) or "note" (Sticky Note).
 static func new_object_next(kind: String, preferred_group_id: String, groups: Array) -> Dictionary:
 	if kind == "group":
 		return {"type": "newGroup", "data": {}}
 	var gid := preferred_group_id
 	if gid == "" and groups.size() > 0:
 		gid = groups[0].id
-	return {"type": "newNote" if kind == "note" else "newItem", "data": {"groupId": gid}}
+	return {"type": String(NEW_OBJECT_DIALOGS.get(kind, "newItem")), "data": {"groupId": gid}}
+
+
+## Whether choice `kind` can be picked: everything but a group needs a group to go in.
+static func new_object_kind_enabled(kind: String, groups: Array) -> bool:
+	return kind == "group" or not groups.is_empty()
 
 
 static func new_object_default_kind(groups: Array) -> String:
@@ -607,12 +683,6 @@ static func welcome_mod_key(os_name: String) -> String:
 const ALL_LAUNCH_GROUPS_IN_USE := "All 8 launch group numbers are in use. Delete a launch group first, or add programs to one you already have."
 const NO_LAUNCH_GROUPS := "There are no launch groups yet. Choose New... to make one, then pick its programs."
 const MEMBERS_MOVE_NOTE := "Checking a program that is in another launch group moves it to this one."
-
-
-## Shared wording made drawable in the WfW font, which has no ">" glyph: "Launcher Tools > Backups"
-## becomes "Launcher Tools - Backups".
-static func wfw_text(text: String) -> String:
-	return text.replace(" > ", " - ").replace(">", "-")
 
 
 ## "No programs", "1 program", "3 programs".
