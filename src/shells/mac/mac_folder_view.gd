@@ -38,10 +38,10 @@ func entries() -> Array:
 			out.append({"id": String(g.id), "name": String(g.name), "icon": "folder", "c2": MacDialogLogic.plural(g.items.size(), "item"), "c3": "Program group"})
 	else:
 		var g := ProgramStore.find_group(group_id())
+		var names := ProgramStore.launch_group_names()
 		for it in g.get("items", []):
-			var lg := int(it.get("launchGroup", 0))
-			out.append({"id": String(it.id), "name": String(it.name), "icon": String(it.get("icon", "")), "c2": String(it.path),
-				"c3": "Group %d" % lg if lg > 0 else "—"})
+			out.append({"id": String(it.id), "name": String(it.name), "icon": String(it.get("icon", "")), "c2": MacDialogLogic.command_cell(it),
+				"c3": MacDialogLogic.launch_group_cell(int(it.get("launchGroup", 0)), names)})
 	return out
 
 
@@ -159,18 +159,18 @@ func _draw_details(es: Array, sel: String, off: int) -> void:
 		Px.hline(self, 0, ry + row.size.y - 1, row.size.x, MacTheme.b("eeeeee"))
 		draw_texture_rect(MacIconCatalog.texture(String(e.icon), "small"), Rect2(8, ry + 2, 16, 16), false)
 		var fg := MacTheme.t("000000")
-		MacDraw.text_centered_y(self, 30, ry, row.size.y - 1, String(e.name), fg, false, int(cols[0].w) - 36)
-		MacDraw.text_centered_y(self, cols[1].x + 10, ry, row.size.y - 1, String(e.c2), fg, false, int(cols[1].w) - 14)
-		MacDraw.text_centered_y(self, cols[2].x + 10, ry, row.size.y - 1, String(e.c3), fg, false, int(cols[2].w) - 14)
+		MacDraw.text_centered_y(self, 30, ry, row.size.y - 1, MacDraw.fit(String(e.name), int(cols[0].w) - 36), fg)
+		MacDraw.text_centered_y(self, cols[1].x + 10, ry, row.size.y - 1, MacDraw.fit(String(e.c2), int(cols[1].w) - 14), fg)
+		MacDraw.text_centered_y(self, cols[2].x + 10, ry, row.size.y - 1, MacDraw.fit(String(e.c3), int(cols[2].w) - 14), fg)
 	# sticky header
 	draw_rect(Rect2(0, 0, _layout.width, h.size.y), MacTheme.b("dddddd"))
 	if by_name:
 		draw_rect(Rect2(0, 0, cols[0].w, h.size.y), MacTheme.b("bbbbbb"))
 	Px.hline(self, 0, h.size.y - 1, _layout.width, MacTheme.b("888888"))
-	var names := ["Name", "Size" if is_computer() else "Command", "Type" if is_computer() else "Batch"]
+	var names := MacDialogLogic.list_headers(is_computer(), int(cols[2].w) - 14)
 	for i in 3:
 		var cx: float = cols[i].x
-		MacDraw.text_centered_y(self, cx + 10, 0, h.size.y - 1, names[i], MacTheme.t("000000"), false, int(cols[i].w) - 14)
+		MacDraw.text_centered_y(self, cx + 10, 0, h.size.y - 1, MacDraw.fit(String(names[i]), int(cols[i].w) - 14), MacTheme.t("000000"))
 		if i < 2:
 			Px.vline(self, cx + cols[i].w - 1, 0, h.size.y - 1, MacTheme.b("888888"))
 		Px.hline(self, cx, 0, cols[i].w - (1 if i < 2 else 0), MacTheme.s("cccccc") if i == 0 and by_name else MacTheme.s("ffffff"))

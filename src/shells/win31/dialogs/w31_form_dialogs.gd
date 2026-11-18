@@ -1,7 +1,7 @@
 class_name W31FormDialogs
 extends RefCounted
 ## Win31 dialogs built from rows of fields + the bottom button row: New Program Object,
-## Move/Copy Program Item, Run, Help, Change Icon, New/Rename Program Group, Add URL.
+## Move/Copy Program Item, Run, Help, Change Icon, New/Rename Program Group, New Web Site.
 
 
 static func open_help() -> void:
@@ -21,25 +21,26 @@ class NewObject extends W31Dialog:
 
 	func _build(cw: int) -> void:
 		add_text(2, 2, "What type of object do you want to create?")
+		var choices: Array = W31DialogLogic.NEW_OBJECT_KINDS
 		var box_w := cw - 10
-		add_op(func(ci: CanvasItem): W31.group_frame(ci, Rect2(5, 24, box_w, 55)))
+		var box_h := 10 + 20 * choices.size() + 5
+		add_op(func(ci: CanvasItem): W31.group_frame(ci, Rect2(5, 24, box_w, box_h)))
 		var group := []
-		var rg := W31Radio.new("Program &Group")
-		var ri := W31Radio.new("Program &Item")
-		rg.group = group
-		ri.group = group
-		group.append(rg)
-		group.append(ri)
-		ri.disabled = groups.is_empty()
-		rg.checked = kind == "group"
-		ri.checked = kind == "item"
-		rg.selected.connect(func(): kind = "group")
-		ri.selected.connect(func(): kind = "item")
-		add_widget(rg, 5 + 1 + 12, 24 + 1 + 10)
-		add_widget(ri, 5 + 1 + 12, 24 + 1 + 10 + 20)
+		for i in choices.size():
+			var k := String(choices[i][0])
+			var r := W31Radio.new(String(choices[i][1]))
+			r.group = group
+			group.append(r)
+			r.disabled = not W31DialogLogic.new_object_kind_enabled(k, groups)
+			r.checked = kind == k
+			r.selected.connect(func(): kind = k)
+			add_widget(r, 5 + 1 + 12, 24 + 1 + 10 + 20 * i)
+			if r.checked:
+				initial_focus = r  # like WfW: the chosen option has the focus, arrows move it
+		var top := 24 + box_h + 12
 		var ok := make_button("OK", true, _submit)
-		add_button_row(91, [ok, make_button("Cancel", false, UIState.close_dialog), make_button("Help", false, W31FormDialogs.open_help)])
-		_finish(91 + 4 + 22 + 8)
+		add_button_row(top, [ok, make_button("Cancel", false, UIState.close_dialog), make_button("Help", false, W31FormDialogs.open_help)])
+		_finish(top + 4 + 22 + 8)
 
 	func _submit() -> void:
 		var next := W31DialogLogic.new_object_next(kind, preferred_group_id, groups)
@@ -220,7 +221,7 @@ class ChangeIcon extends W31Dialog:
 	func _build(cw: int) -> void:
 		add_text(0, 0, "Select an icon for this program item:")
 		grid = W31IconGrid.new(8, 5)
-		grid.max_height = 150
+		grid.max_height = 162  # all four rows of the catalog, no scroll bar
 		grid.size = Vector2(cw, 0)
 		var entries := []
 		for id in W31Icons.IDS:
@@ -270,7 +271,7 @@ class NewGroup extends W31Dialog:
 			add_text(0, y, "Create a group to add your new program item.", 11)
 			y += 21
 		elif data.get("openUrlAfterCreate", false):
-			add_text(0, y, "Create a group to add your URL.", 11)
+			add_text(0, y, "Create a group to add your web site.", 11)
 			y += 21
 		var prev := field.text if field else ""
 		field = W31TextField.new()
@@ -329,6 +330,8 @@ class RenameGroup extends W31Dialog:
 			UIState.close_dialog()
 
 
+## File > New... > Web Site: a web address as an item of the chosen group (web icon; the description
+## defaults to the site's host). Reached from New Program Object and after New Program Group.
 class NewUrl extends W31Dialog:
 	var data: Dictionary
 	var groups: Array
@@ -340,14 +343,16 @@ class NewUrl extends W31Dialog:
 	var _selected_group := ""
 
 	func _init(p_data: Dictionary, p_groups: Array) -> void:
-		super("Add URL", 420)
+		super("New Web Site", 400)
+		set_auto_id("wfw.dialog.new-web-site")
 		data = p_data
 		groups = p_groups
 		_selected_group = String(p_data.get("groupId", ""))
-		if _selected_group == "" and groups.size() > 0:
-			_selected_group = groups[0].id
+		if ProgramStore.find_group(_selected_group).is_empty() and groups.size() > 0:
+			_selected_group = String(groups[0].id)
 
 	func _build(cw: int) -> void:
+		var fw := cw - 111
 		var y := 0
 		var prev_url := url_field.text if url_field else ""
 		var prev_name := name_field.text if name_field else ""
@@ -356,47 +361,49 @@ class NewUrl extends W31Dialog:
 			var names := []
 			var ids := []
 			for g in groups:
-				names.append(g.name)
-				ids.append(g.id)
+				names.append(String(g.name))
+				ids.append(String(g.id))
 			group_combo = W31Combo.new()
 			group_combo.set_items(names, ids)
 			group_combo.select_value(_selected_group)
+			group_combo.set_auto_id("wfw.dialog.web-group")
 			group_combo.selection_changed.connect(func(_i): _selected_group = String(group_combo.value()); _sync())
-			add_form_row(y, "Program Group:", group_combo, cw - 111)
+			add_form_row(y, "Program Group:", group_combo, fw)
 			y += 24
 		url_field = W31TextField.new()
-		url_field.set_field_size(cw - 111, 19)
+		url_field.set_field_size(fw, 19)
 		url_field.placeholder_text = "https://example.com"
 		url_field.text = prev_url
+		url_field.set_auto_id("wfw.dialog.web-url")
 		url_field.text_changed.connect(func(_t): _sync())
-		add_form_row(y, "URL:", url_field, cw - 111)
+		add_form_row(y, "URL:", url_field, fw)
 		initial_focus = url_field
 		y += 24
 		name_field = W31TextField.new()
-		name_field.set_field_size(cw - 111, 19)
-		name_field.placeholder_text = "Optional (defaults to host)"
+		name_field.set_field_size(fw, 19)
+		name_field.placeholder_text = "Leave blank to use the site's address"
 		name_field.text = prev_name
-		add_form_row(y, "Name:", name_field, cw - 111)
+		name_field.set_auto_id("wfw.dialog.web-name")
+		add_form_row(y, "Description:", name_field, fw)
 		y += 24
 		launch_combo = W31Combo.new()
-		var labels := []
-		for v in W31DialogLogic.LAUNCH_GROUP_OPTIONS:
-			labels.append(W31DialogLogic.format_launch_group(v))
-		launch_combo.set_items(labels, W31DialogLogic.LAUNCH_GROUP_OPTIONS.duplicate())
+		var choices := W31DialogLogic.launch_group_choices(ProgramStore.launch_group_names())
+		launch_combo.set_items(choices.labels, choices.values)
 		launch_combo.selected = prev_launch
-		add_form_row(y, "Launch Group:", launch_combo, cw - 111)
-		y += 24
+		launch_combo.set_auto_id("wfw.dialog.web-launch-group")
+		add_form_row(y, "Launch Group:", launch_combo, fw)
+		y += 24 + 5
 		ok = make_button("OK", true, _submit)
-		add_button_row(y, [ok, make_button("Cancel", false, UIState.close_dialog)])
+		add_button_row(y, [ok, make_button("Cancel", false, UIState.close_dialog), make_button("Help", false, W31FormDialogs.open_help)])
 		_sync()
 		_finish(y + 4 + 22 + 8)
 
 	func _sync() -> void:
-		ok.disabled = not W31DialogLogic.url_form_valid(url_field.text, _selected_group)
+		if ok:
+			ok.disabled = not W31DialogLogic.url_form_valid(url_field.text, _selected_group)
 
 	func _submit() -> void:
-		var item := W31DialogLogic.url_item(url_field.text, name_field.text, int(launch_combo.value()), _selected_group)
-		if item.is_empty():
-			return
-		ProgramStore.add_item(_selected_group, item)
-		UIState.close_dialog()
+		var id := W31DialogLogic.apply_new_url(ProgramStore, _selected_group, url_field.text, name_field.text,
+			int(launch_combo.value()))
+		if id != "":
+			UIState.close_dialog()

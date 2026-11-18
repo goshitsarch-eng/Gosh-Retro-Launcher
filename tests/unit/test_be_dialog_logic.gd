@@ -154,7 +154,7 @@ func test_find_filters() -> void:
 	expect_eq(BeDialogLogic.find(groups, "", ids[1], "all", "").size(), 0, "group filter")
 	expect_eq(BeDialogLogic.find(groups, "", "all", "all", "example").size(), 1, "text in path")
 	expect_eq(BeDialogLogic.find_title(" "), "Find: All Programs")
-	expect_eq(BeDialogLogic.find_title(" ab "), "Find: Programs named ab")
+	expect_eq(BeDialogLogic.find_title(" ab "), "Find: “ab” in names and notes")
 	s.free()
 
 
@@ -173,7 +173,7 @@ func test_entries_and_titles() -> void:
 	expect_eq(BeDialogLogic.entries_for("g:missing", s.groups), [])
 	expect_eq(BeDialogLogic.window_title("computer", s.groups), "Program Manager")
 	expect_eq(BeDialogLogic.window_title("g:" + ids[0], s.groups), "Work")
-	expect_eq(BeDialogLogic.window_title("find", s.groups, "q"), "Find: Programs named q")
+	expect_eq(BeDialogLogic.window_title("find", s.groups, "q"), "Find: “q” in names and notes")
 	s.free()
 
 
@@ -186,7 +186,10 @@ func test_clock_run_target_and_feedback_text() -> void:
 	expect_eq(BeDialogLogic.run_target(groups, "calc").path, "calc")
 	expect_eq(BeDialogLogic.run_target(groups, " "), {})
 	expect_eq(BeDialogLogic.feedback_text({"visible": false}), "")
-	expect_eq(BeDialogLogic.feedback_text({"visible": true, "status": "launching", "currentGroup": 1, "totalGroups": 3}), "Launching group 2 of 3…")
+	expect_eq(BeDialogLogic.feedback_text({"visible": true, "status": "launching", "currentGroup": 5, "completedGroups": 1, "totalGroups": 3}),
+		"Launching Group 5 (2 of 3)…", "the group number, then its place in the run")
+	expect_eq(BeDialogLogic.feedback_text({"visible": true, "status": "launching", "currentGroup": 5, "completedGroups": 0, "totalGroups": 1},
+		{"5": "Evening"}), "Launching Group 5: Evening…")
 	expect_eq(BeDialogLogic.feedback_text({"visible": true, "status": "complete", "totalItems": 1}), "Launched 1 program.")
 	expect_eq(BeDialogLogic.feedback_text({"visible": true, "status": "error", "failures": 2}), "2 programs could not be started.")
 	expect_eq(BeDialogLogic.launch_error({"error": "bad"}, {"path": "p"}), "bad")
@@ -207,3 +210,9 @@ func test_theme_tables_and_dark_flag() -> void:
 	expect_eq(BeTheme.b("123456"), Color("#123456"), "unmapped colours pass through")
 	BeTheme.dark = false
 	expect(BeTheme.is_dark({"theme": "dark"}) and not BeTheme.is_dark({"theme": "light"}) and not BeTheme.is_dark({}))
+
+
+func test_find_status_counts_items() -> void:
+	expect_eq(BeDialogLogic.found_text(1), "1 item found")
+	expect_eq(BeDialogLogic.found_text(0), "0 items found")
+	expect_eq(BeDialogLogic.found_text(3), "3 items found")

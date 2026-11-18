@@ -68,7 +68,8 @@ func test_menu_tree() -> void:
 	var file_labels := []
 	for it in menus[0].items:
 		file_labels.append("-" if it.get("separator", false) else it.label)
-	expect_eq(file_labels, ["&New...", "&Open", "-", "&Move...", "&Copy...", "&Delete", "&Properties...", "-", "&Run...", "-", "E&xit Windows..."])
+	expect_eq(file_labels, ["&New...", "&Open", "-", "&Move...", "&Copy...", "&Delete", "&Properties...", "-", "&Run...", "-",
+		"&Import All...", "Export &All...", "-", "E&xit Windows..."])
 	var win: Array = menus[2].items
 	expect_eq(win[3].get("separator", false), true)
 	expect_eq(win[4].label, "&1 Main")
@@ -82,6 +83,8 @@ func test_menu_tree() -> void:
 	expect_eq(launcher[2].label, "Launch Group &1 (2 items)")
 	expect_eq(launcher[3].label, "Launch Group &2 (1 item)")
 	expect_eq(launcher[3].command, "launch-group:2")
+	expect_eq(launcher[launcher.size() - 2].label, "Launch &Groups...")
+	expect_eq(launcher[launcher.size() - 2].command, "launch-groups")
 	expect_eq(launcher[launcher.size() - 1].label, "Launcher &Tools...")
 
 
@@ -89,7 +92,8 @@ func test_launcher_menu_without_groups() -> void:
 	var menus := Win31Commands.build_menus([_group("a", "Main", false)], "a", {}, {})
 	var launcher: Array = menus[3].items
 	expect_eq(launcher[0].disabled, true)
-	expect_eq(launcher.size(), 3, "Launch All, separator, Launcher Tools")
+	expect_eq(launcher.size(), 4, "Launch All, separator, Launch Groups, Launcher Tools")
+	expect_eq(launcher[2].disabled if launcher[2].has("disabled") else false, false, "the manager is always available")
 
 
 func test_window_menu_numbers_only_first_nine() -> void:

@@ -3,7 +3,9 @@ extends Control
 ## Client of the modeless Find window (port of Win95FindView.tsx): "Name & Location",
 ## "Date Modified" (visible, criteria disabled: launcher items have no dates) and "Advanced" pages,
 ## Find Now / Stop / New Search, and the results list (click, Ctrl/Shift, arrows, Home/End,
-## PageUp/PageDown, Ctrl+A, double-click / Enter launches). Searches with ProgramSearch.find_programs.
+## PageUp/PageDown, Ctrl+A, double-click / Enter launches; a sticky note opens its window). Searches
+## with Win95DialogLogic.find_results (ProgramSearch plus notes by title and text; a note's row shows
+## the first line of its text after its title).
 ## Plugs into Win95Window as its client (signals result_count_changed / selection_changed,
 ## methods open_selected() / select_all() / handle_key()).
 
@@ -150,7 +152,7 @@ func _build_pages() -> void:
 	_pages["advanced"] = a
 	type_select = Win95Select.new()
 	type_select.shell = shell
-	type_select.options = ["All launcher items", "Application", "Internet Shortcut"]
+	type_select.options = Win95DialogLogic.FIND_TYPE_LABELS
 	type_select.position = Vector2(74, 0)
 	type_select.size = Vector2(257, 21)
 	containing_edit = Win95TextInput.new()
@@ -232,7 +234,7 @@ func _group_id() -> String:
 
 
 func _type() -> String:
-	return ["all", "application", "internet"][clampi(type_select.selected_index, 0, 2)]
+	return Win95DialogLogic.FIND_TYPES[clampi(type_select.selected_index, 0, Win95DialogLogic.FIND_TYPES.size() - 1)]
 
 
 func stop() -> void:
@@ -261,7 +263,7 @@ func find_now() -> void:
 
 func _on_found() -> void:
 	var filters := Win95DialogLogic.find_filters(named_edit.text, _group_id(), include_sub.checked, _type(), containing_edit.text, path_edit.text)
-	results = ProgramSearch.find_programs(ProgramStore.groups, filters)
+	results = Win95DialogLogic.find_results(ProgramStore.groups, filters)
 	_set_running(false)
 	result_count_changed.emit(results.size())
 	_sync_scrollbar()
@@ -373,6 +375,14 @@ func _draw() -> void:
 		if clip_h >= ROW_H - 2:
 			Win95Draw.icon(self, Win95IconCatalog.texture(String(r2.item.get("icon", "")), "small"), Vector2(hx + 4, y + 2))
 		Win95Draw.text(self, Vector2(hx + 23, y + 3), r2.item.name, fg, {"max_width": int(c1) - 27})
+		var preview := Win95DialogLogic.find_preview(r2.item)
+		if preview != "":
+			# a note shows its first line after its title, in gray: "Shopping - milk, eggs"
+			var px := hx + 23 + Win95Draw.measure(String(r2.item.name)) + 4
+			var room := int(hx + c1 - 4 - px)
+			if room > 12:
+				Win95Draw.text(self, Vector2(px, y + 3), "- " + preview.replace("&", "&&"), fg if sel else Win95Draw.SHADOW,
+					{"max_width": room, "show_access": false})
 		Win95Draw.text(self, Vector2(hx + c1 + 4, y + 3), r2.group.name, fg, {"max_width": int(c2) - 8})
 	if results.is_empty():
 		if running:

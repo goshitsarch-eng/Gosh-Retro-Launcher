@@ -15,6 +15,7 @@ const LINE := 13
 var text := "":
 	set(v):
 		text = v
+		access_key = RetroFont.parse_access(v).accessKey  ## "&New..." -> Alt+N in the dialog
 		queue_redraw()
 var is_default := false:
 	set(v):
@@ -85,10 +86,12 @@ func _draw() -> void:
 	var off := Vector2(1, 1) if down else Vector2.ZERO
 	var total_h := lines.size() * LINE
 	var top := floorf((size.y - total_h) / 2.0) + off.y + dy
+	var underline := lines.size() == 1 and access_key != ""
 	for i in lines.size():
 		var w := f.measure(lines[i])
 		var x := floorf((size.x - w) / 2.0) + off.x
-		f.draw(self, Vector2(x, top + i * LINE), lines[i], W31.BLACK, {"disabled": disabled, "show_access": false})
+		f.draw(self, Vector2(x, top + i * LINE), text if underline else lines[i], W31.BLACK,
+			{"disabled": disabled, "show_access": underline})
 	if has_focus() and not disabled:
 		Px.focus_rect(self, Rect2(4 + off.x, 4 + off.y, size.x - 8, size.y - 8))
 

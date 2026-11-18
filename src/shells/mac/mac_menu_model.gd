@@ -2,8 +2,10 @@ class_name MacMenuModel
 extends RefCounted
 ## Pure menu definitions for the Mac shell (menu bar menus, context menus). An item is
 ## {id, label, disabled?, check?, key?} or {sep: true}; `id` is a command string the shell dispatches
-## ("new-folder", "open-group:<gid>", "launch-group:<n>", ...). `key` is the Ctrl/Cmd+<letter> accelerator.
-## ctx for menu_bar(): {groups, active_key, view, selected: {kind: ""|"item"|"group", groupId, itemId}, buckets}.
+## ("new-folder", "new-note", "open-group:<gid>", "launch-group:<n>", ...). New Note… (a sticky note, like the
+## Stickies desk accessory) goes in the front folder, or the first folder when no folder window is in front. `key` is the Ctrl/Cmd+<letter> accelerator.
+## ctx for menu_bar(): {groups, active_key, view, selected: {kind: ""|"item"|"group", groupId, itemId}, buckets,
+## launch_names (settings.launchGroupNames, so the Launch rows show group names)}.
 
 const SEP := {"sep": true}
 
@@ -37,24 +39,21 @@ static func menu_bar(ctx: Dictionary) -> Array:
 	]
 	for g in ctx.get("groups", []):
 		logo_items.append(item("open-group:" + String(g.id), String(g.name)))
-	var special := [item("launch-all", "Launch All", {"disabled": buckets.is_empty()})]
-	for b in buckets:
-		var n := int(b.groupNumber)
-		var c: int = b.items.size()
-		special.append(item("launch-group:%d" % n, "Launch Group %d (%d %s)" % [n, c, "item" if c == 1 else "items"]))
-	special.append_array([SEP, item("run", "Run…", {"key": "R"}), SEP, item("restart", "Restart"), item("shutdown", "Shut Down")])
+	var special := special_menu(buckets, ctx.get("launch_names", {}))
 	return [
 		{"id": "logo", "label": "", "items": logo_items},
 		{"id": "file", "label": "File", "items": [
 			item("new-folder", "New Folder", {"key": "N"}),
 			item("new-program", "New Program…", {"disabled": not active.begins_with("g:")}),
 			item("new-website", "New Website…", {"disabled": not active.begins_with("g:")}),
+			item("new-note", "New Note…", {"disabled": ctx.get("groups", []).is_empty()}),
 			item("open", "Open", {"disabled": not has_sel, "key": "O"}),
 			item("close-window", "Close Window", {"disabled": active == "", "key": "W"}), SEP,
 			item("get-info", "Get Info", {"disabled": not has_sel, "key": "I"}),
 			item("duplicate", "Duplicate", {"disabled": not is_item, "key": "D"}),
 			item("trash", "Move To Trash", {"disabled": not has_sel, "key": "T"}), SEP,
-			item("find", "Find…", {"key": "F"})]},
+			item("find", "Find…", {"key": "F"}), SEP,
+			item("export-all", "Export All…"), item("import-all", "Import All…")]},
 		{"id": "edit", "label": "Edit", "items": [
 			item("undo", "Undo", {"disabled": true}), SEP,
 			item("cut", "Cut", {"disabled": true}), item("copy", "Copy", {"disabled": true}),
@@ -67,6 +66,18 @@ static func menu_bar(ctx: Dictionary) -> Array:
 		{"id": "help", "label": "Help", "items": [
 			item("help", "Program Manager Help"), item("balloons", "Show Balloons", {"disabled": true})]},
 	]
+
+
+## Special menu: Launch All, one row per launch group in use ("Launch Group 3: Morning (2 items)"), the
+## Launch Groups… manager, then Run…, Restart and Shut Down. `buckets` is LaunchGroups.collect_launch_groups().
+static func special_menu(buckets: Array, names: Variant = {}) -> Array:
+	var out := [item("launch-all", "Launch All", {"disabled": buckets.is_empty()})]
+	for b in buckets:
+		var n := int(b.groupNumber)
+		out.append(item("launch-group:%d" % n, LaunchGroups.launch_label(n, b.items.size(), names)))
+	out.append_array([SEP, item("launch-groups", "Launch Groups…"), SEP, item("run", "Run…", {"key": "R"}), SEP,
+		item("restart", "Restart"), item("shutdown", "Shut Down")])
+	return out
 
 
 static func _is_folder_view(key: String) -> bool:
@@ -92,7 +103,7 @@ static func group_menu() -> Array:
 
 
 static func desktop_menu() -> Array:
-	return [item("help", "Help"), SEP, item("new-folder", "New Folder"), item("clean-up", "Clean Up"), SEP,
+	return [item("help", "Help"), SEP, item("new-folder", "New Folder"), item("new-note", "New Note…"), item("clean-up", "Clean Up"), SEP,
 		item("desktop-pictures", "Change Desktop Background…")]
 
 
@@ -107,10 +118,36 @@ static func folder_background_menu(is_computer: bool, view: String) -> Array:
 		item("new-folder" if is_computer else "new-program", "New Folder" if is_computer else "New Program…")]
 	if not is_computer:
 		out.append(item("new-website", "New Website…"))
+		out.append(item("new-note", "New Note…"))
 	out.append_array([item("close-window", "Close Window"), SEP,
 		item("view:large", "as Icons", {"check": view == "large"}), item("view:details", "as List", {"check": view == "details"}),
 		item("clean-up", "Clean Up"), SEP, item("get-info", "Get Info")])
 	return out
+
+
+## Contextual menu of an open sticky note (right-click or Control-click on it): Close, Get Info, the six paper
+## colours with the current one checked, and Move To Trash…. Colour rows are "note-color:<id>"; `swatches` maps a
+## colour id to a Texture2D drawn as the row's icon.
+static func note_menu(color: String, swatches: Dictionary = {}) -> Array:
+	var current := color if Notes.COLORS.has(color) else Notes.DEFAULT_COLOR
+	var out := [item("note-close", "Close"), item("note-info", "Get Info"), SEP]
+	for c in Notes.color_choices():
+		var opts := {"check": c.id == current}
+		if swatches.has(c.id):
+			opts["icon"] = swatches[c.id]
+		out.append(item("note-color:" + String(c.id), String(c.label), opts))
+	out.append_array([SEP, item("note-trash", "Move To Trash…")])
+	return out
+
+
+## Cmd-key commands that still run while a text box has the keyboard (a sticky note, the Find field): Close Window
+## (in a note it closes the note) and Find. Open, Get Info, Duplicate, Move To Trash, New Folder and Run would act on
+## the folder selection behind the text, so those keys are left to the text box.
+const TYPING_COMMANDS := ["close-window", "find"]
+
+
+static func allowed_while_typing(cmd: String) -> bool:
+	return TYPING_COMMANDS.has(cmd)
 
 
 ## Command id for a Ctrl/Cmd+<letter> accelerator, "" when none.

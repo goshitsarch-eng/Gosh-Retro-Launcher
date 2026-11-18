@@ -282,12 +282,12 @@ func _draw_details(sel: String, origin: Vector2) -> void:
 		var col := BeTheme.t("000000")
 		BeFont.draw(self, Vector2(rc.position.x + 8 + 16 + 6, rc.position.y + 3), BeFont.clip(String(e.name), float(cols[1]) - 8 - 16 - 6 - 8), col)
 		BeFont.draw(self, Vector2(rc.position.x + float(cols[2]) + 10, rc.position.y + 3), BeFont.clip(String(e.c2), float(cols[3]) - 20), col)
-		BeFont.draw(self, Vector2(rc.position.x + float(cols[4]) + 10, rc.position.y + 3), BeFont.clip(String(e.c3), float(cols[5]) - 20), col)
+		BeFont.draw(self, Vector2(rc.position.x + float(cols[4]) + 10, rc.position.y + 3), BeFont.clip(String(e.c3), float(cols[5]) - 10 - BeGeometry.SCROLLBAR - 4), col)
 	# sticky header
 	var hr := Rect2(1 - _scroll.x, 1, tw, BeGeometry.DETAILS_HEAD_H)
 	BeDraw.gradient_v(self, hr, BeTheme.b("f4f4f4"), BeTheme.b("d4d4d4"))
 	BeDraw.hline(self, hr.position.x, hr.end.y - 1, hr.size.x, BeTheme.b("989898"))
-	var labels := ["Name", "Size" if key == BeWindowStore.COMPUTER else "Command", "Type" if key == BeWindowStore.COMPUTER else "Batch"]
+	var labels := BeDialogLogic.details_headings(key == BeWindowStore.COMPUTER)
 	for n in 3:
 		var cx: float = hr.position.x + float(cols[n * 2])
 		BeFont.draw(self, Vector2(cx + 10, hr.position.y + 4), labels[n], BeTheme.t("000000"), BeGeometry.FONT, true)

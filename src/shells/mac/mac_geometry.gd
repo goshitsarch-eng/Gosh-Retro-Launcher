@@ -110,7 +110,7 @@ static func grid_layout(entries: Array, content_w: int) -> Dictionary:
 ## Details (list) layout: column x/width list and rows. Returns {cols: [{x, w}], rows: [{id, rect}], header: Rect2, height, width}.
 static func details_layout(entries: Array, content_w: int) -> Dictionary:
 	var total_w := maxi(DETAILS_MIN_W, content_w)
-	var last := 100
+	var last := clampi(total_w / 4, 100, 150)  # wide enough for "Group 3: Morning" in wider windows
 	var rest := total_w - last
 	var c1 := maxi(120, rest * 2 / 5)
 	var c2 := rest - c1
@@ -120,6 +120,16 @@ static func details_layout(entries: Array, content_w: int) -> Dictionary:
 		rows.append({"id": entries[i].id, "rect": Rect2(0, DETAILS_HEADER_H + i * DETAILS_ROW_H, total_w, DETAILS_ROW_H)})
 	return {"cols": cols, "rows": rows, "header": Rect2(0, 0, total_w, DETAILS_HEADER_H), "width": total_w,
 		"height": DETAILS_HEADER_H + entries.size() * DETAILS_ROW_H}
+
+
+## Where a pop-up button's menu opens, the Classic Mac way: over the button, with the current item's row on the
+## button and its text where the button's label is (the check mark then hangs left of the button). `row_top` is the
+## first row's offset inside the panel, `text_inset` how much further right a row's text starts than the button's
+## label. Returns the panel's top-left; MacPopupMenu then keeps it on screen.
+static func select_popup_origin(button: Rect2, index: int, row_h: int, row_top: int, text_inset: int) -> Vector2:
+	var i := maxi(0, index)
+	return Vector2(button.position.x - text_inset,
+		button.position.y + floorf((button.size.y - row_h) / 2.0) - row_top - i * row_h)
 
 
 ## Desktop icons (Launcher HD at the top of the right-hand column, Trash at the bottom).

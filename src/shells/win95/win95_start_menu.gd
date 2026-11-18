@@ -1,11 +1,13 @@
 class_name Win95StartMenu
 extends Control
 ## The Start menu (port of Win95StartMenu.tsx): 164x235 main menu with the vertical "Windows95"
-## strip and seven 32px commands, cascading Programs (launcher groups, multi-column overflow) ->
-## group items, Documents, Settings (incl. Launcher Tools...) and Find. Cascades open after
+## strip and seven 32px commands, cascading Programs (launcher groups, multi-column overflow, then
+## the Launch Groups folder) -> group items / launch-group commands, Documents, Settings (incl.
+## Launcher Tools..., Launch Groups..., Export All..., Import All...) and Find. Cascades open after
 ## 220 ms; keyboard navigation uses Win95MenuState; press-drag-release from the Start button
 ## activates the row under the pointer on release.
-## Automation ids: w95.start-command:<Label>, w95.start-level:<n>:first-command.
+## Automation ids: w95.start-command:<Label>, w95.start-level:<n>:first-command,
+## w95.start-item:<level>:<label> (any cascade row by its text, access-key markers removed).
 
 const M := Win95Tokens.M
 const TOP_ITEMS := [
@@ -27,6 +29,9 @@ const SETTINGS_ITEMS := [
 	{"id": "printers", "label": "&Printers", "icon": "printers"},
 	{"id": "taskbar", "label": "&Taskbar...", "icon": "taskbar"},
 	{"id": "tools", "label": "&Launcher Tools...", "icon": "settings", "separatorBefore": true},
+	{"id": "groups", "label": "Launch &Groups...", "icon": "programs"},
+	{"id": "export", "label": "E&xport All...", "icon": "documents", "separatorBefore": true},
+	{"id": "import", "label": "&Import All...", "icon": "folder-open"},
 ]
 
 var shell: Control
@@ -105,18 +110,46 @@ func _groups() -> Array:
 	return ProgramStore.groups
 
 
+## Rows of the Programs cascade: every program group, then the Launch Groups folder.
+func _programs_items() -> Array:
+	return _groups() + [Win95LaunchGroupLogic.programs_row()]
+
+
+func _launch_groups_open() -> bool:
+	return open_group == Win95LaunchGroupLogic.PROGRAMS_ROW_ID
+
+
 func _level_items(lv: int) -> Array:
 	if lv == 0:
 		return TOP_ITEMS
 	if lv == 1:
 		match open_top:
-			"programs": return _groups()
+			"programs": return _programs_items()
 			"settings": return SETTINGS_ITEMS
 			"find": return FIND_ITEMS
 			_: return []
 	if lv == 2 and open_group != "":
+		if _launch_groups_open():
+			return Win95LaunchGroupLogic.menu_rows(_groups(), ProgramStore.launch_group_names())
 		return ProgramStore.find_group(open_group).get("items", [])
 	return []
+
+
+## Width of the Launch Groups cascade: wide enough for its longest label (164..360 px), as Win95
+## sizes a menu to its text.
+static func launch_groups_width(items: Array) -> int:
+	var w := 164
+	for it in items:
+		w = maxi(w, 4 + 21 + Win95Draw.measure(String(it.get("label", ""))) + 12 + 4 + 8)
+	return mini(w, 360)
+
+
+## Height of a single-column cascade: 22 px rows, 6 px separators, 4 px padding top and bottom.
+static func cascade_height(items: Array) -> int:
+	var h := 8
+	for it in items:
+		h += 22 + (6 if it.get("separatorBefore", false) else 0)
+	return h + (22 if items.is_empty() else 0)
 
 
 # ---------------------------------------------------------------- geometry
@@ -135,7 +168,7 @@ func _program_rows() -> int:
 
 func _program_columns() -> int:
 	var rows := _program_rows()
-	return maxi(1, int(ceilf(float(_groups().size()) / rows)))
+	return maxi(1, int(ceilf(float(_programs_items().size()) / rows)))
 
 
 func _level_one_top() -> float:
@@ -158,29 +191,28 @@ func level_rect(lv: int) -> Rect2:
 		var top := _level_one_top()
 		if open_top == "programs" and _program_columns() > 1:
 			return Rect2(pad.x + 156, pad.y + top, _program_columns() * 164, _program_rows() * 22 + 8)
-		var n := maxi(1, _level_items(1).size())
-		var h := n * 22 + 8
-		if open_top == "settings":
-			h = 4 * 22 + 6 + 8
-		return Rect2(pad.x + 156, pad.y + top, 164, h)
+		return Rect2(pad.x + 156, pad.y + top, 164, cascade_height(_level_items(1)))
 	if lv == 2:
 		if open_top != "programs" or open_group == "":
 			return Rect2()
+		var level_two := _level_items(2)
+		var width := launch_groups_width(level_two) if _launch_groups_open() else 164
 		var level_one_width := _program_columns() * 164
 		var natural := M.startMenuWidth - 1 + level_one_width - 1
 		var third_left := natural
-		if natural + 164 > shell.logical_size.x:
-			third_left = M.startMenuWidth - 1 - 164 + 1
-		var count := _level_items(2).size()
-		var third_h := maxi(1, count) * 22 + 4
+		if natural + width > shell.logical_size.x:
+			third_left = M.startMenuWidth - 1 - width + 1
+		var full_h := cascade_height(level_two)
+		var third_h := full_h - 4
 		var main_top := _vh() - M.taskbarHeight - M.startMenuHeight
 		var gi := 0
-		for i in _groups().size():
-			if _groups()[i].id == open_group:
+		var programs := _programs_items()
+		for i in programs.size():
+			if programs[i].id == open_group:
 				gi = i
 		var row := gi % _program_rows()
 		var third_top := maxf(-main_top, minf(_level_one_top() + row * 22 - 2, _vh() - M.taskbarHeight - main_top - third_h))
-		return Rect2(pad.x + third_left, pad.y + third_top, 164, maxi(1, count) * 22 + 8)
+		return Rect2(pad.x + third_left, pad.y + third_top, width, full_h)
 	return Rect2()
 
 
@@ -394,7 +426,7 @@ func _delayed_open(top: String, group_id: String) -> void:
 
 func _activate_row(lv: int, row: Dictionary) -> void:
 	var item: Dictionary = row.item
-	if row.index < 0 and lv > 0:
+	if (row.index < 0 and lv > 0) or item.get("disabled", false):
 		return
 	if lv == 0:
 		indices[0] = row.index
@@ -409,9 +441,20 @@ func _activate_row(lv: int, row: Dictionary) -> void:
 			_activate_settings(String(item.id))
 		elif open_top == "find":
 			_activate_find(String(item.id))
+	elif _launch_groups_open():
+		close()
+		_activate_launch_row(String(item.id))
 	else:
 		shell.launch_item(item)
 		close()
+
+
+## Start > Programs > Launch Groups: Launch All, Launch Group N, Manage Launch Groups...
+func _activate_launch_row(id: String) -> void:
+	if id == "manage":
+		Win95Dialogs.open_launch_groups(shell)
+	else:
+		shell.launch_group_row(id)
 
 
 func _activate_top(id: String) -> void:
@@ -447,6 +490,12 @@ func _activate_settings(id: String) -> void:
 	close()
 	if id == "tools":
 		shell.request_show_launcher_tools.emit()
+	elif id == "groups":
+		Win95Dialogs.open_launch_groups(shell)
+	elif id == "export":
+		Win95Dialogs.export_all(shell)
+	elif id == "import":
+		Win95Dialogs.import_all(shell)
 	else:
 		var label := String(SETTINGS_ITEMS.filter(func(i): return i.id == id)[0].label).replace("&", "")
 		Win95Dialogs.show_message(shell, label, "This Windows system feature is not available in the application launcher.", "warning")
@@ -532,6 +581,12 @@ func auto_lookup(id: String) -> Variant:
 		var rows := level_rows(lv)
 		if rows.size() > 0:
 			return rows[0].rect
+	if id.begins_with("w95.start-item:"):  # w95.start-item:<level>:<label without &>, e.g. w95.start-item:1:Launch Groups
+		var lv2 := int(id.get_slice(":", 1))
+		var want := id.substr(("w95.start-item:%d:" % lv2).length())
+		for r in level_rows(lv2):
+			if String(r.item.get("label", r.item.get("name", ""))).replace("&&", "\u0001").replace("&", "").replace("\u0001", "&") == want:
+				return r.rect
 	return null
 
 
@@ -561,6 +616,8 @@ func _a11y_level_name(lv: int) -> String:
 			if it.id == open_top:
 				return A11y.plain(it.label)
 		return ""
+	if _launch_groups_open():
+		return Win95LaunchGroupLogic.PROGRAMS_ROW_NAME
 	return String(ProgramStore.find_group(open_group).get("name", "")) if open_group != "" else ""
 
 

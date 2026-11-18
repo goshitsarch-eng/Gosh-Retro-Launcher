@@ -41,7 +41,7 @@ func _draw() -> void:
 	Win95Draw.border(self, btn, 1, Win95Draw.LIGHT, Win95Draw.DARK, Win95Draw.DARK, Win95Draw.LIGHT)
 	Win95Draw.inset_shadow(self, btn.grow(-1), -1, -1, Win95Draw.SHADOW)
 	Win95Draw.glyph(self, "combo-down", btn.position + Vector2(1, 2), Win95Draw.DISABLED if disabled else Win95Draw.DARK)
-	Win95Draw.text(self, Vector2(5, 4), current_text(), Win95Draw.TEXT, {"disabled": disabled, "max_width": int(size.x) - 26})
+	Win95Draw.text(self, Vector2(5, 4), current_text().replace("&", "&&"), Win95Draw.TEXT, {"disabled": disabled, "show_access": false, "max_width": int(size.x) - 26})
 	if has_focus():
 		Win95Draw.dotted_rect(self, r.grow(-4), Win95Draw.TEXT)
 
@@ -60,7 +60,38 @@ func open_list() -> void:
 	_menu = Win95Menu.open(shell, items, at, {"on_close": func(): _menu = null})
 
 
+## Space from the modal key router opens the list (as Alt+Down / F4 do in a real drop-down list).
+func click() -> void:
+	open_list()
+
+
+## Selection after a navigation key in the closed list (Up/Down/Left/Right/Home/End), or -1. Pure.
+static func key_index(index: int, key: String, count: int) -> int:
+	if count <= 0:
+		return -1
+	match key:
+		"ArrowDown", "ArrowRight": return mini(count - 1, index + 1)
+		"ArrowUp", "ArrowLeft": return maxi(0, index - 1)
+		"Home": return 0
+		"End": return count - 1
+	return -1
+
+
 func _gui_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not disabled:
+		var k := event as InputEventKey
+		var key := Win95InputController.key_name(k)
+		if (k.alt_pressed and key == "ArrowDown") or key == "F4":
+			open_list()
+			accept_event()
+			return
+		var next := key_index(selected_index, key, options.size())
+		if next >= 0:
+			if next != selected_index:
+				selected_index = next
+				item_selected.emit(next)
+			accept_event()
+		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		grab_focus()
 		if _menu != null and is_instance_valid(_menu):

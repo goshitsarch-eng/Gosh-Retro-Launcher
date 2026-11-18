@@ -22,9 +22,10 @@ func test_group_and_window_menus() -> void:
 
 func test_desktop_menus() -> void:
 	var d := BeMenuModel.desktop_menu()
-	expect_eq(_labels(d), ["New Folder", "-", "Clean Up", "Select All", "-", "Find…", "Launcher Tools…", "Backgrounds…", "-", "Help"])
-	expect(d[3].disabled)
-	expect_eq(d[6].action, "tools.open")
+	expect_eq(_labels(d), ["New Folder", "New Note…", "-", "Clean Up", "Select All", "-", "Find…", "Launcher Tools…", "Backgrounds…", "-", "Help"])
+	expect(d[4].disabled)
+	expect_eq(d[1].action, "note.new")
+	expect_eq(d[7].action, "tools.open")
 	expect_eq(_labels(BeMenuModel.desktop_icon_menu("computer")), ["Open", "Get Info", "-", "Find…"])
 	expect_eq(_labels(BeMenuModel.desktop_icon_menu("g:x")), _labels(BeMenuModel.group_menu("x")))
 	expect_eq(BeMenuModel.desktop_icon_menu("g:x")[0].args.gid, "x")
@@ -32,25 +33,28 @@ func test_desktop_menus() -> void:
 
 func test_folder_background_menu_depends_on_window_kind_and_view() -> void:
 	var c := BeMenuModel.folder_background_menu("computer", true, "large")
-	expect_eq(_labels(c), ["New Folder", "-", "Icon View", "Mini Icon View", "List View", "-", "Clean Up", "Select All", "-", "Get Info", "Close"])
-	expect(c[2].dot and not c[3].dot)
-	expect_eq(c[9].action, "about.open")
+	expect_eq(_labels(c), ["New Folder", "New Note…", "-", "Icon View", "Mini Icon View", "List View", "-", "Clean Up", "Select All", "-", "Get Info", "Close"])
+	expect(c[3].dot and not c[4].dot)
+	expect_eq(c[10].action, "about.open")
 	var g := BeMenuModel.folder_background_menu("g:x", false, "details")
 	expect_eq(g[0].label, "Add Program…")
 	expect_eq(g[1].label, "Add Website…")
 	expect_eq(g[1].action, "website.new")
-	expect(g[5].dot)
-	expect_eq(g[10].action, "group.info")
-	expect_eq(g[10].args.gid, "x")
+	expect_eq(g[2].label, "New Note…")
+	expect_eq(g[2].action, "note.new")
+	expect_eq(g[2].args, {"key": "g:x"})
+	expect(g[6].dot)
+	expect_eq(g[11].action, "group.info")
+	expect_eq(g[11].args.gid, "x")
 
 
 func test_menu_bar_enables_selection_commands_only_with_a_selection() -> void:
 	var bar := BeMenuModel.menu_bar("g:x", false, "large", "")
 	expect_eq(bar.map(func(m): return m.label), ["File", "Edit", "View", "Help"])
 	var file: Array = bar[0].items
-	expect_eq(_labels(file), ["Open", "-", "Add Program…", "Add Website…", "-", "Move to Trash", "Edit Name", "Get Info", "-", "Close"])
-	expect(file[0].disabled and file[5].disabled and file[6].disabled and file[7].disabled)
-	expect(not file[2].get("disabled", false) and not file[9].get("disabled", false))
+	expect_eq(_labels(file), ["Open", "-", "Add Program…", "Add Website…", "New Note…", "-", "Move to Trash", "Edit Name", "Get Info", "-", "Close"])
+	expect(file[0].disabled and file[6].disabled and file[7].disabled and file[8].disabled)
+	expect(not file[2].get("disabled", false) and not file[4].get("disabled", false) and not file[10].get("disabled", false))
 	var sel := BeMenuModel.menu_bar("g:x", false, "small", "i1")
 	expect(not sel[0].items[0].get("disabled", false))
 	expect_eq(sel[0].items[0].args, {"gid": "x", "iid": "i1"})
@@ -58,6 +62,8 @@ func test_menu_bar_enables_selection_commands_only_with_a_selection() -> void:
 	var comp := BeMenuModel.menu_bar("computer", true, "large", "g1")
 	expect_eq(comp[0].items[0].action, "group.open")
 	expect_eq(comp[0].items[2].label, "New Folder")
+	expect_eq(comp[0].items[4].label, "New Note…")
+	expect(not comp[0].items[4].get("disabled", false), "a note can be made from the Program Manager window too")
 	expect_eq(_labels(comp[2].items), ["Icon View", "Mini Icon View", "List View", "-", "Clean Up", "Refresh"])
 	expect_eq(_labels(comp[3].items), ["Help Topics", "-", "About Program Manager"])
 	expect_eq(_labels(comp[1].items), ["Undo", "-", "Cut", "Copy", "Paste", "-", "Select All", "Invert Selection"])
@@ -84,8 +90,20 @@ func test_file_menu_offers_add_website_next_to_add_program() -> void:
 
 func test_deskbar_menu_matches_the_design_items() -> void:
 	var d := BeMenuModel.deskbar_menu()
-	expect_eq(_labels(d), ["About Program Manager…", "-", "Find…", "Run…", "Launcher Tools…", "Backgrounds…", "Help", "-", "Restart", "Shut Down…"])
+	expect_eq(_labels(d), ["About Program Manager…", "-", "Find…", "Run…", "New Note…", "Launcher Tools…", "Backgrounds…", "Help", "-",
+		"Launch Groups…", "-", "Export All…", "Import All…", "-", "Restart", "Shut Down…"])
 	expect_eq(d[0].icon, "logo")
-	expect_eq(d[9].icon, "critical")
-	expect_eq(d[4].action, "tools.open")
-	expect_eq(_labels(BeMenuModel.deskbar_context_menu()), ["About Program Manager…", "Launcher Tools…"])
+	expect_eq(d[15].icon, "critical")
+	expect_eq(d[4].action, "note.new")
+	expect_eq(d[4].icon, "note")
+	expect_eq(d[5].action, "tools.open")
+	var ctx := BeMenuModel.deskbar_context_menu()
+	expect_eq(_labels(ctx), ["About Program Manager…", "-", "New Note…", "-", "Launcher Tools…", "Launch Groups…", "-",
+		"Export All…", "Import All…"])
+	# every command of the logo's right-click menu does what the same row of the Deskbar menu does
+	for r in ctx:
+		if r.get("sep", false):
+			continue
+		var same: Array = d.filter(func(x): return String(x.get("label", "")) == String(r.label))
+		expect_eq(same.size(), 1, r.label)
+		expect_eq(r.action, same[0].action, r.label)

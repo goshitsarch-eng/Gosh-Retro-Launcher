@@ -5,6 +5,7 @@ These drawings are project originals assembled from primitive shapes. They do
 not contain extracted Microsoft resources. Larger variants are deterministic
 nearest-neighbour outputs so each logical pixel remains stable.
 """
+import sys
 from pathlib import Path
 from PIL import Image, ImageDraw
 
@@ -126,9 +127,27 @@ def information(d):
     d.ellipse((3,3,29,29),fill=PAL["b"],outline=PAL["k"])
     d.rectangle((15,13,17,24),fill=PAL["w"]); d.rectangle((15,8,17,10),fill=PAL["w"])
 
+QUESTION_MARK=[
+    "..#####..",
+    ".#######.",
+    "###...###",
+    "###...###",
+    "......###",
+    ".....###.",
+    "....###..",
+    "...###...",
+    "...###...",
+    ".........",
+    "...###...",
+    "...###...",
+]
+
 def question(d):
+    # White balloon with a bold blue question mark (drawn pixel by pixel: no font involved).
     d.ellipse((3,3,29,29),fill=PAL["w"],outline=PAL["k"])
-    d.text((10,5),"?",fill=PAL["b"],stroke_width=1,stroke_fill=PAL["b"])
+    for y,row in enumerate(QUESTION_MARK):
+        for x,ch in enumerate(row):
+            if ch=="#": d.point((12+x,10+y),fill=PAL["b"])
 
 def terminal(d):
     dos(d)
@@ -148,19 +167,55 @@ def cardfile(d):
     for off in (0,3,6): d.rectangle((3+off,5-off,24+off,27-off),fill=PAL["w"],outline=PAL["k"])
     for y in (12,16,20): d.line((12,y,25,y),fill=PAL["b"])
 
+def note(d):
+    # Sticky note: a square of yellow paper pinned at the top, a few written lines and a
+    # turned-up bottom-right corner, with the grey drop shadow the other paper icons use.
+    d.polygon(((6,6),(29,6),(29,24),(23,30),(6,30)),fill=PAL["g"])
+    d.polygon(((3,4),(26,4),(26,22),(20,28),(3,28)),fill=PAL["y"],outline=PAL["k"])
+    d.line((4,5,25,5),fill=PAL["w"])
+    d.line((4,5,4,27),fill=PAL["w"])
+    d.polygon(((20,28),(20,22),(26,22)),fill=PAL["o"],outline=PAL["k"])
+    for y,x2 in ((11,22),(15,22),(19,22),(23,16)): d.line((7,y,x2,y),fill=PAL["n"])
+    d.ellipse((12,1,18,7),fill=PAL["r"],outline=PAL["k"])
+    d.point((14,3),fill=PAL["w"])
+
+def web(d):
+    # Web site: a blue globe with green land, white meridian and equator lines and a highlight,
+    # over a sheet of paper (the WfW document shape) so it still reads as "a page".
+    d.polygon(((9,2),(24,2),(30,8),(30,30),(9,30)),fill=PAL["w"],outline=PAL["k"])
+    d.line((24,2,24,8,30,8),fill=PAL["g"])
+    d.ellipse((1,7,23,29),fill=PAL["b"],outline=PAL["k"])
+    for poly in (((5,12),(10,10),(13,13),(11,17),(7,19),(4,16)),
+                 ((14,19),(19,17),(21,21),(17,26),(14,24)),
+                 ((15,10),(18,11),(17,13))):
+        d.polygon(poly,fill=PAL["l"],outline=PAL["o"])
+    d.arc((7,8,17,28),90,270,fill=PAL["a"])
+    d.arc((7,8,17,28),270,90,fill=PAL["a"])
+    d.line((2,18,22,18),fill=PAL["a"])
+    d.point((6,11),fill=PAL["w"]); d.point((7,10),fill=PAL["w"])
+
 ICONS={
  "group":group,"default":default,"file-manager":file_manager,"control-panel":control_panel,
  "print-manager":printer,"clipbook":clipboard,"dos":dos,"setup":setup,
  "pif":lambda d:document(d,"p"),"readme":lambda d:document(d,"t"),
  "accessories":accessories,"network":network,"games":games,"startup":startup,
  "program-manager":progman,"warning":warning,"information":information,"question":question,
- "terminal":terminal,"calculator":calculator,"clock":clock,"paint":paint,"cardfile":cardfile
+ "terminal":terminal,"calculator":calculator,"clock":clock,"paint":paint,"cardfile":cardfile,
+ "note":note,"web":web
 }
 
+# `generate_wfw_assets.py note` regenerates only the named icons (the others stay byte-identical).
+ONLY=set(sys.argv[1:])
+unknown=ONLY-set(ICONS)
+if unknown: sys.exit(f"unknown icon(s): {', '.join(sorted(unknown))}")
+
 OUT.mkdir(parents=True, exist_ok=True)
+done=0
 for name, painter in ICONS.items():
+    if ONLY and name not in ONLY: continue
+    done+=1
     image=Image.new("RGBA",(32,32),(0,0,0,0)); painter(ImageDraw.Draw(image))
     for scale in (1,2,3,4):
         target=image if scale==1 else image.resize((32*scale,32*scale),Image.Resampling.NEAREST)
         target.save(OUT/f"{name}-{32*scale}.png",optimize=True)
-print(f"generated {len(ICONS)*4} icons in {OUT}")
+print(f"generated {done*4} icons in {OUT}")

@@ -186,10 +186,30 @@ func test_small_view_grid_and_details_columns() -> void:
 	expect_eq(s.rects[0].position, Vector2(8, 8))
 	var cols := BeGeometry.details_columns(400.0)
 	expect_eq(cols[4] + cols[5], 520.0, "min-width 520")
-	expect_eq(cols[5], 110.0)
+	expect_eq(cols[5], BeGeometry.DETAILS_LAST_W)
 	var wide := BeGeometry.details_columns(1000.0)
 	expect_eq(wide[1] + wide[3] + wide[5], 1000.0)
 	expect(wide[1] < wide[3], "2fr:3fr")
+	# the bold "Launch Group" heading (drawn 10 px in) clears the slim scrollbar over the right edge
+	expect(10.0 + BeFont.width(BeDialogLogic.LAUNCH_GROUP_HEADING, BeGeometry.FONT, true) <= cols[5] - BeGeometry.SCROLLBAR,
+		"the Launch Group heading fits its column")
+
+
+func test_find_columns_fit_every_heading_and_fill_the_list() -> void:
+	for w in [300.0, 430.0, 640.0, 1000.0]:
+		var c := BeGeometry.find_columns(w)
+		expect_eq(c.size(), 8)
+		for n in 3:
+			expect_eq(c[n * 2] + c[n * 2 + 1], c[n * 2 + 2], "columns are contiguous at %d" % w)
+		var heads := BeFindView.HEADINGS
+		for n in 4:
+			expect(10.0 + BeFont.width(heads[n], BeGeometry.FONT, true) <= c[n * 2 + 1], "%s fits at %d" % [heads[n], w])
+	var mid := BeGeometry.find_columns(430.0)
+	expect_eq(mid[6] + mid[7], 430.0, "Command takes the rest of the list")
+	expect(mid[7] >= 90.0, "Command stays readable at 640x480")
+	var wide := BeGeometry.find_columns(1000.0)
+	expect_eq(wide[6] + wide[7], 1000.0)
+	expect(wide[7] > mid[7] + 150.0 and wide[1] > mid[1] + 150.0, "a wide window gives the extra room to Name and Command")
 
 
 func test_deskbar_parts() -> void:

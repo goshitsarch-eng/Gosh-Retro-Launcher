@@ -171,6 +171,39 @@ func activate_desktop() -> void:
 	changed.emit()
 
 
+## active_window_id while a sticky note is the active window (no entry has this id).
+const NOTE_ACTIVE := "sticky-note"
+
+
+## A sticky note was clicked or opened: every window draws inactive, and neither the windows nor
+## the desktop take keys.
+## `item_id` names the note (its taskbar button draws pressed); "" keeps the one already named.
+func activate_note(item_id: String = "") -> void:
+	var id := item_id if item_id != "" else _active_note_id
+	if active_window_id == NOTE_ACTIVE and id == _active_note_id:
+		return
+	active_window_id = NOTE_ACTIVE
+	_active_note_id = id
+	changed.emit()
+
+
+## The item id of the note that is the active window, or "" when a window or the desktop is.
+func active_note_id() -> String:
+	return _active_note_id if active_window_id == NOTE_ACTIVE else ""
+
+
+## A note closed. When it was the active one (or `item_id` is ""), the topmost window becomes
+## active again (the desktop when none is open).
+func note_closed(item_id: String = "") -> void:
+	if active_window_id == NOTE_ACTIVE and (item_id == "" or item_id == _active_note_id):
+		active_window_id = _top_visible()
+		_active_note_id = ""
+		changed.emit()
+
+
+var _active_note_id := ""
+
+
 func update_system_window(id: String, updates: Dictionary) -> void:
 	for e in windows:
 		if e.id == id:
@@ -193,6 +226,7 @@ func clear_window_command(nonce: int) -> void:
 func reset() -> void:
 	windows = []
 	active_window_id = ""
+	_active_note_id = ""
 	next_z_index = 1
 	requested_command = {}
 	changed.emit()

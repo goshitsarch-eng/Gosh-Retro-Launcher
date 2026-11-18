@@ -7,6 +7,9 @@ extends RefCounted
 const VIEWS := [["large", "Icon View"], ["small", "Mini Icon View"], ["details", "List View"]]
 
 const SEP := {"sep": true}
+const NEW_NOTE := "New Note…"
+const NOTE_COLOR := "Color"
+const NOTE_TRASH := "Move to Trash…"
 
 
 static func row(label: String, action: String, args: Dictionary = {}, opts: Dictionary = {}) -> Dictionary:
@@ -36,7 +39,7 @@ static func window_menu(key: String) -> Array:
 
 
 static func desktop_menu() -> Array:
-	return [row("New Folder", "folder.new"), SEP, row("Clean Up", "desktop.cleanup"),
+	return [row("New Folder", "folder.new"), row(NEW_NOTE, "note.new"), SEP, row("Clean Up", "desktop.cleanup"),
 		row("Select All", "none", {}, {"disabled": true}), SEP, row("Find…", "find.open"),
 		row("Launcher Tools…", "tools.open"), row("Backgrounds…", "backgrounds.open"), SEP, row("Help", "help.open")]
 
@@ -53,6 +56,7 @@ static func folder_background_menu(key: String, is_computer: bool, view: String)
 	var out := [row("New Folder" if is_computer else "Add Program…", "folder.new" if is_computer else "program.new", {"key": key})]
 	if not is_computer:
 		out.append(row("Add Website…", "website.new", {"key": key}))
+	out.append(row(NEW_NOTE, "note.new", {"key": key}))
 	out.append(SEP)
 	for v in VIEWS:
 		out.append(row(v[1], "window.view", {"key": key, "view": v[0]}, {"dot": view == v[0]}))
@@ -70,7 +74,8 @@ static func menu_bar(key: String, is_computer: bool, view: String, sel: String) 
 	var file := [
 		row("Open", "group.open" if is_computer else "item.open", a, {"bold": true, "disabled": none}), SEP,
 		row("New Folder" if is_computer else "Add Program…", "folder.new" if is_computer else "program.new", {"key": key}),
-		row("Add Website…", "website.new", {"key": key}, {"disabled": is_computer}), SEP,
+		row("Add Website…", "website.new", {"key": key}, {"disabled": is_computer}),
+		row(NEW_NOTE, "note.new", {"key": key}), SEP,
 		row("Move to Trash", "group.trash" if is_computer else "item.trash", a, {"disabled": none}),
 		row("Edit Name", "group.rename" if is_computer else "item.rename", a, {"disabled": none}),
 		row("Get Info", "group.info" if is_computer else "item.info", a, {"disabled": none}), SEP,
@@ -89,24 +94,43 @@ static func menu_bar(key: String, is_computer: bool, view: String, sel: String) 
 
 ## Deskbar (logo) menu: [icon-key, label, action] rows.
 ## `buckets` = LaunchGroups.collect_launch_groups(): when given (even empty) Launch All and one
-## "Launch Group N" row per used number are listed, like the Classic Mac OS Special menu.
-static func deskbar_menu(buckets: Variant = null) -> Array:
+## "Launch Group N: Name (n items)" row per used number are listed, like the Classic Mac OS Special menu
+## (`names` = settings.launchGroupNames). Launch Groups… (the manager) and Export All… / Import All…
+## (the whole launcher in one file) are always offered.
+static func deskbar_menu(buckets: Variant = null, names: Variant = null) -> Array:
 	var out := [
 		row("About Program Manager…", "about.open", {}, {"icon": "logo"}), SEP,
 		row("Find…", "find.open", {}, {"icon": "find"}), row("Run…", "run.open", {}, {"icon": "terminal"}),
-		row("Launcher Tools…", "tools.open", {}, {"icon": "tools"}), row("Backgrounds…", "backgrounds.open", {}, {"icon": "tools"})]
+		row(NEW_NOTE, "note.new", {}, {"icon": "note"}),
+		row("Launcher Tools…", "tools.open", {}, {"icon": "tools"}), row("Backgrounds…", "backgrounds.open", {}, {"icon": "tools"}),
+		row("Help", "help.open", {}, {"icon": "question"}), SEP]
 	if buckets is Array:
-		out.append(SEP)
 		out.append(row("Launch All", "launch.all", {}, {"icon": "terminal", "disabled": buckets.is_empty()}))
 		for b in buckets:
-			var c: int = b.items.size()
-			out.append(row("Launch Group %d (%d %s)" % [int(b.groupNumber), c, "item" if c == 1 else "items"],
+			out.append(row(LaunchGroups.launch_label(int(b.groupNumber), b.items.size(), names),
 				"launch.group", {"n": int(b.groupNumber)}, {"icon": "terminal"}))
-	out.append_array([row("Help", "help.open", {}, {"icon": "question"}), SEP,
+	out.append_array([row("Launch Groups…", "launchgroups.open", {}, {"icon": "tools"}), SEP,
+		row("Export All…", "data.export", {}, {"icon": "volume"}), row("Import All…", "data.import", {}, {"icon": "doc"}), SEP,
 		row("Restart", "session.restart", {}, {"icon": "info"}), row("Shut Down…", "session.shutdown", {}, {"icon": "critical"})])
 	return out
 
 
-## Right-click on the Deskbar logo button.
+## Right-click on the Deskbar logo button: the Deskbar menu's commands that open a window or a dialog (no
+## launching, Restart or Shut Down).
 static func deskbar_context_menu() -> Array:
-	return [row("About Program Manager…", "about.open"), row("Launcher Tools…", "tools.open")]
+	return [row("About Program Manager…", "about.open"), SEP, row(NEW_NOTE, "note.new"), SEP,
+		row("Launcher Tools…", "tools.open"), row("Launch Groups…", "launchgroups.open"), SEP,
+		row("Export All…", "data.export"), row("Import All…", "data.import")]
+
+
+## Right-click on an open sticky note (`color` = its noteColor): Close, Get Info, a Color submenu (a sample of each
+## paper, with a dot on the current one), and Move to Trash… (which asks first).
+static func note_menu(gid: String, iid: String, color: String) -> Array:
+	var a := {"gid": gid, "iid": iid}
+	var current := color if Notes.COLORS.has(color) else Notes.DEFAULT_COLOR
+	var colors := []
+	for c in Notes.color_choices():
+		colors.append(row(String(c.label), "note.color", {"gid": gid, "iid": iid, "color": String(c.id)},
+			{"dot": String(c.id) == current, "swatch": Notes.COLORS[c.id]}))
+	return [row("Close", "note.close", a), row("Get Info", "item.info", a),
+		row(NOTE_COLOR, "none", {}, {"children": colors}), SEP, row(NOTE_TRASH, "note.trash", a)]

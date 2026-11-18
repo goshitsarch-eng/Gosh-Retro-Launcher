@@ -33,9 +33,7 @@ func _draw_body(c: Dictionary, _st: Dictionary) -> void:
 	Px.vline(self, info.end.x - 1, info.position.y, info.size.y, MacTheme.b("888888"))
 	Px.hline(self, info.position.x + 1, info.position.y + 1, info.size.x - 2, MacTheme.s("ffffff"))
 	Px.vline(self, info.position.x + 1, info.position.y + 1, info.size.y - 1, MacTheme.s("ffffff"))
-	var programs := 0
-	for g in ProgramStore.groups:
-		programs += g.items.size()
+	var programs: int = MacDialogLogic.count_items(ProgramStore.groups).programs
 	var line := MacDialogLogic.info_line(view.entries().size(), programs, key == "computer")
 	var w := MacDraw.measure(line)
 	MacDraw.text_centered_y(self, info.position.x + floorf((info.size.x - w) / 2.0), info.position.y, info.size.y, line, MacTheme.t("000000"))

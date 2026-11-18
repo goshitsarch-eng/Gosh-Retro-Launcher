@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - macOS export: ETC2 ASTC import is enabled, so the universal macOS export succeeds (RT-01).
 - Stored values that are out of range or of the wrong type are repaired on load and on import. Every repaired value is counted in the report, including a missing or wrong-type list or settings object (CORE-01).
 - A stored or imported `launchGroup` above 8 is kept and launched in order. Only a negative number, a fraction or a string becomes 0, and that counts as a repair.
+- Every item editor keeps a launch group above 8 when the item is saved; the WfW Properties dialog and Launcher Tools used to save it as 8.
+- The BeOS launch message no longer shows the group number as its position in the batch (BE-01).
+- An Import All that switches to another desktop now shows its result; the host reports it after the new desktop is up. A successful import shows an information icon in Windows for Workgroups, not a warning.
+- Windows for Workgroups drop-downs show "&" in launch group names instead of dropping it.
+- Launcher Tools fits its window: rows wrap and long names are clipped, so nothing runs off the right edge.
+- Windows 95 New Internet Shortcut uses the program group chosen in it, not always the first one.
+- The fallback file chooser (systems without a native one) opens inside the launcher window, fits it, and uses the desktop's font and colours (Mac: also dark mode) instead of Godot's dark editor look. Clicking a file and then Open works; Godot left Open greyed out.
+- Classic Mac OS: while you type in a note or the Find field, item commands such as Cmd-T (Move To Trash) no longer act on the selected icon. Pop-up menus open over their button with the current item under the pointer.
+- Windows for Workgroups text draws the punctuation its faces lack (bold apostrophe, question mark and others; regular < > | `), so "Plumber's" no longer reads "Plumbers"; typographic quotes, dashes and the ellipsis are spelled out.
+- The host tells each desktop whether a notice is a problem, so a successful import shows an information icon in Windows for Workgroups.
+- The launch group column is headed "Launch Group" instead of "Batch" on Mac and BeOS, and BeOS Find counts items, not files.
+- Windows 95: the window move and size outline draws above sticky notes. BeOS sticky notes use the normal 15 px text.
 - Saves no longer skip silently. A failed groups, settings or workspace-profile write shows a notice, logs an error and stays pending. Groups and settings are retried by the next save of the same kind, profiles by the next save of any kind, and all of them on exit (CORE-01).
 - Restoring a backup writes one safety backup, not two.
 - A JSON import is refused, and nothing is replaced, when its safety backup cannot be written.
@@ -23,6 +35,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Import results, repaired values and save problems are reported to the user.
 
 ### Added
+- Launch groups can be managed in every desktop. A Launch Groups window (WfW Launcher menu, Windows 95 Start menu, Mac Special menu, BeOS Deskbar) creates, renames, renumbers, deletes and launches groups and picks their programs from a checklist. Launcher Tools has the same controls.
+- Launch groups have optional names (`settings.launchGroupNames`), shown everywhere a group appears, for example "Launch Group 3: Morning (2 items)". A named group can be empty. Moving a group to a number that is taken swaps the two.
+- Windows 95 supports launch groups: a Launch group field in Properties and the Create Shortcut wizard, a Launch Groups cascade in Start > Programs, and an "In a launch group" Find filter.
+- Export All... and Import All... in every desktop (WfW File menu, Windows 95 Start > Settings, Mac File menu, BeOS Deskbar, Launcher Tools) save or load the whole launcher in one file. Import asks first and backs up the current data. In Launcher Tools they replace Import JSON... and Export JSON....
+- BeOS menus taller than the screen scroll, so the longer Deskbar menu fits at 640x480.
+- Sticky notes, a third kind of item next to programs and web sites, in every desktop. A note has a title, a paper colour and text, opens as a sticky note on the desktop that saves as you type, and reopens after a restart if it was left open. Find and Quick Search search note text, and a note in a launch group opens when the group runs. Export All includes notes; .GRP export leaves them out and says so.
+- Windows 95 shows a progress window while a launch group runs, with a Cancel button that stops the remaining items.
+- End-to-end tests for Export All / Import All in every desktop, driven through the real menus and confirmation dialog, plus one that clicks and types through the fallback file chooser itself.
+- Right-click (Mac: also Control-click) on a sticky note opens a menu in every desktop: Close, Properties / Get Info, Delete or Move to Trash, and on Mac and BeOS the paper colour. The note that has the keyboard has a stronger title strip.
+- Windows 95 lists open sticky notes on the taskbar and in Alt+Tab.
+- Windows for Workgroups File > New... offers Web Site next to Program Group, Program Item and Sticky Note, with its own Web Site Properties and a web icon.
+- BeOS: Launch Groups, Export All, Import All and New Note in the logo's right-click menu; Find searches "Name or text" and shows each program's launch group.
 - Screenshots of the four desktops in `docs/screenshots/`, shown in the README.
 - `tools/capture_screenshots.sh`, which regenerates the screenshots from the running app with a temporary data folder.
 - `PM_CAPTURE_NOTICE=1` (opt-in, capture runs only) shows store notices. Every capture run with it set then posts one sample save-failure notice, so the shell's message box can be checked. The `wfw-settings` view captures the settings dialog.

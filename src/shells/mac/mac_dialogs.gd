@@ -3,7 +3,9 @@ extends RefCounted
 ## Entry points for every Mac dialog (all bind to ProgramStore through MacDialogLogic):
 ##   alert / confirm            untitled message boxes (icons: note | caution | stop)
 ##   about, help, run, find via shell, desktop_pictures, shutdown
-##   new_folder, rename, new_program, get_info_item, get_info_group, change_icon, browse_programs
+##   new_folder, rename, new_program, new_website, new_note, get_info_item (get_info_note for a sticky note),
+##   get_info_group, change_icon, browse_programs
+##   (the Launch Groups manager is MacLaunchGroups)
 ## `shell` is the MacShell (dialog_layer, popup_layer, logical_size, launch_item, ...).
 
 const LABEL_W := 92.0   ## right edge of the label column inside forms
@@ -31,7 +33,7 @@ static func alert(shell: Control, lines: Array, icon: String = "note", buttons: 
 	var pad := MacDialog.ALERT_PAD + MacDialog.ALERT_BORDER + 1
 	var height := pad * 2 + 16 + content_h + 14 + 20 + 14
 	var d := MacDialog.open(shell, "", Vector2(pad * 2 + 18 + 32 + 18 + wrap_w + 18, height), false)
-	d.add(MacIconBox.make(icon), Vector2(18, 16))
+	d.add(MacIconBox.make(MacIconCatalog.alert_icon(icon)), Vector2(18, 16))
 	var y := 16.0 + 4.0
 	for l in labels:
 		d.add(l, Vector2(68, y))
@@ -63,18 +65,12 @@ static func confirm(shell: Control, text: String, on_yes: Callable, icon: String
 
 
 static func about(shell: Control) -> MacDialog:
-	var n := 0
-	for g in ProgramStore.groups:
-		n += g.items.size()
 	return alert(shell, [{"t": "Program Manager", "w": 700}, "Version " + Platform.version(),
-		"A retro desktop launcher inspired by Windows 3.1.", "%d folders, %d programs" % [ProgramStore.groups.size(), n]], "note")
+		"A retro desktop launcher inspired by Windows 3.1.", MacDialogLogic.stats_line(ProgramStore.groups, ProgramStore.launch_group_names())], "note")
 
 
 static func about_computer(shell: Control) -> MacDialog:
-	var n := 0
-	for g in ProgramStore.groups:
-		n += g.items.size()
-	return alert(shell, [{"t": "Launcher HD", "w": 700}, "%s, %d programs" % [MacDialogLogic.plural(ProgramStore.groups.size(), "folder"), n]], "note")
+	return alert(shell, [{"t": "Launcher HD", "w": 700}, MacDialogLogic.computer_line(ProgramStore.groups)], "note")
 
 
 # --------------------------------------------------------------- form helpers
@@ -194,6 +190,79 @@ static func new_website(shell: Control, group_id: String) -> MacDialog:
 	return d
 
 
+## File > New Note…: a sticky note (title, paper colour, folder, text) that opens on the desktop when OK is clicked.
+static func new_note(shell: Control, group_id: String) -> MacDialog:
+	var d := _titled(shell, "New Note", 440, 268)
+	d.add(MacLabel.make("A sticky note stays in its folder and opens on the desktop. Type a title and, if you like, the text.",
+		{"wrap": 400}), Vector2(14, 12))
+	var title_f := MacTextField.new("mac.dialog.field:Title")
+	title_f.text = MacDialogLogic.DEFAULT_NOTE_NAME
+	_field_row(d, "Title:", 44, title_f)
+	var color_sel := _color_row(d, shell, "Color:", 44 + 28, Notes.DEFAULT_COLOR)
+	var group_sel := MacSelect.new("mac.dialog.select:Folder")
+	group_sel.host = shell.select_layer
+	for g in ProgramStore.groups:
+		group_sel.options.append({"id": String(g.id), "label": String(g.name)})
+	group_sel.select_id(group_id)
+	_field_row(d, "Folder:", 44 + 56, group_sel)
+	var text_l := MacLabel.make("Text:", {"bold": true})
+	d.add(text_l, Vector2(LABEL_W - text_l.size.x, 44 + 84 + 4))
+	var text_f := MacTextArea.new("mac.dialog.field:Text")
+	d.add(text_f, Vector2(LABEL_W + 12, 44 + 84))
+	text_f.size = Vector2(d.body.size.x - LABEL_W - 12 - 14, 62)
+	var b := _buttons(d)
+	b[0].pressed.connect(func():
+		var id := MacDialogLogic.create_note(ProgramStore, group_sel.current_id(), title_f.text, text_f.text, color_sel.current_id())
+		d.close()
+		if id != "":
+			shell.open_note(id))
+	d.on_key = func(k: InputEventKey) -> bool:
+		if (k.keycode == KEY_ENTER or k.keycode == KEY_KP_ENTER) and text_f.has_text_focus():
+			text_f.insert_newline()
+			return true
+		return false
+	title_f.focus_edit()
+	title_f.edit.select_all()
+	return d
+
+
+## A "Color:" row: the paper colour pop-up with a swatch of the paper after it. Returns the pop-up.
+static func _color_row(d: MacDialog, shell: Control, label: String, y: float, current: String) -> MacSelect:
+	var sel := MacSelect.new("mac.dialog.select:Color")
+	sel.host = shell.select_layer
+	sel.options = MacDialogLogic.note_color_options()
+	sel.selected_index = MacDialogLogic.note_color_index(current)
+	_field_row(d, label, y, sel)
+	sel.size.x = 120
+	var swatch := _PaperSwatch.new()
+	swatch.color_id = sel.current_id()
+	d.add(swatch, Vector2(sel.position.x + sel.size.x + 10, y + 1))
+	sel.selected.connect(func(_i: int):
+		swatch.color_id = sel.current_id()
+		swatch.queue_redraw())
+	return sel
+
+
+## A small square of note paper (the colour the pop-up beside it picks), framed like a Stickies window.
+class _PaperSwatch extends Control:
+	var color_id := Notes.DEFAULT_COLOR
+
+	func _init() -> void:
+		size = Vector2(28, 20)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		focus_mode = Control.FOCUS_NONE
+		add_to_group("pm_auto")
+		set_meta("auto_id", "mac.dialog.swatch:Color")
+
+	func _draw() -> void:
+		var paper: Color = Notes.COLORS.get(color_id, Notes.COLORS[Notes.DEFAULT_COLOR])
+		var r := Rect2(Vector2.ZERO, size)
+		draw_rect(r, paper)
+		draw_rect(Rect2(1, 1, size.x - 2, 4), paper.darkened(0.1))
+		Px.hline(self, 1, 5, size.x - 2, paper.darkened(0.3))
+		Px.outline(self, r, Color.BLACK)
+
+
 static func run(shell: Control) -> MacDialog:
 	var d := _titled(shell, "Run", 420, 152)
 	d.add(MacLabel.make("Type the name of a program in your launcher groups, or a command to run.", {"wrap": 380}), Vector2(14, 12))
@@ -219,6 +288,8 @@ static func browse_programs(shell: Control, on_pick: Callable) -> MacDialog:
 	var rows := []
 	for g in ProgramStore.groups:
 		for it in g.items:
+			if Notes.is_note(it):
+				continue  # a note has no command line to put in Run
 			rows.append({"id": String(it.id), "label": String(it.name), "sub": String(it.path), "icon": String(it.get("icon", ""))})
 	list.rows = rows
 	d.add(list, Vector2(14, 32))
@@ -403,6 +474,8 @@ static func get_info_item(shell: Control, group_id: String, item_id: String) -> 
 	var item := ProgramStore.find_item(group_id, item_id)
 	if item.is_empty():
 		return message(shell, "The item no longer exists.", "caution")
+	if Notes.is_note(item):
+		return get_info_note(shell, group_id, item_id)
 	var state := {"icon": String(item.get("icon", "")), "group": group_id}
 	var d := _titled(shell, "%s Info" % item.name, 420, 392)
 	var icon_box := MacIconBox.make(state.icon)
@@ -440,9 +513,7 @@ static func get_info_item(shell: Control, group_id: String, item_id: String) -> 
 	y += 26
 	var lg := MacSelect.new("mac.dialog.select:Launch group")
 	lg.host = shell.select_layer
-	lg.options.append({"id": "0", "label": "None"})
-	for n in range(1, MacDialogLogic.LAUNCH_GROUP_MAX + 1):
-		lg.options.append({"id": str(n), "label": "Group %d" % n})
+	lg.options = MacDialogLogic.launch_group_options(ProgramStore.launch_group_names(), int(item.get("launchGroup", 0)))
 	lg.select_id(str(int(item.get("launchGroup", 0))))
 	_field_row(d, "Launch group:", y, lg)
 	y += 26
@@ -469,6 +540,58 @@ static func get_info_item(shell: Control, group_id: String, item_id: String) -> 
 			"name": name_f.text, "path": path_f.text, "workingDir": dir_f.text, "arguments": args_f.text,
 			"environment": env_f.text, "runMode": run_sel.current_id(), "launchGroup": lg.current_id(),
 			"shortcutKey": key_f.text, "icon": state.icon, "groupId": where.current_id()})
+		if result.ok:
+			d.close()
+		else:
+			message(shell, String(result.error), "caution"))
+	name_f.focus_edit()
+	name_f.edit.select_all()
+	return d
+
+
+## Get Info for a sticky note: title, Kind, Where, paper Color, Launch group and Change Icon (a note has no target,
+## start-in folder, arguments, environment, shortcut key or window mode).
+static func get_info_note(shell: Control, group_id: String, item_id: String) -> MacDialog:
+	var item := ProgramStore.find_item(group_id, item_id)
+	if item.is_empty():
+		return message(shell, "The item no longer exists.", "caution")
+	var state := {"icon": String(item.get("icon", ""))}
+	var d := _titled(shell, "%s Info" % item.name, 420, 262)
+	var icon_box := MacIconBox.make(state.icon)
+	d.add(icon_box, Vector2(14, 12))
+	var name_f := MacTextField.new("mac.dialog.field:Name")
+	name_f.text = String(item.name)
+	d.add(name_f, Vector2(60, 17))
+	name_f.size = Vector2(d.body.size.x - 60 - 14, 22)
+	d.add(_Rule.new(d.body.size.x - 28), Vector2(14, 54))
+	var y := 66.0
+	_static_row(d, "Kind:", MacDialogLogic.kind_of(item), y)
+	y += 26
+	var where := MacSelect.new("mac.dialog.select:Where")
+	where.host = shell.select_layer
+	for g in ProgramStore.groups:
+		where.options.append({"id": String(g.id), "label": String(g.name)})
+	where.select_id(group_id)
+	_field_row(d, "Where:", y, where)
+	y += 26
+	var color_sel := _color_row(d, shell, "Color:", y, String(item.get("noteColor", Notes.DEFAULT_COLOR)))
+	y += 26
+	var lg := MacSelect.new("mac.dialog.select:Launch group")
+	lg.host = shell.select_layer
+	lg.options = MacDialogLogic.launch_group_options(ProgramStore.launch_group_names(), int(item.get("launchGroup", 0)))
+	lg.select_id(str(int(item.get("launchGroup", 0))))
+	_field_row(d, "Launch group:", y, lg)
+	var change := MacButton.new("Change Icon...", 90)
+	var b := _buttons(d, "OK", [change])
+	change.pressed.connect(func():
+		change_icon(shell, String(state.icon), func(id: String):
+			state.icon = id
+			icon_box.icon = id
+			icon_box.queue_redraw()))
+	b[0].pressed.connect(func():
+		var result := MacDialogLogic.apply_note_info(ProgramStore, group_id, item_id, {
+			"name": name_f.text, "noteColor": color_sel.current_id(), "launchGroup": lg.current_id(),
+			"icon": state.icon, "groupId": where.current_id()})
 		if result.ok:
 			d.close()
 		else:

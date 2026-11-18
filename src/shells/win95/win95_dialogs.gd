@@ -10,8 +10,13 @@ extends RefCounted
 ##   open_properties(shell, target)   # {kind: "item", groupId, item} | {kind: "group", group}  (Win95Properties)
 ##   open_new_folder(shell, ctx)      # ctx = {openItemAfterCreate?, openUrlAfterCreate?}
 ##   open_new_url(shell, ctx)         # ctx = {groupId?}
+##   open_new_note(shell, ctx)        # New Sticky Note; ctx = {groupId?}
+##   open_change_icon(shell, current, on_pick)   # Change Icon (Win95IconCatalog.PICKABLE_IDS)
 ##   open_help(shell) / open_about(shell)
 ##   build_find_view(shell, window)   # the Find client Control hosted by Win95Window
+##   open_launch_groups(shell)        # Launch Groups manager (Win95LaunchGroups)
+##   export_all(shell) / import_all(shell)   # Start > Settings > Export All... / Import All...
+##   confirm_ok_cancel(shell, title, message, on_ok, icon, ok_default)   # OK / Cancel box
 ## Building blocks for new dialogs: Win95Modal (frame, key routing), Win95Button/Checkbox/Radio/
 ## TextInput/Select/GroupBox/Label/IconBox/TabStrip/Rule. `shell` is the Win95Shell.
 
@@ -46,6 +51,16 @@ static func open_new_url(shell: Control, ctx: Dictionary) -> void:
 	Win95DialogForms.open_new_url(shell, ctx)
 
 
+## New Sticky Note dialog; ctx = {groupId?}. OK creates the note in that folder and opens it.
+static func open_new_note(shell: Control, ctx: Dictionary) -> void:
+	Win95DialogForms.open_new_note(shell, ctx)
+
+
+## Change Icon: picks one of Win95IconCatalog.PICKABLE_IDS; on_pick(icon_id) on OK.
+static func open_change_icon(shell: Control, current: String, on_pick: Callable) -> void:
+	Win95Properties.open_change_icon(shell, current, on_pick)
+
+
 static func open_help(shell: Control) -> void:
 	Win95DialogForms.open_help(shell)
 
@@ -60,9 +75,35 @@ static func build_find_view(shell: Control, window: Control) -> Control:
 	return view
 
 
-## OK message box (355x145 frame, 32px icon, wrapped text, default OK).
+static func open_launch_groups(shell: Control) -> void:
+	Win95LaunchGroups.open_manager(shell)
+
+
+## Start > Settings > Export All...: saves the whole launcher to a JSON file the user picks.
+static func export_all(shell: Control) -> void:
+	var result: Dictionary = await Platform.export_all()
+	var text := DataTransfer.export_status(result)
+	if text == "" or not is_instance_valid(shell) or not shell.is_inside_tree():
+		return
+	show_message(shell, DataTransfer.EXPORT_TITLE, text.replace("&", "&&"), "information" if result.get("success", false) else "critical")
+
+
+## Start > Settings > Import All...: OK / Cancel warning, then the file chooser. The result is shown
+## by the host (Platform.import_finished), because an import that switches the desktop frees this shell.
+static func import_all(shell: Control) -> Win95Modal:
+	return confirm_ok_cancel(shell, DataTransfer.IMPORT_TITLE, DataTransfer.IMPORT_CONFIRM, func(): Platform.import_data(), "warning")
+
+
+## Height of a message box frame for `text`: the classic 145 px, taller when the text needs it.
+static func message_height(text: String) -> float:
+	var lines := Win95Draw.font().wrap(text, 275).size()
+	var label_h := maxi(13, lines * 13)
+	return maxf(145.0, 26.0 + 10.0 + maxf(32.0, label_h) + 12.0 + 23.0 + 10.0)
+
+
+## OK message box (355x145 frame, 32px icon, wrapped text, default OK; taller for long text).
 static func show_message(shell: Control, title: String, text: String, icon: String = "information") -> Win95Modal:
-	var m := Win95Modal.open(shell, title, Vector2(355, 145))
+	var m := Win95Modal.open(shell, title, Vector2(355, message_height(text)))
 	var y := _message_body(m, text, icon)
 	var ok := Win95Button.new()
 	ok.label = "OK"
@@ -75,7 +116,7 @@ static func show_message(shell: Control, title: String, text: String, icon: Stri
 
 ## Yes/No question box; No is the default (least destructive).
 static func confirm(shell: Control, title: String, message: String, on_confirm: Callable, on_cancel: Callable = Callable()) -> Win95Modal:
-	var m := Win95Modal.open(shell, title, Vector2(355, 145))
+	var m := Win95Modal.open(shell, title, Vector2(355, message_height(message)))
 	var y := _message_body(m, message, "question")
 	var yes := Win95Button.new()
 	yes.label = "&Yes"
@@ -94,6 +135,26 @@ static func confirm(shell: Control, title: String, message: String, on_confirm: 
 		on_confirm.call())
 	no.pressed.connect(cancel)
 	no.grab_focus()
+	return m
+
+
+## OK / Cancel box. Cancel, the least destructive choice, is the default unless `ok_default`.
+static func confirm_ok_cancel(shell: Control, title: String, message: String, on_ok: Callable, icon: String = "question",
+		ok_default: bool = false) -> Win95Modal:
+	var m := Win95Modal.open(shell, title, Vector2(355, message_height(message)))
+	var y := _message_body(m, message, icon)
+	var ok := Win95Button.new()
+	ok.label = "OK"
+	var cancel := Win95Button.new()
+	cancel.label = "Cancel"
+	m.add(ok, Vector2(m.body.size.x - 9 - 75 * 2 - 6, y))
+	m.add(cancel, Vector2(m.body.size.x - 9 - 75, y))
+	m.set_default(ok if ok_default else cancel)
+	cancel.pressed.connect(m.close)
+	ok.pressed.connect(func():
+		m.close()
+		on_ok.call())
+	(ok if ok_default else cancel).grab_focus()
 	return m
 
 

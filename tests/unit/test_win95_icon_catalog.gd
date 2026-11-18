@@ -19,7 +19,7 @@ func test_contains_the_native_size_families_needed_by_shell_surfaces() -> void:
 	for id in ["my-computer", "network-neighborhood", "recycle-empty", "folder", "programs", "run", "find", "shutdown",
 			"taskbar", "warning", "information", "question", "critical", "application", "url"]:
 		expect(Win95IconCatalog.ICON_IDS.has(id), id)
-	expect_eq(Win95IconCatalog.ICON_IDS.size(), 26)
+	expect_eq(Win95IconCatalog.ICON_IDS.size(), 27)
 
 
 func test_does_not_replace_extracted_application_icons() -> void:

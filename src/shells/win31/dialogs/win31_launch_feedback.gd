@@ -47,7 +47,7 @@ func _sync() -> void:
 
 ## {rect, title, detail, icon, progress, status} of the toast for the current state (no drawing).
 func layout(fb: Dictionary = UIState.launch_feedback) -> Dictionary:
-	var title := W31DialogLogic.feedback_status_text(fb)
+	var title := W31DialogLogic.feedback_status_text(fb, ProgramStore.launch_group_names())
 	var detail := W31DialogLogic.feedback_detail_text(fb)
 	var f := W31.font()
 	var text_w := maxi(f.measure(title), f.measure(detail))
@@ -77,7 +77,7 @@ func _draw() -> void:
 	Px.outline(self, icon_rect, W31.BLACK)
 	var icon_text: String = l.icon
 	if icon_text == ">>":
-		# the WfW strike has no '>' glyph: two 4x7 chevrons
+		# two 4x7 chevrons drawn as a picture (bigger than the font's own '>' stand-in)
 		var cx := x + floorf((ICON - 11) / 2.0)
 		var cy := y + floorf((ICON - 7) / 2.0)
 		for k in 2:
@@ -90,8 +90,8 @@ func _draw() -> void:
 	var bx := x + ICON + 8
 	var bw := r.end.x - 1 - PAD - bx
 	var f := W31.font()
-	f.draw(self, Vector2(bx, y), f.clip(l.title, int(bw)), W31.BLACK)
-	f.draw(self, Vector2(bx, y + 15), f.clip(l.detail, int(bw)), W31.SHADOW)
+	f.draw(self, Vector2(bx, y), f.clip(W31.drawable(l.title), int(bw)), W31.BLACK)
+	f.draw(self, Vector2(bx, y + 15), f.clip(W31.drawable(l.detail), int(bw)), W31.SHADOW)
 	var meter := Rect2(bx, y + 15 + 13 + 6, bw, METER_H)
 	Px.fill_rect(self, meter, W31.WHITE)
 	W31.border2(self, meter, W31.SHADOW, W31.WHITE)

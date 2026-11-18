@@ -10,12 +10,16 @@ const RUN_MODE_LABELS := ["Normal window", "Minimized", "Maximized"]
 const LAUNCH_GROUP_MAX := 8
 const DEFAULT_FOLDER_NAME := "untitled folder"
 ## Change Icon options (design ICONIDS reduced to distinct Mac icons): catalog id -> Mac icon.
-const ICON_CHOICES := ["default", "readme", "terminal", "network", "setup", "accessories"]
+const ICON_CHOICES := ["default", "readme", "terminal", "network", "setup", "accessories", "note"]
+## The Kind of a sticky note (Get Info, the folder list view).
+const NOTE_KIND := "sticky note"
+const DEFAULT_NOTE_NAME := "untitled note"
 
 const HELP_TOPICS := [
 	["Starting programs", "Double-click an icon in a folder window to start it. Select an icon and choose Open from the File menu, or press Return."],
-	["Creating folders and items", "Choose New Folder from the File menu to create a folder. Use New Program in a folder window's context menu, or drag files into a folder window."],
-	["Batch launching", "Give items a launch group number from 1 to 8 in Get Info. Then use Launch Group or Launch All in the Special menu to start them with the delay you set."],
+	["Creating folders and items", "Choose New Folder from the File menu to create a folder. Use New Program in a folder window's context menu, or drag files into a folder window. New Note puts a sticky note in the front folder and opens it on the desktop; double-click its icon to open it again."],
+	["Batch launching", "Give items a launch group number from 1 to 8 in Get Info, or choose Launch Groups in the Special menu to create, name, renumber and fill groups. Then use Launch Group or Launch All in the Special menu to start them with the delay you set."],
+	["Moving your setup", "Choose Export All in the File menu to save every folder, program, launch group and setting to one file. Import All replaces everything with the contents of such a file; your current setup is backed up first."],
 	["Importing .GRP files", "Open Launcher Tools and choose Import .GRP to bring in an original Windows 3.x program group. Export .GRP writes one back out."],
 	["Switching shells", "Press Ctrl+Alt+T to open Launcher Tools, pick a shell under Appearance, and click Apply."],
 	["Backups and profiles", "Settings are saved automatically. The newest 12 automatic restore points are kept, and you can create manual restore points and named workspace profiles in Launcher Tools."],
@@ -59,6 +63,8 @@ static func is_internet_url(path: String) -> bool:
 
 
 static func kind_of(item: Dictionary) -> String:
+	if Notes.is_note(item):
+		return NOTE_KIND
 	return "Internet shortcut" if is_internet_url(String(item.get("path", ""))) else "Application program"
 
 
@@ -81,6 +87,9 @@ static func apply_item_info(store: Object, persisted_group_id: String, item_id: 
 	if name.is_empty() or path.is_empty():
 		return {"ok": false, "error": "Enter a name and a target for this item.", "groupId": persisted_group_id}
 	var lg := parse_launch_group(String(fields.get("launchGroup", "")))
+	var stored := int(_find(store, persisted_group_id, item_id).get("launchGroup", 0))
+	if lg < 0 and stored > LAUNCH_GROUP_MAX and String(fields.get("launchGroup", "")).strip_edges() == str(stored):
+		lg = stored   # an imported number above 8 is kept unless the user picks another
 	if lg < 0:
 		return {"ok": false, "error": "Launch group must be a number from 1 to %d, or None." % LAUNCH_GROUP_MAX, "groupId": persisted_group_id}
 	var run_mode := String(fields.get("runMode", "normal"))
@@ -105,6 +114,15 @@ static func apply_item_info(store: Object, persisted_group_id: String, item_id: 
 	return {"ok": true, "error": "", "groupId": gid}
 
 
+static func _find(store: Object, group_id: String, item_id: String) -> Dictionary:
+	for g in store.groups:
+		if g.id == group_id:
+			for it in g.items:
+				if it.id == item_id:
+					return it
+	return {}
+
+
 ## Duplicate / Make Alias: appends "<name> <suffix>" to the same group. Returns the new item id or "".
 static func duplicate_item(store: Object, group_id: String, item_id: String, suffix: String) -> String:
 	var src: Dictionary = {}
@@ -119,6 +137,8 @@ static func duplicate_item(store: Object, group_id: String, item_id: String, suf
 	copy.erase("id")
 	copy.erase("win31Position")
 	copy.erase("win95Position")
+	copy.erase("noteOpen")   # a copied note starts closed (and is not reopened at the next start)
+	copy.erase("noteBounds")
 	copy["name"] = "%s %s" % [src.name, suffix]
 	return String(store.add_item(group_id, copy))
 
@@ -155,9 +175,12 @@ static func clean_up(store: Object, group_id: String) -> void:
 			store.update_group(group_id, {"items": items})
 
 
-## Find window filter. kind: "all" | "app" | "url" | "batch"; where: "all" or a group id. Returns
-## [{group, item}] ranked like Quick Search.
-static func find_items(groups: Array, query: String, where: String, kind: String) -> Array:
+## Find window filter. kind: "all" | "app" | "url" | "note" | "batch"; where: "all" or a group id. Returns
+## [{group, item}] ranked like Quick Search. For "batch" an item also matches when its launch group's label
+## ("Group 3: Morning", names = settings.launchGroupNames) contains the query; those follow the name matches.
+## Sticky notes match by title and by their text ("all" and "note"; text matches follow the title matches);
+## "app" leaves notes out, "note" keeps only notes.
+static func find_items(groups: Array, query: String, where: String, kind: String, names: Variant = {}) -> Array:
 	var type := "all"
 	if kind == "app":
 		type = "application"
@@ -168,8 +191,136 @@ static func find_items(groups: Array, query: String, where: String, kind: String
 	for r in found:
 		if kind == "batch" and int(r.item.get("launchGroup", 0)) <= 0:
 			continue
+		if kind == "app" and Notes.is_note(r.item):
+			continue
+		if kind == "note" and not Notes.is_note(r.item):
+			continue
 		out.append(r)
+	var q := query.strip_edges().to_lower()
+	if (kind == "all" or kind == "note") and q != "" and not q.contains("*") and not q.contains("?"):
+		var seen_n := {}
+		for r in out:
+			seen_n[String(r.item.id)] = true
+		for g in groups:
+			if where != "all" and String(g.id) != where:
+				continue
+			for it in g.items:
+				if Notes.is_note(it) and not seen_n.has(String(it.id)) and String(it.get("note", "")).to_lower().contains(q):
+					out.append({"group": g, "item": it})
+					seen_n[String(it.id)] = true
+	if kind == "batch" and q != "" and not q.contains("*") and not q.contains("?"):
+		var seen := {}
+		for r in out:
+			seen[String(r.item.id)] = true
+		for g in groups:
+			if where != "all" and String(g.id) != where:
+				continue
+			for it in g.items:
+				var n := int(it.get("launchGroup", 0))
+				if n > 0 and not seen.has(String(it.id)) and LaunchGroups.format_launch_group(n, names).to_lower().contains(q):
+					out.append({"group": g, "item": it})
+					seen[String(it.id)] = true
 	return out
+
+
+## Find results' last column: the launch group (batch search), a note's first line, or the command.
+static func find_detail(item: Dictionary, batch: bool, names: Variant = {}) -> String:
+	if batch:
+		return launch_group_cell(int(item.get("launchGroup", 0)), names)
+	if Notes.is_note(item):
+		return Notes.preview(item)
+	return String(item.get("path", ""))
+
+
+## Find results' last column header for the type filter of the search.
+static func find_detail_header(kind: String) -> String:
+	match kind:
+		"batch":
+			return "Launch Group"
+		"note":
+			return "Text"
+	return "Command"
+
+
+## Folder list view "Command" column: the command line, or the Kind of a sticky note (it has none).
+static func command_cell(item: Dictionary) -> String:
+	return NOTE_KIND if Notes.is_note(item) else String(item.get("path", ""))
+
+
+# --------------------------------------------------------------- sticky notes
+
+## A press that opens a contextual menu: the right button, or Control-click (the one-button Mac way).
+static func is_context_click(button: int, ctrl: bool) -> bool:
+	return button == MOUSE_BUTTON_RIGHT or (button == MOUSE_BUTTON_LEFT and ctrl)
+
+
+## The note context menu's Move To Trash… alert.
+static func note_trash_prompt(name: String) -> String:
+	return "Delete the sticky note “%s”?" % name
+
+
+## The note context menu's colour rows: repaints note `item_id`. False (and no change) for an unknown colour or a
+## missing note.
+static func set_note_color(store: Object, item_id: String, color: String) -> bool:
+	var loc: Dictionary = store.locate_item(item_id)
+	if loc.is_empty() or not Notes.is_note(loc.item) or not Notes.COLORS.has(color):
+		return false
+	store.update_item(String(loc.groupId), item_id, {"noteColor": color})
+	return true
+
+## The folder a new note goes in: the front folder window's group, else the first folder ("" when there are none).
+static func note_group(groups: Array, active_key: String) -> String:
+	if active_key.begins_with("g:"):
+		var gid := active_key.substr(2)
+		for g in groups:
+			if String(g.id) == gid:
+				return gid
+	return String(groups[0].id) if not groups.is_empty() else ""
+
+
+## New Note… OK: adds the note (blank title -> DEFAULT_NOTE_NAME). Returns its id ("" when the folder is gone).
+static func create_note(store: Object, group_id: String, title: String, text: String, color: String) -> String:
+	var t := title.strip_edges()
+	return String(store.add_note(group_id, t if t != "" else DEFAULT_NOTE_NAME, text, color))
+
+
+## The paper colour pop-up rows ([{id, label}]) and the index of `current` in them (0 when unknown).
+static func note_color_options() -> Array:
+	return Notes.color_choices()
+
+
+static func note_color_index(current: String) -> int:
+	var opts := note_color_options()
+	for i in opts.size():
+		if String(opts[i].id) == current:
+			return i
+	return 0
+
+
+## Get Info OK for a note. fields: {name, noteColor, launchGroup (String), icon, groupId}. Returns {ok, error, groupId}.
+static func apply_note_info(store: Object, persisted_group_id: String, item_id: String, fields: Dictionary) -> Dictionary:
+	var name := String(fields.get("name", "")).strip_edges()
+	if name.is_empty():
+		return {"ok": false, "error": "Enter a title for this note.", "groupId": persisted_group_id}
+	var lg := parse_launch_group(String(fields.get("launchGroup", "")))
+	var stored := int(_find(store, persisted_group_id, item_id).get("launchGroup", 0))
+	if lg < 0 and stored > LAUNCH_GROUP_MAX and String(fields.get("launchGroup", "")).strip_edges() == str(stored):
+		lg = stored
+	if lg < 0:
+		return {"ok": false, "error": "Launch group must be a number from 1 to %d, or None." % LAUNCH_GROUP_MAX, "groupId": persisted_group_id}
+	var updates := {"name": name, "launchGroup": lg}
+	var color := String(fields.get("noteColor", ""))
+	if Notes.COLORS.has(color):
+		updates["noteColor"] = color
+	if String(fields.get("icon", "")) != "":
+		updates["icon"] = String(fields.icon)
+	store.update_item(persisted_group_id, item_id, updates)
+	var gid := persisted_group_id
+	var target := String(fields.get("groupId", persisted_group_id))
+	if target != "" and target != persisted_group_id:
+		store.move_item(persisted_group_id, target, item_id)
+		gid = target
+	return {"ok": true, "error": "", "groupId": gid}
 
 
 ## Item to launch for Run: an existing item whose name matches, otherwise an ad-hoc command item. {} when blank.
@@ -201,6 +352,232 @@ static func window_title(key: String, groups: Array) -> String:
 		if "g:" + String(g.id) == key:
 			return String(g.name)
 	return ""
+
+
+# --------------------------------------------------------------- launch groups
+# A launch group is a number (item.launchGroup) plus an optional name (settings.launchGroupNames). LaunchGroups
+# and ProgramStore do the work; these shape it for the Mac dialogs. `store` is a ProgramStore.
+
+const ALL_NUMBERS_IN_USE := "All 8 launch group numbers are in use. Delete a group, or add programs to one of the existing groups instead."
+
+
+## Get Info "Launch group" pop-up: None, then Group 1..8 with their names. A stored number above 8 (kept from an
+## import) is offered too, so OK does not silently drop it.
+static func launch_group_options(names: Variant, current: int = 0) -> Array:
+	var out := [{"id": "0", "label": "None"}]
+	for n in range(1, LaunchGroups.MAX_GROUP + 1):
+		out.append({"id": str(n), "label": LaunchGroups.format_launch_group(n, names)})
+	if current > LaunchGroups.MAX_GROUP:
+		out.append({"id": str(current), "label": LaunchGroups.format_launch_group(current, names)})
+	return out
+
+
+## Folder list view column headers. A folder's last column shows launch groups: "Launch Group" when that fits in
+## `last_text_w` px, else "Group". Launcher HD lists folders (Size, Type).
+static func list_headers(is_computer: bool, last_text_w: int) -> Array:
+	if is_computer:
+		return ["Name", "Size", "Type"]
+	return ["Name", "Command", "Launch Group" if MacDraw.measure("Launch Group") <= last_text_w else "Group"]
+
+
+## Folder list view "Launch Group" column: the launch group label, or a dash when the item is in none.
+static func launch_group_cell(number: int, names: Variant) -> String:
+	return LaunchGroups.format_launch_group(number, names) if number > 0 else "—"
+
+
+## Rows of the Launch Groups list: {id: "3", label: "Group 3: Morning", sub: "2 items" | "empty", count}.
+static func launch_group_rows(groups: Array, names: Variant) -> Array:
+	var out := []
+	for d in LaunchGroups.defined_groups(groups, names):
+		out.append({"id": str(d.number), "label": String(d.label), "count": int(d.count),
+			"sub": "empty" if int(d.count) == 0 else plural(int(d.count), "item")})
+	return out
+
+
+## Rows of the Members checklist for group `number`: every program and sticky note, labelled with its folder (sub;
+## "Main (note)" for a note, which opens when the group runs); one that is in another launch group says which
+## ("Mail (Group 2: Evening)"). {id: "groupId:itemId", label, sub, checked, auto, note, icon?}. Notes carry their
+## icon so they stand out in the checklist.
+static func member_rows(groups: Array, number: int, names: Variant) -> Array:
+	var out := []
+	var notes := {}
+	for g in groups:
+		for it in g.get("items", []):
+			if Notes.is_note(it):
+				notes["%s:%s" % [g.id, it.id]] = true
+	for e in LaunchGroups.all_items(groups):
+		var lg := int(e.launchGroup)
+		var label := String(e.name)
+		if lg > 0 and lg != number:
+			label += " (%s)" % LaunchGroups.format_launch_group(lg, names)
+		var is_note := notes.has(String(e.key))
+		out.append({"id": String(e.key), "label": label, "sub": String(e.groupName) + (" (note)" if is_note else ""),
+			"checked": lg == number, "auto": String(e.name), "note": is_note})
+	return out
+
+
+## The keys of the checked rows (what set_launch_group_members takes).
+static func checked_keys(rows: Array) -> Array:
+	var out := []
+	for r in rows:
+		if r.get("checked", false):
+			out.append(String(r.id))
+	return out
+
+
+## Members checklist summary: "2 of 14 programs checked" ("items" once notes are in the list).
+static func members_summary(rows: Array) -> String:
+	var any_note := rows.any(func(r): return r.get("note", false))
+	return "%d of %s checked" % [checked_keys(rows).size(), plural(rows.size(), "item" if any_note else "program")]
+
+
+## Status line after the Members checklist's OK: a group left with no programs and no name no longer exists.
+static func members_status(number: int, count: int, has_name: bool) -> String:
+	if count == 0 and not has_name:
+		return "Group %d has no programs and no name, so it was removed." % number
+	return "Group %d now starts %s." % [number, plural(count, "program")]
+
+
+## Export All / Import All outcome for an alert: {text, icon} ("" text when the user canceled the file picker).
+## kind: "export" | "import"; result: Platform.export_all() / Platform.import_data().
+static func transfer_message(kind: String, result: Dictionary) -> Dictionary:
+	var text := DataTransfer.export_status(result) if kind == "export" else DataTransfer.import_status(result)
+	return {"text": text, "icon": "note" if result.get("success", false) else "stop"}
+
+
+## Number pop-up for group `current`: Group 1..8; a number another group uses says it will swap.
+static func number_options(groups: Array, names: Variant, current: int) -> Array:
+	var taken := {}
+	for d in LaunchGroups.defined_groups(groups, names):
+		taken[int(d.number)] = true
+	var out := []
+	for n in range(1, LaunchGroups.MAX_GROUP + 1):
+		var label := LaunchGroups.format_launch_group(n, names)
+		if taken.has(n) and n != current:
+			label += " (swap)"
+		out.append({"id": str(n), "label": label})
+	if current > LaunchGroups.MAX_GROUP:
+		out.append({"id": str(current), "label": LaunchGroups.format_launch_group(current, names)})
+	return out
+
+
+## New…: {number, error}. Refuses when all eight numbers are taken or the name is blank.
+static func new_launch_group(store: Object, name: String) -> Dictionary:
+	if LaunchGroups.next_free_number(store.groups, store.launch_group_names()) == 0:
+		return {"number": 0, "error": ALL_NUMBERS_IN_USE}
+	if LaunchGroups.clean_name(name) == "":
+		return {"number": 0, "error": "Type a name for the new launch group."}
+	var n: int = store.create_launch_group(name)
+	if n == 0:
+		return {"number": 0, "error": ALL_NUMBERS_IN_USE}
+	return {"number": n, "error": ""}
+
+
+## Text of the New… prompt: which number the group will get, or why there is none.
+static func new_group_prompt(groups: Array, names: Variant) -> String:
+	var n := LaunchGroups.next_free_number(groups, names)
+	if n == 0:
+		return ALL_NUMBERS_IN_USE
+	return "The new launch group will be Group %d. Name it, then check the programs it starts." % n
+
+
+## Rename…: stores the name (blank clears it) and returns the status line.
+static func rename_launch_group(store: Object, number: int, name: String) -> String:
+	var had_members := not LaunchGroups.member_keys(store.groups, number).is_empty()
+	store.set_launch_group_name(number, name)
+	var cleaned := LaunchGroups.clean_name(name)
+	if cleaned != "":
+		return "Group %d is now called “%s”." % [number, cleaned]
+	if not had_members:
+		return "Group %d had no name and no programs, so it was removed." % number
+	return "Group %d no longer has a name." % number
+
+
+## Explanation under the Rename… field.
+static func rename_hint(count: int) -> String:
+	if count == 0:
+		return "Leave it blank to remove the name. This group has no programs, so without a name it is removed."
+	return "Leave it blank to remove the name."
+
+
+## Number: moves group `from` to `to` (swapping with a group already there). {ok, swapped, status}.
+static func renumber_launch_group(store: Object, from: int, to: int) -> Dictionary:
+	var names: Dictionary = store.launch_group_names().duplicate()
+	var label_from := LaunchGroups.format_launch_group(from, names)
+	var label_to := LaunchGroups.format_launch_group(to, names)
+	var swapped := false
+	for d in LaunchGroups.defined_groups(store.groups, names):
+		if int(d.number) == to:
+			swapped = true
+	if not store.renumber_launch_group(from, to):
+		return {"ok": false, "swapped": false, "status": ""}
+	if swapped:
+		return {"ok": true, "swapped": true,
+			"status": "%s and %s swapped numbers, so Launch All now starts them in the new order." % [label_from, label_to]}
+	return {"ok": true, "swapped": false, "status": "%s is now Group %d." % [label_from, to]}
+
+
+## Delete… confirmation: makes clear the programs stay.
+static func delete_prompt(groups: Array, names: Variant, number: int) -> String:
+	var count := LaunchGroups.member_keys(groups, number).size()
+	var label := LaunchGroups.format_launch_group(number, names)
+	if count == 0:
+		return "Delete %s? It has no programs." % label
+	return "Delete %s? Its %s stay in their folders; they just stop launching together." % [label, plural(count, "program")]
+
+
+## Toast text for UIState.launch_feedback ("" when there is nothing to show).
+static func launch_feedback_text(fb: Dictionary, names: Variant) -> String:
+	if not fb.get("visible", false):
+		return ""
+	match String(fb.get("status", "")):
+		"launching":
+			var total := int(fb.get("totalGroups", 1))
+			var index := int(fb.get("completedGroups", 0)) + 1
+			var current: Variant = fb.get("currentGroup")
+			if current != null and int(current) > 0:
+				var label := LaunchGroups.format_launch_group(int(current), names)
+				return "Launching %s…" % label if total <= 1 else "Launching %s (%d of %d)…" % [label, index, total]
+			return "Launching group %d of %d…" % [index, total]
+		"complete":
+			return "Launched %s." % plural(int(fb.get("totalItems", 0)), "item")
+		"error":
+			return "%s failed to launch." % plural(int(fb.get("failures", 0)), "item")
+	return ""
+
+
+## About box statistics: "5 folders, 23 programs" plus ", 2 sticky notes" and ", 2 launch groups" when there are any.
+static func stats_line(groups: Array, names: Variant) -> String:
+	var c := count_items(groups)
+	var s := "%d folders, %d programs" % [groups.size(), c.programs]
+	if c.notes > 0:
+		s += ", " + plural(c.notes, "sticky note")
+	var lg := LaunchGroups.defined_groups(groups, names).size()
+	if lg > 0:
+		s += ", " + plural(lg, "launch group")
+	return s
+
+
+## {programs, notes}: how many items are programs (and web sites) and how many are sticky notes.
+static func count_items(groups: Array) -> Dictionary:
+	var programs := 0
+	var notes := 0
+	for g in groups:
+		for it in g.items:
+			if Notes.is_note(it):
+				notes += 1
+			else:
+				programs += 1
+	return {"programs": programs, "notes": notes}
+
+
+## Get Info for Launcher HD: "5 folders, 23 programs" (", 2 sticky notes" when there are any).
+static func computer_line(groups: Array) -> String:
+	var c := count_items(groups)
+	var s := "%s, %d programs" % [plural(groups.size(), "folder"), c.programs]
+	if c.notes > 0:
+		s += ", " + plural(c.notes, "sticky note")
+	return s
 
 
 static func info_line(entry_count: int, program_count: int, is_computer: bool) -> String:

@@ -223,7 +223,7 @@ func _on_key(event: Dictionary) -> bool:
 	var focused := _focused_widget()
 	var has_default: bool = default_button != null and is_instance_valid(default_button) and not ("disabled" in default_button and default_button.disabled)
 	var is_button := focused is Win95Button
-	var action := Win95DialogState.resolve_key(event, has_default, is_button, false)
+	var action := Win95DialogState.resolve_key(event, has_default, is_button, focused is TextEdit)  # Enter in a multi-line field is a new line
 	match action:
 		"cancel":
 			cancel()

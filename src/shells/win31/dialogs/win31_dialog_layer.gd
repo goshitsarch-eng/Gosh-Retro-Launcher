@@ -39,8 +39,18 @@ static func create_dialog(type: String, data: Dictionary) -> W31Dialog:
 				return null
 			return W31PropertiesDialogs.GroupProperties.new(data)
 		"newItem", "itemProperties":
+			if type == "itemProperties" and Notes.is_note(data.get("item", {})):
+				return W31NoteDialogs.NoteProperties.new(data, groups)
+			if type == "itemProperties" and W31DialogLogic.is_web_item(data.get("item", {})):
+				return W31PropertiesDialogs.WebSiteProperties.new(data, groups)
 			return W31PropertiesDialogs.ItemProperties.new(data, groups)
+		"newNote":
+			if groups.is_empty():
+				return null
+			return W31NoteDialogs.NewNote.new(data, groups)
 		"newUrl":
+			if groups.is_empty():
+				return null
 			return W31FormDialogs.NewUrl.new(data, groups)
 		"settings":
 			return W31SettingsDialog.new()
@@ -71,6 +81,18 @@ static func create_dialog(type: String, data: Dictionary) -> W31Dialog:
 			return W31MessageDialogs.ExitWindows.new()
 		"unavailable":
 			return W31MessageDialogs.Unavailable.new(data)
+		"launchGroups":
+			return W31LaunchGroupDialogs.Manager.new(data)
+		"launchGroupName":
+			return W31LaunchGroupDialogs.NameDialog.new(data)
+		"launchGroupNumber":
+			if int(data.get("number", 0)) <= 0:
+				return null
+			return W31LaunchGroupDialogs.NumberDialog.new(data)
+		"launchGroupMembers":
+			if int(data.get("number", 0)) <= 0:
+				return null
+			return W31LaunchGroupDialogs.Members.new(data)
 	return null
 
 

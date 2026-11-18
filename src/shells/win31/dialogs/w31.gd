@@ -26,11 +26,41 @@ static func font(px: int = 11) -> RetroFont:
 
 
 static func text(ci: CanvasItem, x: float, y: float, s: String, color: Color = BLACK, px: int = 11, opts: Dictionary = {}) -> Vector2:
-	return font(px).draw(ci, Vector2(x, y), s, color, opts)
+	return font(px).draw(ci, Vector2(x, y), drawable(s, bool(opts.get("bold", false))), color, opts)
 
 
 static func text_w(s: String, px: int = 11, bold: bool = false) -> int:
-	return font(px).measure(s, bold)
+	return font(px).measure(drawable(s, bold), bold)
+
+
+## Plain-text spellings of characters neither WfW face nor RetroFont's stand-ins can draw (the
+## bold face has no curly quotes; neither face has an ellipsis, arrow, times sign, bullet or ©).
+## RetroFont already draws its own stand-ins for the ASCII punctuation the faces lack (' ? > < |...).
+const GLYPH_FALLBACKS := {
+	"‘": "'", "’": "'", "“": "\"", "”": "\"", "…": "...", "→": "->", "×": "x", "•": "-", "©": "(c)",
+}
+
+
+## `s` with every character the WfW face (`bold` or regular) cannot draw replaced by its plain
+## spelling (GLYPH_FALLBACKS), so a name like “Bob’s” or a note preview ending in "…" shows instead of
+## leaving a gap. Characters the face has are kept.
+static func drawable(s: String, bold: bool = false) -> String:
+	var hit := false
+	for k in GLYPH_FALLBACKS:
+		if s.contains(k):
+			hit = true
+			break
+	if not hit:
+		return s
+	var f := RetroFont.instance(RetroFont.WFW)
+	var face: FontFile = f.bold_font if bold else f.font
+	var out := ""
+	for ch in s:
+		if GLYPH_FALLBACKS.has(ch) and not face.has_char(ch.unicode_at(0)):
+			out += String(GLYPH_FALLBACKS[ch])
+		else:
+			out += ch
+	return out
 
 
 ## Chromium-style 1px two-colour border: top/left `tl`, bottom/right `br`; the two diagonal

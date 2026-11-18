@@ -1,7 +1,9 @@
 class_name MacFindWindow
 extends MacWindow
 ## The Find window (design "Find items [in all groups] whose [name] contains [____]  [Find]" + results list).
-## Results are ProgramSearch matches; double-click launches, right-click opens the item context menu.
+## Results are ProgramSearch matches; double-click launches, right-click opens the item context menu. Searching
+## "name (launch groups)" also matches launch group names, and the last column then shows each item's launch group.
+## Sticky notes match by title and text ("name" and "name or text (notes)"); their last column is the note's first line.
 
 const PAD := 12
 const ROW_H := 20
@@ -13,6 +15,7 @@ var query: MacTextField
 var find_btn: MacButton
 var results: Array = []     ## [{group, item}]
 var ran := false
+var ran_kind := ""          ## the type filter of the last search (its last column follows it)
 var _sel_id := ""
 var _scroll := 0
 
@@ -23,7 +26,8 @@ func _init() -> void:
 	where_sel = MacSelect.new("mac.find.where")
 	type_sel = MacSelect.new("mac.find.type")
 	type_sel.options = [{"id": "all", "label": "name"}, {"id": "app", "label": "name (programs)"},
-		{"id": "url", "label": "name (URLs)"}, {"id": "batch", "label": "name (launch groups)"}]
+		{"id": "url", "label": "name (URLs)"}, {"id": "note", "label": "name or text (notes)"},
+		{"id": "batch", "label": "name (launch groups)"}]
 	query = MacTextField.new("mac.find.query")
 	find_btn = MacButton.new("Find", 70)
 	find_btn.is_default = true
@@ -59,8 +63,10 @@ func focus_query() -> void:
 
 
 func run_search() -> void:
-	results = MacDialogLogic.find_items(ProgramStore.groups, query.text, where_sel.current_id(), type_sel.current_id())
+	results = MacDialogLogic.find_items(ProgramStore.groups, query.text, where_sel.current_id(), type_sel.current_id(),
+		ProgramStore.launch_group_names())
 	ran = true
+	ran_kind = type_sel.current_id()
 	_scroll = 0
 	_sel_id = ""
 	queue_redraw()
@@ -109,6 +115,8 @@ func _draw_body(c: Dictionary, _st: Dictionary) -> void:
 	var c1 := int(cols[1])
 	var view_h := int(rr.size.y) - HEADER_H
 	var max_scroll := maxi(0, results.size() * ROW_H - view_h)
+	var batch := ran_kind == "batch"
+	var names := ProgramStore.launch_group_names()
 	_scroll = clampi(_scroll, 0, max_scroll)
 	for i in results.size():
 		var ry := rr.position.y + HEADER_H + i * ROW_H - _scroll
@@ -122,9 +130,10 @@ func _draw_body(c: Dictionary, _st: Dictionary) -> void:
 			draw_rect(Rect2(rr.position.x, ry, rr.size.x, ROW_H), MacTheme.b("ccccff"))
 		Px.hline(self, rr.position.x, ry + ROW_H - 1, rr.size.x, MacTheme.b("eeeeee"))
 		draw_texture_rect(MacIconCatalog.texture(String(r.item.get("icon", "")), "small"), Rect2(rr.position.x + 8, ry + 2, 16, 16), false)
-		MacDraw.text_centered_y(self, rr.position.x + 30, ry, ROW_H - 1, String(r.item.name), fg, false, c0 - 36)
-		MacDraw.text_centered_y(self, rr.position.x + c0 + 10, ry, ROW_H - 1, String(r.group.name), fg, false, c1 - 14)
-		MacDraw.text_centered_y(self, rr.position.x + c0 + c1 + 10, ry, ROW_H - 1, String(r.item.path), fg, false, int(rr.size.x) - c0 - c1 - 14)
+		MacDraw.text_centered_y(self, rr.position.x + 30, ry, ROW_H - 1, MacDraw.fit(String(r.item.name), c0 - 36), fg)
+		MacDraw.text_centered_y(self, rr.position.x + c0 + 10, ry, ROW_H - 1, MacDraw.fit(String(r.group.name), c1 - 14), fg)
+		var last := MacDialogLogic.find_detail(r.item, batch, names)
+		MacDraw.text_centered_y(self, rr.position.x + c0 + c1 + 10, ry, ROW_H - 1, MacDraw.fit(last, int(rr.size.x) - c0 - c1 - 14), fg)
 	draw_rect(Rect2(rr.position.x, rr.position.y, rr.size.x, HEADER_H), MacTheme.b("dddddd"))
 	# The Name header shading marks a sorted column. Results are ranked by relevance, so shade it only when they really
 	# are in name order (the same rule as the folder list view).
@@ -133,7 +142,7 @@ func _draw_body(c: Dictionary, _st: Dictionary) -> void:
 	Px.hline(self, rr.position.x, rr.position.y + HEADER_H - 1, rr.size.x, MacTheme.b("888888"))
 	MacDraw.text_centered_y(self, rr.position.x + 10, rr.position.y, HEADER_H - 1, "Name", fg)
 	MacDraw.text_centered_y(self, rr.position.x + c0 + 10, rr.position.y, HEADER_H - 1, "Group", fg)
-	MacDraw.text_centered_y(self, rr.position.x + c0 + c1 + 10, rr.position.y, HEADER_H - 1, "Command", fg)
+	MacDraw.text_centered_y(self, rr.position.x + c0 + c1 + 10, rr.position.y, HEADER_H - 1, MacDialogLogic.find_detail_header(ran_kind), fg)
 	Px.vline(self, rr.position.x + c0 - 1, rr.position.y, HEADER_H - 1, MacTheme.b("888888"))
 	Px.vline(self, rr.position.x + c0 + c1 - 1, rr.position.y, HEADER_H - 1, MacTheme.b("888888"))
 	Px.outline(self, rr, MacTheme.b("888888"))

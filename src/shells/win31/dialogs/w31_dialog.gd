@@ -115,8 +115,10 @@ func _finish_layout(with_scroll: bool) -> void:
 	viewport.size = Vector2(dialog_width - 2 * FRAME, vh)
 	body.position = Vector2(PAD, PAD)
 	body.size = Vector2(_content_w, _inner_h)
-	size = Vector2(dialog_width, chrome + vh)
-	custom_minimum_size = size
+	# Minimum first: setting `size` below an older, larger minimum is ignored, so a dialog that got
+	# shorter (Quick Search as its results narrow) kept its tallest height.
+	custom_minimum_size = Vector2(dialog_width, chrome + vh)
+	size = custom_minimum_size
 	if with_scroll:
 		scroll = W31ScrollBar.new()
 		scroll.position = Vector2(viewport.size.x - W31ScrollBar.WIDTH, 0)
@@ -157,17 +159,23 @@ func add_text(x: int, y: int, s: String, px: int = 11, opts: Dictionary = {}) ->
 	body.texts.append({"text": s, "rect": Rect2(x, y, W31.text_w(s, px), int(opts.get("line_height", 13)))})
 
 
-## Wrapped paragraph; returns its height.
+## Wrapped paragraph; returns its height. The text is literal: a paragraph has no access key, so an
+## "&" in a name or message ("Q&A", "Morning & Mail") is shown as written.
 func add_paragraph(x: int, y: int, s: String, width: int, line_h: int, px: int = 11, opts: Dictionary = {}) -> int:
-	var lines := W31.font(px).wrap(s, width)
+	var lines := W31Dialog.paragraph_lines(s, width, px, bool(opts.get("bold", false)))
 	var o := opts.duplicate()
 	o["line_height"] = line_h
 	body.texts.append({"text": s, "rect": Rect2(x, y, width, maxi(1, lines.size()) * line_h)})
 	for i in lines.size():
-		var line := lines[i]
+		var line := lines[i].replace("&", "&&")
 		var yy := y + i * line_h
 		body.ops.append(func(ci: CanvasItem): W31.text(ci, x, yy, line, o.get("color", W31.BLACK), px, o))
 	return lines.size() * line_h
+
+
+## The plain lines `s` wraps to at `width` (literal "&", WfW glyph fallbacks applied).
+static func paragraph_lines(s: String, width: int, px: int = 11, bold: bool = false) -> PackedStringArray:
+	return W31.font(px).wrap(W31.drawable(s, bold).replace("&", "&&"), width, bold)
 
 
 func add_image(tex: Texture2D, x: int, y: int, sz: Vector2 = Vector2.ZERO) -> void:
@@ -273,7 +281,7 @@ func _draw() -> void:
 	Px.fill(self, sb.position.x + 4, sb.position.y + 7, 5, 2, W31.BLACK)
 	var avail := int(tr.size.x) - 44
 	var f := W31.font()
-	var clipped := f.clip(title, avail, true)
+	var clipped := f.clip(W31.drawable(title, true).replace("&", "&&"), avail, true).replace("&", "&&")
 	var tw := f.measure(clipped, true)
 	f.draw(self, Vector2(tr.position.x + 22 + floorf((avail - tw) / 2.0), tr.position.y + (0 if half_pixel else 1)), clipped, W31.WHITE, {"bold": true, "line_height": TITLE_H, "show_access": false})
 

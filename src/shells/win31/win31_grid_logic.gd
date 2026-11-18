@@ -119,9 +119,10 @@ static func ellipsize(font: RetroFont, text: String, max_w: int) -> String:
 	return kept + "..."
 
 
-## Escapes "&" so RetroFont shows user-supplied names literally (no access-key parsing).
+## Escapes "&" so RetroFont shows user-supplied names literally (no access-key parsing), with the
+## characters the WfW face cannot draw spelled out (W31.drawable).
 static func lit(text: String) -> String:
-	return text.replace("&", "&&")
+	return W31.drawable(text).replace("&", "&&")
 
 
 ## Minimized-group icon label (single block, same span rules).

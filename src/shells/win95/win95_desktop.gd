@@ -4,7 +4,8 @@ extends Control
 ## Neighborhood / Recycle Bin icons with persisted positions (settings.win95DesktopIconPositions),
 ## selection (Ctrl/Shift, marquee, keyboard, type-to-select), manual placement, Line Up /
 ## Auto Arrange, desktop + icon context menus, and the host of all primary windows.
-## Windows are children (z-order == child order); the Move/Size outline layer sits above them.
+## Windows are children (z-order == child order). The Move/Size outline is drawn in the shell's
+## outline_layer, above the windows and the sticky notes (in the desktop itself when there is none).
 
 const M := Win95Tokens.M
 const ICONS := [
@@ -46,7 +47,11 @@ func setup(p_shell: Control) -> void:
 	_marquee_layer = Win95DifferenceLayer.new()
 	add_child(_marquee_layer)
 	_outline_layer = Win95DifferenceLayer.new()
-	add_child(_outline_layer)
+	var outline_host: Variant = shell.get("outline_layer")
+	if outline_host is Control:
+		(outline_host as Control).add_child(_outline_layer)
+	else:
+		add_child(_outline_layer)
 	shell.windows.changed.connect(sync_windows)
 	ProgramStore.groups_changed.connect(sync_windows)
 	ProgramStore.settings_changed.connect(_on_settings)
@@ -110,7 +115,8 @@ func sync_windows() -> void:
 	for e in ordered:
 		var w: Win95Window = _windows[e.id]
 		move_child(w, get_child_count() - 1)
-	move_child(_outline_layer, get_child_count() - 1)  # outline stays above every window
+	if _outline_layer.get_parent() == self:
+		move_child(_outline_layer, get_child_count() - 1)  # outline stays above every window
 	for e in store.windows:
 		(_windows[e.id] as Win95Window).refresh()
 	queue_redraw()
@@ -376,6 +382,11 @@ func _desktop_menu() -> Array:
 				Win95Dialogs.open_wizard(shell, {"groupId": ProgramStore.groups[0].id})
 			else:
 				Win95Dialogs.open_new_folder(shell, {"openItemAfterCreate": true})},
+		{"id": "new-note", "label": "New S&ticky Note...", "icon": "note", "onSelect": func():
+			if ProgramStore.groups.size() > 0:
+				Win95Dialogs.open_new_note(shell, {"groupId": ProgramStore.groups[0].id})
+			else:
+				Win95Dialogs.open_new_folder(shell, {"openNoteAfterCreate": true})},
 		{"id": "sep-3", "separator": true},
 		{"id": "properties", "label": "P&roperties", "icon": "properties", "onSelect": func(): shell.request_show_launcher_tools.emit()},
 	]

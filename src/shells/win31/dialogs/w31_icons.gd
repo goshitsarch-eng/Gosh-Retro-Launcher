@@ -7,14 +7,14 @@ const IDS := [
 	"group", "default", "file-manager", "control-panel", "print-manager",
 	"clipbook", "dos", "setup", "pif", "readme", "accessories", "network",
 	"games", "startup", "program-manager", "terminal", "calculator", "clock",
-	"paint", "cardfile", "warning", "information", "question",
+	"paint", "cardfile", "warning", "information", "question", "note", "web",
 ]
 
 const ALIASES := {
 	"folder": "group", "wfw-group": "group", "wfw-file-manager": "file-manager",
 	"wfw-control-panel": "control-panel", "wfw-print-manager": "print-manager",
 	"wfw-clipbook": "clipbook", "wfw-dos": "dos", "wfw-setup": "setup", "wfw-pif": "pif",
-	"wfw-readme": "readme", "drive": "file-manager", "network": "network", "trash": "default",
+	"wfw-readme": "readme", "drive": "file-manager", "network": "network", "trash": "default", "url": "web",
 }
 
 

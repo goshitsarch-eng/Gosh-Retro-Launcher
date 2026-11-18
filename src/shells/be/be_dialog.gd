@@ -16,6 +16,9 @@ var text_mode := false
 var panel_w := 480
 var icon_tex: Texture2D
 var cancel_cb := Callable()
+## Optional key hook for the topmost dialog: func(k: InputEventKey) -> bool (true = handled). Runs before
+## Escape / Enter, so a list dialog can take the arrow keys or Space.
+var key_handler := Callable()
 var content: VBoxContainer
 var buttons: Array = []
 var default_button: BeButton
@@ -111,6 +114,13 @@ func set_buttons(specs: Array) -> void:
 
 ## Positions everything once rows exist. Call after the last add_row/set_buttons.
 func finish() -> void:
+	relayout()
+	if default_button != null:
+		default_button.grab_focus.call_deferred()
+
+
+## Re-measures and re-centres the panel after a row changed size (keeps the focus where it is).
+func relayout() -> void:
 	content.size = Vector2(content_width(), 0)
 	var h := content.get_combined_minimum_size().y
 	var ph := maxf(h + _pad.y + _pad.w + 2 * BORDER, 60.0 if text_mode else 0.0)
@@ -125,8 +135,6 @@ func finish() -> void:
 		var tw := BeGeometry.tab_width(BeFont.width(title, BeGeometry.FONT, true), panel_w, false)
 		set_meta("tab_w", tw)
 	queue_redraw()
-	if default_button != null:
-		default_button.grab_focus.call_deferred()
 
 
 func frame_rect() -> Rect2:
@@ -190,12 +198,15 @@ func _input(event: InputEvent) -> void:
 		return  # only the topmost dialog reacts
 	var k := event as InputEventKey
 	var vp := get_viewport()  # the dialog may remove itself below
+	if key_handler.is_valid() and bool(key_handler.call(k)):
+		vp.set_input_as_handled()
+		return
 	if k.keycode == KEY_ESCAPE:
 		cancel()
 		vp.set_input_as_handled()
 	elif (k.keycode == KEY_ENTER or k.keycode == KEY_KP_ENTER) and default_button != null:
 		var f := vp.gui_get_focus_owner()
-		if f is BeButton and f != default_button:
-			return
+		if (f is BeButton and f != default_button) or f is TextEdit:
+			return  # a focused button activates itself; a text box types a new line
 		default_button.pressed.emit()
 		vp.set_input_as_handled()

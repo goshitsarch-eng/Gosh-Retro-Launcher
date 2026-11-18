@@ -1,7 +1,8 @@
 class_name MacShell
 extends ShellBase
-## The classic Mac OS-style shell. Layers (back to front): desktop (icons + folder/Find windows) < popup layer
-## (menus) < menu bar < toast < dialog layer < popup overlay for selects opened inside dialogs.
+## The classic Mac OS-style shell. Layers (back to front): desktop (icons + folder/Find windows) < sticky notes
+## (below the menu bar strip) < popup layer (menus) < menu bar < toast < dialog layer < popup overlay for selects
+## opened inside dialogs.
 ## Groups are folders ("Launcher HD" lists them, a folder window lists its items). Everything is drawn in
 ## integer logical pixels; the host applies the integer content scale.
 ##
@@ -9,6 +10,7 @@ extends ShellBase
 ## launch_item(), open_group_window(), show_menu(), show_item_context(), do_shutdown(), refresh_theme().
 
 var desktop: MacDesktop
+var notes_layer: Control    ## StickyNote windows (ShellBase.open_note); covers the desktop under the menu bar
 var menu_bar: MacMenuBar
 var popup_layer: Control
 var dialog_layer: Control
@@ -33,6 +35,10 @@ func _init() -> void:
 	rf.x_adjust = 1
 	desktop = MacDesktop.new()
 	add_child(desktop)
+	notes_layer = _make_layer()
+	notes_layer.set_meta("auto_id", "mac.notes-layer")
+	notes_layer.add_to_group("pm_auto")
+	add_child(notes_layer)
 	popup_layer = _make_layer()
 	add_child(popup_layer)
 	menu_bar = MacMenuBar.new()
@@ -92,6 +98,8 @@ func _layout() -> void:
 	desktop.size = logical_size
 	menu_bar.position = Vector2.ZERO
 	menu_bar.size = Vector2(logical_size.x, MacGeometry.MENU_H)
+	notes_layer.position = Vector2(0, MacGeometry.MENU_H)
+	notes_layer.size = Vector2(logical_size.x, maxf(1.0, logical_size.y - MacGeometry.MENU_H))
 	for c in [popup_layer, dialog_layer, select_layer]:
 		c.position = Vector2.ZERO
 		c.size = logical_size
@@ -125,6 +133,85 @@ func has_dialog() -> bool:
 
 func _any_popup() -> bool:
 	return popup_layer.get_child_count() > 0
+
+
+# ---------------------------------------------------------------- sticky notes
+
+## Notes float above the desktop and its folder windows, below the menu bar, menus, toasts and dialogs.
+func note_layer() -> Control:
+	return notes_layer
+
+
+## The shell's pixel font. The paper stays light in the dark theme, so the text stays black.
+func note_style() -> Dictionary:
+	return {"font": MacDraw.font().font, "font_size": 11, "text_color": Color.BLACK}
+
+
+## Platinum grey with a light title bar and the lavender highlight, for the fallback file chooser; dark in the
+## dark theme (MacTheme.file_dialog_palette).
+func file_dialog_palette() -> Dictionary:
+	MacTheme.refresh_from_settings()
+	return MacTheme.file_dialog_palette()
+
+
+## The note's contextual menu (right-click or Control-click on an open note): Close, Get Info, the paper colours
+## (the current one checked) and Move To Trash…, at `global_pos`.
+func show_note_menu(item_id: String, global_pos: Vector2) -> void:
+	var loc := ProgramStore.locate_item(item_id)
+	if loc.is_empty() or not Notes.is_note(loc.item):
+		return
+	var n := note_window(item_id)
+	if n != null:
+		n.move_to_front()
+	var swatches := {}
+	for c in Notes.COLORS:
+		swatches[c] = MacDraw.swatch_texture(Notes.COLORS[c])
+	var items := MacMenuModel.note_menu(String(loc.item.get("noteColor", Notes.DEFAULT_COLOR)), swatches)
+	menu_bar.close_menu()
+	_close_popups()
+	var at := popup_layer.get_global_transform().affine_inverse() * global_pos
+	var m := MacPopupMenu.open(popup_layer, items, at, {"min_width": 150})
+	m.chosen.connect(func(id: String): run_note_command(id, item_id))
+
+
+## A command from the note menu: "note-close", "note-info", "note-color:<id>" or "note-trash".
+func run_note_command(id: String, item_id: String) -> void:
+	var loc := ProgramStore.locate_item(item_id)
+	if loc.is_empty() or not Notes.is_note(loc.item):
+		return
+	var n := note_window(item_id)
+	if n != null and id != "note-close":
+		ProgramStore.update_note_quietly(item_id, {"note": Notes.clean_text(n.text())})  # keep what was just typed
+	if id == "note-close":
+		close_note(item_id)
+	elif id == "note-info":
+		MacDialogs.get_info_item(self, String(loc.groupId), item_id)
+	elif id.begins_with("note-color:"):
+		MacDialogLogic.set_note_color(ProgramStore, item_id, id.substr(11))
+	elif id == "note-trash":
+		var gid := String(loc.groupId)
+		MacDialogs.confirm(self, MacDialogLogic.note_trash_prompt(String(loc.item.get("name", ""))),
+			func(): MacDialogLogic.trash_item(ProgramStore, gid, item_id), "caution", "Delete", "Cancel")
+
+
+## The topmost open note at `global_pos` (a mouse event's position in _input), or null.
+func _note_at(global_pos: Vector2) -> StickyNote:
+	var notes := open_notes()
+	for i in range(notes.size() - 1, -1, -1):
+		var n: StickyNote = notes[i]
+		if n.is_visible_in_tree() and n.get_global_rect().has_point(global_pos):
+			return n
+	return null
+
+
+## The StickyNote that holds `node` (the note's text box, for instance), or null.
+func _note_of(node: Node) -> StickyNote:
+	var n := node
+	while n != null and n != notes_layer:
+		if n is StickyNote:
+			return n
+		n = n.get_parent()
+	return null
 
 
 # ------------------------------------------------------------------ host events
@@ -163,12 +250,27 @@ func on_files_dropped(files: PackedStringArray, logical_pos: Vector2) -> void:
 # ------------------------------------------------------------------- launching
 
 func launch_item(item: Dictionary) -> void:
+	if Notes.is_note(item):
+		open_note_item(item)
+		return
 	toast("Starting %s…" % String(item.get("name", "")))
 	var result: Dictionary = Platform.launch(MacDialogLogic.launch_payload(item))
 	if not result.get("success", false):
 		MacDialogs.alert(self, [{"t": String(item.get("name", "")), "w": 700}, String(result.get("error", "Cannot find '%s'." % item.get("path", "")))], "stop")
 	elif ProgramStore.settings.get("minimizeOnUse", false):
 		Platform.minimize_window()
+
+
+## Opens a sticky note the way any item opens: through Platform.launch (the host answers note_open_requested
+## with open_note). If nothing answered (no host, as in tests), the shell opens it itself. No toast, and
+## "minimize on use" does not apply: the note opens on this desktop.
+func open_note_item(item: Dictionary) -> StickyNote:
+	var id := String(item.get("id", ""))
+	Platform.launch(MacDialogLogic.launch_payload(item))
+	for n in open_notes():
+		if n.item_id == id:
+			return n
+	return open_note(id)
 
 
 func toast(text: String) -> void:
@@ -179,13 +281,9 @@ func _on_launch_feedback() -> void:
 	var fb: Dictionary = UIState.launch_feedback
 	if not fb.get("visible", false):
 		return
-	var status := String(fb.get("status", ""))
-	if status == "launching":
-		toast("Launching group %d of %d…" % [int(fb.get("completedGroups", 0)) + 1, int(fb.get("totalGroups", 1))])
-	elif status == "complete":
-		toast("Launched %s." % MacDialogLogic.plural(int(fb.get("totalItems", 0)), "item"))
-	elif status == "error":
-		toast("%s failed to launch." % MacDialogLogic.plural(int(fb.get("failures", 0)), "item"))
+	var text := MacDialogLogic.launch_feedback_text(fb, ProgramStore.launch_group_names())
+	if text != "":
+		toast(text)
 
 
 func launch_buckets(buckets: Array) -> void:
@@ -239,6 +337,7 @@ func _menu_context() -> Dictionary:
 		"groups": ProgramStore.groups, "active_key": key, "view": String(st.get("view", "")),
 		"selected": {"kind": String(t.get("kind", "")), "groupId": String(t.get("groupId", "")), "itemId": String(t.get("itemId", ""))},
 		"buckets": LaunchGroups.collect_launch_groups(ProgramStore.groups),
+		"launch_names": ProgramStore.launch_group_names(),
 	}
 
 
@@ -333,6 +432,12 @@ func _run_simple(id: String, t: Dictionary) -> void:
 			var wwin := String(t.get("win", desktop.store.active_key()))
 			if wwin.begins_with("g:"):
 				MacDialogs.new_website(self, wwin.substr(2))
+		"new-note":
+			var gid_n := MacDialogLogic.note_group(ProgramStore.groups, String(t.get("win", desktop.store.active_key())))
+			if gid_n == "":
+				MacDialogs.message(self, "Make a folder first: a sticky note is kept in a folder.", "caution")
+			else:
+				MacDialogs.new_note(self, gid_n)
 		"run":
 			MacDialogs.run(self)
 		"open":
@@ -377,10 +482,39 @@ func _run_simple(id: String, t: Dictionary) -> void:
 			MacDialogLogic.clean_up(ProgramStore, k2.substr(2) if k2.begins_with("g:") else "")
 		"launch-all":
 			launch_buckets(LaunchGroups.collect_launch_groups(ProgramStore.groups))
+		"launch-groups":
+			MacLaunchGroups.open(self)
+		"export-all":
+			export_all()
+		"import-all":
+			import_all()
 		"restart":
 			restart()
 		"shutdown":
 			MacDialogs.shutdown(self)
+
+
+# ------------------------------------------------------------ export / import
+
+## File > Export All…: the whole launcher to one JSON file (Platform picks the file).
+func export_all() -> void:
+	var result: Dictionary = await Platform.export_all()
+	_show_transfer("export", result)
+
+
+## File > Import All…: confirm, pick the file, replace everything (Platform backs up the current setup first).
+## The host shows the result (Platform.import_finished), because an import that switches the desktop frees
+## this shell before it could.
+func import_all() -> MacDialog:
+	return MacDialogs.confirm(self, DataTransfer.IMPORT_CONFIRM, func(): Platform.import_data(), "caution", "OK", "Cancel")
+
+
+func _show_transfer(kind: String, result: Dictionary) -> void:
+	if not is_inside_tree():
+		return
+	var msg := MacDialogLogic.transfer_message(kind, result)
+	if String(msg.text) != "":
+		MacDialogs.message(self, String(msg.text), String(msg.icon))
 
 
 func _confirm_trash(kind: String, gid: String, iid: String) -> void:
@@ -433,6 +567,17 @@ func restart() -> void:
 # ------------------------------------------------------------------ keyboard
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+		var mb := event as InputEventMouseButton
+		var menu_note := _note_at(mb.position) if MacDialogLogic.is_context_click(mb.button_index, mb.ctrl_pressed) \
+			and not has_dialog() and _restart_overlay == null else null
+		if menu_note != null:
+			# Right-click or Control-click anywhere on a note (its text included) opens the note's menu.
+			get_viewport().set_input_as_handled()
+			show_note_menu(menu_note.item_id, mb.global_position)
+			return
+		_release_note_focus_outside(mb.position)
+		return
 	if not (event is InputEventKey) or not (event as InputEventKey).pressed:
 		return
 	var k := event as InputEventKey
@@ -440,9 +585,17 @@ func _input(event: InputEvent) -> void:
 		request_show_launcher_tools.emit()
 		get_viewport().set_input_as_handled()
 		return
+	var focus := get_viewport().gui_get_focus_owner()
+	var in_note := _note_of(focus) if focus != null else null
 	if has_dialog() or _restart_overlay != null:
+		if in_note != null:
+			focus.release_focus()  # a modal dialog is up: keys must not type into the note behind it
 		return
-	var in_text := get_viewport().gui_get_focus_owner() is LineEdit
+	var in_text := focus is LineEdit or focus is TextEdit
+	if in_note != null and (k.ctrl_pressed or k.meta_pressed) and not k.alt_pressed and k.keycode == KEY_W:
+		in_note.close()   # Close Window acts on the note being typed in, as in Stickies
+		get_viewport().set_input_as_handled()
+		return
 	if (k.ctrl_pressed or k.meta_pressed) and not k.alt_pressed:
 		if k.keycode == KEY_BACKSPACE or k.keycode == KEY_DELETE:
 			if not in_text:
@@ -450,9 +603,10 @@ func _input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 			return
 		var cmd := MacMenuModel.accelerator(k.keycode)
-		if cmd != "" and not (in_text and cmd in ["find", "run", "new-folder", "open", "close-window", "get-info", "duplicate", "trash"] and false):
-			_run_target_command(cmd)
-			get_viewport().set_input_as_handled()
+		if cmd == "" or (in_text and not MacMenuModel.allowed_while_typing(cmd)):
+			return  # Cmd-A/C/X/V/Z and the item commands stay with the text box (they must not trash the selection)
+		_run_target_command(cmd)
+		get_viewport().set_input_as_handled()
 		return
 	if in_text:
 		return
@@ -468,6 +622,15 @@ func _input(event: InputEvent) -> void:
 		KEY_DELETE, KEY_BACKSPACE:
 			_run_target_command("trash")
 			get_viewport().set_input_as_handled()
+
+
+## A press outside the note whose text has the keyboard gives the keyboard back to the desktop (arrow keys, Return
+## and Delete then work on the folder windows again). The press itself is not consumed.
+func _release_note_focus_outside(global_pos: Vector2) -> void:
+	var focus := get_viewport().gui_get_focus_owner()
+	var note := _note_of(focus) if focus != null else null
+	if note != null and not note.get_global_rect().has_point(global_pos):
+		focus.release_focus()
 
 
 func _run_target_command(cmd: String) -> void:

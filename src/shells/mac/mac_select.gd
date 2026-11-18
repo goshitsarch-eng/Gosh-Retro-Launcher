@@ -4,6 +4,8 @@ extends Control
 
 signal selected(index: int)
 
+const LABEL_X := 8          ## where MacDraw.select_face starts the label
+
 var options: Array = []     ## [{id, label}]
 var selected_index := 0:
 	set(v):
@@ -43,7 +45,11 @@ func _gui_input(event: InputEvent) -> void:
 		var items := []
 		for i in options.size():
 			items.append(MacMenuModel.item("opt:%d" % i, String(options[i].label), {"check": i == selected_index}))
-		var m := MacPopupMenu.open(host, items, global_position + Vector2(0, size.y), {"min_width": int(size.x), "auto_prefix": "mac.select-item:"})
+		# Over the button with the current item under the pointer (the face is drawn 1px short of the control).
+		var inset := 1 + MacPopupMenu.PAD_L - LABEL_X
+		var at := MacGeometry.select_popup_origin(Rect2(global_position, size - Vector2(0, 1)), selected_index, MacPopupMenu.ROW_H,
+			1 + MacPopupMenu.PAD_Y, inset)
+		var m := MacPopupMenu.open(host, items, at, {"min_width": int(size.x) + inset, "auto_prefix": "mac.select-item:"})
 		m.chosen.connect(func(id: String):
 			selected_index = id.substr(4).to_int()
 			selected.emit(selected_index))

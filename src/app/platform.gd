@@ -12,6 +12,12 @@ signal files_dropped(files: PackedStringArray, logical_pos: Vector2)
 signal window_state_changed(state: Dictionary)    ## {focused, maximized, minimized, bounds: Rect2i}
 signal display_changed
 signal launcher_tools_requested
+## A sticky note was opened (double-click, Enter, Quick Search, Find, a launch group). The host
+## asks the active shell to show its window.
+signal note_open_requested(item_id: String)
+## Import All finished (successfully or not). The host shows the result, because an import that
+## switches the desktop frees the shell that started it before it could show anything.
+signal import_finished(result: Dictionary)
 
 const MAX_GRP_BYTES := 10 * 1024 * 1024
 const GRP_UNSAFE := "[<>:\"/\\\\|?*]+"
@@ -19,6 +25,14 @@ const GRP_UNSAFE := "[<>:\"/\\\\|?*]+"
 ## Tests / automation: Callable(request: Dictionary) -> PackedStringArray (may be a coroutine).
 ## request = {title, mode: "open"|"save", filters: Array, default_name: String, start_dir: String}.
 var dialog_provider: Callable = Callable()
+## () -> {style: {font, font_size}, palette: {...}} for Godot's own file chooser (the fallback when
+## the system has none). The host points it at the active shell (note_style, file_dialog_palette).
+var dialog_style_provider: Callable = Callable()
+## Tests only: use Godot's own file chooser even under the headless display server, so a test can
+## click through it. The real app never sets it.
+var allow_fallback_dialog_headless := false
+## The fallback chooser while it is open (tests drive it), else null.
+var fallback_dialog: FileDialog
 
 ## Set by the app host once the tray icon exists. On Windows the window is only really hidden when
 ## there is a tray icon to bring it back (it can never be stranded invisible).
@@ -96,14 +110,26 @@ func file_exists(path: String) -> bool:
 # ------------------------------------------------------------------ launching
 
 func launch(item: Dictionary) -> Dictionary:
+	if _is_note(item):
+		note_open_requested.emit(String(item.get("id", "")))
+		return {"success": true}
 	if not Validators.is_launch_item(item):
 		return {"success": false, "error": "Invalid program item payload"}
 	return Launcher.launch_program(item)
 
 
-## (await) -> Array[{id, success, error?}]
+## A payload is a note when it says so or when the stored item with its id is one (a shell may pass
+## a trimmed copy of the item).
+func _is_note(item: Dictionary) -> bool:
+	if Notes.is_note(item):
+		return true
+	var id: Variant = item.get("id")
+	return Jsonx.is_str(id) and Notes.is_note(ProgramStore.locate_item(String(id)).get("item", {}))
+
+
+## (await) -> Array[{id, success, error?}]. Notes in the batch open their windows.
 func launch_batch(items: Array, delay_ms: Variant) -> Array:
-	return await LaunchGroups.launch_batch(self, items, delay_ms)
+	return await LaunchGroups.launch_batch(self, items, delay_ms, launch)
 
 
 # --------------------------------------------------------------- native dialogs
@@ -185,10 +211,22 @@ func export_grp(group: Dictionary) -> Dictionary:
 
 ## (await) -> {success, error?}  JSON backup import (validated, replaces data, reloads store)
 func import_data() -> Dictionary:
-	var path := await pick_open_file("Import Settings", PlatformFilters.json_filters())
+	var path := await pick_open_file(DataTransfer.IMPORT_TITLE, PlatformFilters.json_filters())
 	if path == "":
 		return {"success": false, "error": "Canceled"}
-	return ProgramStore.import_from(path)
+	var result: Dictionary = ProgramStore.import_from(path)
+	import_finished.emit(result)
+	return result
+
+
+## Export All: (await) -> {success, path?} | {success: false, canceled: true} | {success: false, error}.
+func export_all() -> Dictionary:
+	var path := await pick_save_file(DataTransfer.EXPORT_TITLE, DataTransfer.default_export_name(), PlatformFilters.json_filters())
+	if path == "":
+		return {"success": false, "canceled": true}
+	if not ProgramStore.export_to(path):
+		return {"success": false, "error": "Could not write %s." % path.get_file()}
+	return {"success": true, "path": path}
 
 
 ## (await) -> bool
@@ -222,7 +260,7 @@ func _pick(request: Dictionary) -> PackedStringArray:
 		elif provided is String and provided != "":
 			out.append(provided)
 		return out
-	if DisplayServer.get_name() == "headless":
+	if DisplayServer.get_name() == "headless" and not allow_fallback_dialog_headless:
 		return PackedStringArray()
 	var save: bool = request.mode == "save"
 	var any: bool = request.mode == "open_any"
@@ -231,7 +269,7 @@ func _pick(request: Dictionary) -> PackedStringArray:
 		start_dir = _last_dir if _last_dir != "" else OS.get_environment("USERPROFILE" if os_name() == "win32" else "HOME")
 	var result := PackedStringArray()
 	var done := false
-	if DisplayServer.has_feature(DisplayServer.FEATURE_NATIVE_DIALOG_FILE):
+	if DisplayServer.has_feature(DisplayServer.FEATURE_NATIVE_DIALOG_FILE) and DisplayServer.get_name() != "headless":
 		var waiter := _Waiter.new()
 		var err := DisplayServer.file_dialog_show(String(request.title), start_dir, String(request.default_name), false,
 				DisplayServer.FILE_DIALOG_MODE_SAVE_FILE if save else (DisplayServer.FILE_DIALOG_MODE_OPEN_ANY if any else DisplayServer.FILE_DIALOG_MODE_OPEN_FILE),
@@ -246,6 +284,13 @@ func _pick(request: Dictionary) -> PackedStringArray:
 	return result
 
 
+## Biggest the fallback chooser gets; it is shrunk to fit the launcher window.
+const FALLBACK_DIALOG_SIZE := Vector2i(560, 380)
+
+
+## Godot's own file chooser, for systems without a native one. It is embedded in the launcher window
+## (so it cannot open off to one side, larger than the app, and it takes the same clicks as the rest
+## of the desktop), sized to fit the window, and drawn with the active desktop's font and colours.
 func _pick_with_godot_dialog(request: Dictionary, start_dir: String) -> PackedStringArray:
 	var save: bool = request.mode == "save"
 	var dlg := FileDialog.new()
@@ -253,6 +298,11 @@ func _pick_with_godot_dialog(request: Dictionary, start_dir: String) -> PackedSt
 	dlg.access = FileDialog.ACCESS_FILESYSTEM
 	dlg.file_mode = FileDialog.FILE_MODE_SAVE_FILE if save else (FileDialog.FILE_MODE_OPEN_ANY if request.mode == "open_any" else FileDialog.FILE_MODE_OPEN_FILE)
 	dlg.title = String(request.title)
+	dlg.exclusive = true
+	dlg.transient = true
+	var look: Dictionary = dialog_style_provider.call() if dialog_style_provider.is_valid() else {}
+	dlg.theme = FileDialogTheme.make(look.get("style", {}), look.get("palette", {}))
+	dlg.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST  # crisp 1 px bevels
 	for f in request.filters:
 		var patterns := PackedStringArray()
 		for ext in f.extensions:
@@ -267,11 +317,47 @@ func _pick_with_godot_dialog(request: Dictionary, start_dir: String) -> PackedSt
 	dlg.dir_selected.connect(func(p: String) -> void: waiter.finish(PackedStringArray([p])))
 	dlg.canceled.connect(waiter.cancel)
 	dlg.close_requested.connect(waiter.cancel)
+	var root := get_tree().root
+	var was_embedding := root.gui_embed_subwindows
+	root.gui_embed_subwindows = true
 	add_child(dlg)
-	dlg.popup_centered(Vector2i(760, 520))
+	fallback_dialog = dlg
+	var visible := Vector2i(root.get_visible_rect().size)
+	var want := fallback_dialog_size(visible)
+	dlg.popup_centered(want)
+	# popup_centered can keep a smaller size (the headless display server does), so set it outright.
+	dlg.size = Vector2i(maxi(want.x, dlg.get_contents_minimum_size().x), maxi(want.y, dlg.get_contents_minimum_size().y))
+	dlg.position = Vector2i(maxi(0, (visible.x - dlg.size.x) / 2), maxi(18, (visible.y - dlg.size.y + 18) / 2))
+	var tick := Callable() if save else _keep_open_in_step(dlg)
 	var res: PackedStringArray = await waiter.done
+	if tick.is_valid():
+		get_tree().process_frame.disconnect(tick)
+	fallback_dialog = null
+	dlg.hide()
 	dlg.queue_free()
+	root.gui_embed_subwindows = was_embedding
 	return res
+
+
+## Godot's chooser can leave Open greyed out with a file picked: when its list refreshes it re-selects
+## the file named in the name box without updating Open, and clicking that already-selected file sends
+## no signal. So while an open-mode chooser is up, Open follows the name box every frame: enabled when
+## it holds a name, so clicking or typing a file and then Open works as in a native chooser.
+func _keep_open_in_step(dlg: FileDialog) -> Callable:
+	var field := dlg.get_line_edit()
+	var tick := func() -> void:
+		if is_instance_valid(dlg) and dlg.visible:
+			var empty := field.text.strip_edges() == ""
+			if dlg.get_ok_button().disabled != empty:
+				dlg.get_ok_button().disabled = empty
+	get_tree().process_frame.connect(tick)
+	return tick
+
+
+## The fallback chooser's size inside a launcher window of `visible` logical pixels (title bar and a
+## small margin included).
+static func fallback_dialog_size(visible: Vector2i) -> Vector2i:
+	return Vector2i(mini(FALLBACK_DIALOG_SIZE.x, visible.x - 16), mini(FALLBACK_DIALOG_SIZE.y, visible.y - 16 - 18))
 
 
 # ----------------------------------------------------------------- window control

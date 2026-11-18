@@ -170,7 +170,8 @@ static func _clamp16(v: float, lo: int, hi: int) -> int:
 
 ## Returns {"ok":true,"bytes":PackedByteArray} or {"ok":false,"error":String}.
 static func serialize(group: Dictionary) -> Dictionary:
-	var items: Array = group.get("items", [])
+	# Sticky notes have no command line, so a .GRP file cannot hold them.
+	var items: Array = group.get("items", []).filter(func(i): return not Notes.is_note(i))
 	if items.size() > MAX_ITEMS:
 		return _fail("A .GRP file can contain at most %d items." % MAX_ITEMS)
 	var table_size := HEADER_SIZE + items.size() * 2

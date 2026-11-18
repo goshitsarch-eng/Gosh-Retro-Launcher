@@ -10,7 +10,7 @@ const ROW := 15
 const MAX_ROWS := 8
 const ARROW_W := 16
 
-var items: Array = []  ## display strings
+var items: Array = []  ## display strings (shown literally: an "&" is a character, not an access key)
 var values: Array = []  ## parallel payloads (defaults to the strings)
 var selected := 0:
 	set(v):
@@ -23,6 +23,14 @@ var disabled := false:
 		queue_redraw()
 
 var _popup: Control
+
+
+## The drawable source for item text `label` clipped to `width`: every "&" doubled so RetroFont
+## shows it instead of reading it as an access-key marker (group and launch group names are user
+## text, and a drop-down's entries never have access keys).
+static func fit_label(label: String, width: int) -> String:
+	var f := W31.font()
+	return f.clip(W31.drawable(label).replace("&", "&&"), width).replace("&", "&&")
 
 
 func _init() -> void:
@@ -68,7 +76,7 @@ func _draw() -> void:
 		return
 	var label: String = items[selected]
 	var text_w := int(size.x) - 2 - ARROW_W - 4
-	var clipped := W31.font().clip(label, text_w)
+	var clipped := W31Combo.fit_label(label, text_w)
 	var line_y := floorf((size.y - 13) / 2.0)
 	if has_focus() and not is_open():
 		var hw := W31.font().measure(clipped)
@@ -219,7 +227,7 @@ class _Popup extends Control:
 			var row_w := int(size.x) - 2 - (W31ScrollBar.WIDTH if sb else 0)
 			if sel:
 				Px.fill(self, 1, y, row_w, ROW, W31.NAVY)
-			W31.font().draw(self, Vector2(4, y + 1), W31.font().clip(combo.items[idx], text_w), W31.WHITE if sel else W31.BLACK)
+			W31.font().draw(self, Vector2(4, y + 1), W31Combo.fit_label(String(combo.items[idx]), text_w), W31.WHITE if sel else W31.BLACK)
 
 	func _row_at(p: Vector2) -> int:
 		var i := int((p.y - 1) / ROW)

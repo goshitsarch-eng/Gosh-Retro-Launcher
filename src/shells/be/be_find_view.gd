@@ -1,9 +1,10 @@
 class_name BeFindView
 extends Control
-## Contents of the Find window: "Find [type] in [group]", "Name contains [____] (Find)", and the results list
-## (Name / Group / Command). State lives in shell.find_state so reopening the window keeps the last search.
+## Contents of the Find window: "Find [type] in [group]", "Name or text contains [____] (Find)", and the results list
+## (Name / Group / Launch Group / Command). State lives in shell.find_state so reopening the window keeps the last search.
 
-const TYPES := [["all", "All programs"], ["app", "Applications"], ["url", "URLs"], ["batch", "In a launch group"]]
+const TYPES := [["all", "All programs"], ["app", "Applications"], ["url", "URLs"], ["note", "Sticky notes"], ["batch", "In a launch group"]]
+const HEADINGS := ["Name", "Group", BeDialogLogic.LAUNCH_GROUP_HEADING, "Command"]
 
 var shell: Control
 var window: Control
@@ -105,7 +106,7 @@ func _layout() -> void:
 	where_sel.position = Vector2(x, y + 1)
 	where_sel.size = where_sel.custom_minimum_size
 	var y2 := 32.0 + 12.0
-	var lw := BeFont.width("Name contains") + 10.0
+	var lw := BeFont.width(BeDialogLogic.FIND_QUERY_LABEL) + 10.0
 	run_btn.size = run_btn.custom_minimum_size
 	run_btn.position = Vector2(size.x - run_btn.size.x, y2)
 	query.position = Vector2(lw, y2)
@@ -142,10 +143,7 @@ func _ready() -> void:
 
 
 func _columns() -> Array:
-	var w := size.x - 2
-	var c0 := maxf(150.0, w * 2.0 / 6.0)
-	var c1 := maxf(100.0, w / 6.0)
-	return [0.0, c0, c0, c1, c0 + c1, maxf(60.0, w - c0 - c1)]
+	return BeGeometry.find_columns(size.x - 2)
 
 
 func _row_at(p: Vector2) -> int:
@@ -199,10 +197,10 @@ func _draw() -> void:
 	BeDraw.icon(self, BeIconCatalog.texture("find"), Rect2(0, 0, 32, 32))
 	BeFont.draw(self, Vector2(40, 7), "Find", col)
 	BeFont.draw(self, Vector2(type_sel.position.x + type_sel.size.x + 8, 7), "in", col)
-	BeFont.draw(self, Vector2(0, 44 + 6), "Name contains", col)
+	BeFont.draw(self, Vector2(0, 44 + 6), BeDialogLogic.FIND_QUERY_LABEL, col)
 	if bool(shell.find_state.ran):
 		var rr := _results_rect()
-		BeFont.draw(self, Vector2(0, rr.end.y + 12 - 1), "%d file(s) found" % results.size(), col, BeGeometry.FONT_SMALL, false, 16)
+		BeFont.draw(self, Vector2(0, rr.end.y + 12 - 1), BeDialogLogic.found_text(results.size()), col, BeGeometry.FONT_SMALL, false, 16)
 
 
 func _draw_results(c: Control) -> void:
@@ -211,6 +209,7 @@ func _draw_results(c: Control) -> void:
 	BeDraw.fill(c, rr, BeTheme.b("ffffff"))
 	var cols := _columns()
 	var sel: String = shell.selected_id_in(BeWindowStore.FIND)
+	var names := ProgramStore.launch_group_names()
 	for i in results.size():
 		var r: Rect2 = _rows[i]
 		var y := r.position.y - _scroll
@@ -221,15 +220,15 @@ func _draw_results(c: Control) -> void:
 			BeDraw.fill(c, Rect2(1, y, rr.size.x - 2, 24), BeTheme.b("c8c8c8"))
 		BeDraw.icon(c, BeIconCatalog.texture(String(res.item.get("icon", "default")), String(res.item.name)), Rect2(8, y + 4, 16, 16))
 		BeFont.draw(c, Vector2(8 + 16 + 6, y + 3), BeFont.clip(String(res.item.name), float(cols[1]) - 38), col)
-		BeFont.draw(c, Vector2(float(cols[2]) + 10, y + 3), BeFont.clip(String(res.group.name), float(cols[3]) - 12), col)
-		BeFont.draw(c, Vector2(float(cols[4]) + 10, y + 3), BeFont.clip(String(res.item.path), float(cols[5]) - 20), col)
+		var cells := [String(res.group.name), BeDialogLogic.launch_group_cell(res.item, names), BeDialogLogic.command_text(res.item)]
+		for n in 3:
+			BeFont.draw(c, Vector2(float(cols[n * 2 + 2]) + 10, y + 3), BeFont.clip(cells[n], float(cols[n * 2 + 3]) - 20), col)
 	var hr := Rect2(1, 1, rr.size.x - 2, 26)
 	BeDraw.gradient_v(c, hr, BeTheme.b("f4f4f4"), BeTheme.b("d4d4d4"))
 	BeDraw.hline(c, hr.position.x, hr.end.y - 1, hr.size.x, BeTheme.b("989898"))
-	var heads := ["Name", "Group", "Command"]
-	for n in 3:
+	for n in HEADINGS.size():
 		var cx: float = hr.position.x + float(cols[n * 2])
-		BeFont.draw(c, Vector2(cx + 10, hr.position.y + 3), heads[n], col, BeGeometry.FONT, true)
-		if n < 2:
+		BeFont.draw(c, Vector2(cx + 10, hr.position.y + 3), HEADINGS[n], col, BeGeometry.FONT, true)
+		if n < HEADINGS.size() - 1:
 			BeDraw.vline(c, cx + float(cols[n * 2 + 1]) - 1, hr.position.y, hr.size.y - 1, BeTheme.b("b8b8b8"))
 	BeDraw.border(c, rr, BeTheme.b("989898"))

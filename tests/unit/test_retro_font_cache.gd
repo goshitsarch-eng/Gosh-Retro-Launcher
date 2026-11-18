@@ -77,3 +77,10 @@ func test_long_strings_are_measured_but_not_kept() -> void:
 	expect_eq(f._measure_cache.size(), 0, "a long field value is not cached")
 	f.measure("Short label")
 	expect_eq(f._measure_cache.size(), 1)
+
+
+func test_wfw_draws_stand_ins_for_missing_punctuation() -> void:
+	var f := RetroFont.instance(RetroFont.WFW)
+	expect_eq(f.advance("'", true), 4, "bold apostrophe: 2 columns plus spacing")
+	expect_eq(f.advance(">", false), 6, "regular > : 4 columns plus spacing")
+	expect(f.measure("Plumber's", true) > f.measure("Plumbers", true) + 2, "the apostrophe takes room")

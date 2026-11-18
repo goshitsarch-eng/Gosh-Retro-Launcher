@@ -95,20 +95,16 @@ static func import_grp(store: Node, result: Dictionary, info_fn: Callable) -> Di
 ## e.g. "2 stored values were repaired and 1 shortcut key was cleared (shortcut keys need Ctrl, Alt,
 ## Shift or Meta)."
 static func repair_summary(normalized: int, shortcuts_cleared: int) -> String:
-	var parts := []
-	if normalized > 0:
-		parts.append("%d stored %s repaired" % [normalized, "value was" if normalized == 1 else "values were"])
-	if shortcuts_cleared > 0:
-		parts.append("%d shortcut %s cleared (shortcut keys need Ctrl, Alt, Shift or Meta)" % [shortcuts_cleared,
-			"key was" if shortcuts_cleared == 1 else "keys were"])
-	if parts.is_empty():
-		return ""
-	return " and ".join(parts) + "."
+	return DataTransfer.repair_summary(normalized, shortcuts_cleared)
 
 
-static func export_grp_status(group_name: String, result: Dictionary) -> String:
+## `skipped_notes`: sticky notes in the group, which a .GRP file cannot hold (Grp leaves them out).
+static func export_grp_status(group_name: String, result: Dictionary, skipped_notes: int = 0) -> String:
 	if result.get("success", false):
-		return "Exported “%s” as a Windows 3.x .GRP file." % group_name
+		var line := "Exported “%s” as a Windows 3.x .GRP file." % group_name
+		if skipped_notes > 0:
+			line += " %s left out: a .GRP file has no sticky notes." % ("1 sticky note was" if skipped_notes == 1 else "%d sticky notes were" % skipped_notes)
+		return line
 	if result.get("error", "") != "Canceled":
 		return String(result.get("error", "")) if String(result.get("error", "")) != "" else "Could not export the group."
 	return ""
@@ -151,9 +147,9 @@ static func set_delay(store: Node, value: Variant) -> int:
 	return d
 
 
-static func launch_status_start(buckets: Array) -> String:
+static func launch_status_start(buckets: Array, names: Variant = null) -> String:
 	if buckets.size() == 1:
-		return "Launching Group %d..." % int(buckets[0].groupNumber)
+		return "Launching %s..." % LaunchGroups.format_launch_group(int(buckets[0].groupNumber), names)
 	return "Launching all groups..."
 
 
@@ -167,9 +163,62 @@ static func launch_status_done(results: Array) -> String:
 	return "Launched %d %s." % [results.size(), "item" if results.size() == 1 else "items"]
 
 
-static func launch_group_label(bucket: Dictionary) -> String:
-	var n: int = bucket.items.size()
-	return "Launch Group %d (%d %s)" % [int(bucket.groupNumber), n, "item" if n == 1 else "items"]
+static func launch_group_label(bucket: Dictionary, names: Variant = null) -> String:
+	return LaunchGroups.launch_label(int(bucket.groupNumber), bucket.items.size(), names)
+
+
+# -------------------------------------------------------- launch group editing
+# The "Launch groups" section edits groups in place; the wording and rules are the WfW manager's
+# (W31DialogLogic), so every surface says the same thing.
+
+## [{number, name, count, text, right}] of every launch group, named or with members.
+static func launch_group_rows(groups: Array, names: Variant) -> Array:
+	return W31DialogLogic.launch_group_rows(groups, names)
+
+
+## Labels for the per-item "Batch group" choice: None, Group 1, Group 2: Morning, ... Group 8.
+static func batch_group_labels(names: Variant, current: int = 0) -> Array:
+	return W31DialogLogic.launch_group_choices(names, current).labels
+
+
+## The launch group number shown at `index` of batch_group_labels(names, current).
+static func batch_group_value(index: int, current: int = 0) -> int:
+	return int(W31DialogLogic.launch_group_choices(null, current).values[index])
+
+
+static func new_launch_group(store: Node, name: String) -> String:
+	if W31DialogLogic.new_launch_group_number(store.groups, store.launch_group_names()) == 0:
+		return W31DialogLogic.ALL_LAUNCH_GROUPS_IN_USE
+	return String(W31DialogLogic.apply_new_launch_group(store, name).status) + \
+		(" Pick its programs with Batch group below." if LaunchGroups.clean_name(name) != "" else "")
+
+
+static func rename_launch_group(store: Node, number: int, name: String) -> String:
+	return W31DialogLogic.apply_rename_launch_group(store, number, name)
+
+
+static func renumber_launch_group(store: Node, from: int, to: int) -> String:
+	return String(W31DialogLogic.apply_renumber_launch_group(store, from, to).status)
+
+
+static func delete_launch_group_confirmation(groups: Array, names: Variant, number: int) -> String:
+	return W31DialogLogic.delete_launch_group_message(groups, names, number)
+
+
+static func delete_launch_group(store: Node, number: int) -> String:
+	return W31DialogLogic.apply_delete_launch_group(store, number)
+
+
+# ------------------------------------------------------- Export All / Import All
+
+## Status line after Export All (Platform.export_all()); "" on Cancel.
+static func export_all_status(result: Dictionary) -> String:
+	return DataTransfer.export_status(result)
+
+
+## Status line after Import All (Platform.import_data()); "" on Cancel.
+static func import_all_status(result: Dictionary) -> String:
+	return DataTransfer.import_status(result)
 
 
 ## Items of every group as [{key "groupId:itemId", label "Group — Item"}].
@@ -184,7 +233,7 @@ static func item_choices(groups: Array) -> Array:
 static func launch_profile_updates(args: String, working_dir: String, environment: String, run_mode: String, launch_group: Variant) -> Dictionary:
 	return {"arguments": args, "workingDir": working_dir, "environment": environment,
 		"runMode": run_mode if Types.RUN_MODES.has(run_mode) else "normal",
-		"launchGroup": clampi(int(launch_group), 0, 8)}
+		"launchGroup": maxi(0, int(launch_group))}
 
 
 static func save_launch_profile(store: Node, group_id: String, item_id: String, updates: Dictionary) -> String:

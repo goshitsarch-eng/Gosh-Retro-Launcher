@@ -54,3 +54,48 @@ The `wfw-settings` scenario opens Options > Settings... with `wfw.menu:1` and `w
 | `wfw.program-item:<itemId>` | a specific program item cell |
 | `wfw.minimized-group:<groupId>` | a specific minimized group icon |
 | `wfw.desktop-icon:program-manager` | minimized Program Manager icon (desktop mode) |
+
+## Launch groups and Export All / Import All
+
+### Windows for Workgroups
+
+| Id | Element |
+|----|---------|
+| `wfw.dialog.launch-groups.list` | group list in the Launch Groups dialog |
+| `wfw.dialog.launch-groups:<close\|new\|rename\|number\|delete\|members\|launch>` | its buttons |
+| `wfw.dialog.launch-group-name` | name field (New / Rename) |
+| `wfw.dialog.launch-group-number` | number drop-down (Number) |
+| `wfw.dialog.launch-group-members.list` | Members checklist |
+
+### Windows 95
+
+| Id | Element |
+|----|---------|
+| `w95.start-item:<level>:<label>` | a Start menu row by cascade level and label |
+| `w95.lg.list` | group list in the Launch Groups dialog |
+| `w95.lg.button:<New\|Rename\|Number\|Delete\|Members\|Launch\|Close>` | its buttons |
+| `w95.lg.name` / `w95.lg.number` | name field / number drop-down in the sub-dialogs |
+| `w95.lg.members.list` | Members checklist |
+| `w95.properties.select:launchGroup` / `w95.wizard.select:launchGroup` | Launch group drop-down in Properties / Create Shortcut |
+
+### Launcher Tools
+
+`tools.export-all`, `tools.import-all`, `tools.launch-group-number-<n>`, `tools.launch-group-name-<n>`,
+`tools.launch-group-rename-<n>`, `tools.launch-group-delete-<n>`, `tools.launch-group-new-name`,
+`tools.launch-group-new`, `tools.batch-group`. (`tools.import-json` and `tools.export-json` were removed.)
+
+## Sticky notes (every shell)
+
+A open note window (`StickyNote`) answers `note:<itemId>` (window), `note.title:<itemId>` (drag strip),
+`note.close:<itemId>`, `note.grip:<itemId>` (resize) and `note.text:<itemId>` (text area).
+
+Windows for Workgroups: `wfw.dialog.new-note`, `wfw.dialog.note-properties`, `wfw.dialog.note-group`, `wfw.dialog.note-title`,
+`wfw.dialog.note-color`, `wfw.dialog.note-text`, `wfw.dialog.note-launch-group`; Launcher Tools `tools.launch-group-row-<n>`.
+
+Windows 95: `w95.new-note.*`, `w95.note-props.*`, `w95.change-icon.*`, `w95.launch-progress.*` (batch progress window),
+`w95.wizard.button:sticky-note` (see the class comments in `src/shells/win95/` for each control).
+
+Polish pass: WfW `wfw.note-menu` (rows via `wfw.popup-item:<label>`), `wfw.dialog.radio:Web Site`,
+`wfw.dialog.new-web-site`, `wfw.dialog.web-group`, `wfw.dialog.web-url`, `wfw.dialog.web-name`,
+`wfw.dialog.web-launch-group`, `wfw.dialog.web-properties`, `wfw.dialog.web-shortcut`. Windows 95 taskbar buttons:
+`w95.task:<window entry id>` (for example `w95.task:group:main`) and `w95.task:note:<itemId>`.
