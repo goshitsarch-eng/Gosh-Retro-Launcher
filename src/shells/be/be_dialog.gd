@@ -22,6 +22,7 @@ var key_handler := Callable()
 var content: VBoxContainer
 var buttons: Array = []
 var default_button: BeButton
+var _scroll: ScrollContainer
 var _frame := Rect2()
 var _pad := Vector4(18, 16, 18, 14)  ## left, top, right, bottom
 var _strip := 0
@@ -53,7 +54,11 @@ func _setup() -> void:
 	content = VBoxContainer.new()
 	content.add_theme_constant_override("separation", GAP)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(content)
+	_scroll = ScrollContainer.new()
+	_scroll.follow_focus = true
+	add_child(_scroll)
+	_scroll.add_child(content)
+	resized.connect(relayout)
 
 
 func content_width() -> float:
@@ -125,11 +130,16 @@ func relayout() -> void:
 	var h := content.get_combined_minimum_size().y
 	var ph := maxf(h + _pad.y + _pad.w + 2 * BORDER, 60.0 if text_mode else 0.0)
 	var view := size if size.x > 0 else get_viewport_rect().size
-	var total := ph + (BeGeometry.TAB_H if tabbed else 0)
-	var x := floorf(maxf(0.0, (view.x - panel_w) / 2.0))
+	var tab_height := BeGeometry.TAB_H if tabbed else 0
+	var visible_w := minf(panel_w, view.x)
+	ph = minf(ph, maxf(1, view.y - tab_height))
+	var total := ph + tab_height
+	var x := floorf(maxf(0.0, (view.x - visible_w) / 2.0))
 	var top := floorf(maxf(0.0, (view.y - total) / 2.0))
-	_frame = Rect2(x, top + (BeGeometry.TAB_H if tabbed else 0), panel_w, ph)
-	content.position = _frame.position + Vector2(BORDER + _strip + _pad.x, BORDER + _pad.y)
+	_frame = Rect2(x, top + (BeGeometry.TAB_H if tabbed else 0), visible_w, ph)
+	_scroll.position = _frame.position + Vector2(BORDER + _strip + _pad.x, BORDER + _pad.y)
+	_scroll.size = (_frame.size - Vector2(BORDER * 2 + _strip + _pad.x + _pad.z, BORDER * 2 + _pad.y + _pad.w)).max(Vector2.ONE)
+	content.custom_minimum_size.x = content_width()
 	content.size = Vector2(content_width(), h)
 	if tabbed:
 		var tw := BeGeometry.tab_width(BeFont.width(title, BeGeometry.FONT, true), panel_w, false)

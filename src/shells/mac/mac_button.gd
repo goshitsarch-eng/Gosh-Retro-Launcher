@@ -15,6 +15,7 @@ var is_default := false:
 var disabled := false:
 	set(v):
 		disabled = v
+		focus_mode = Control.FOCUS_NONE if v else Control.FOCUS_ALL
 		queue_redraw()
 var _down := false
 
@@ -22,7 +23,9 @@ var _down := false
 func _init(p_label: String = "OK", min_w: int = 60) -> void:
 	label = p_label
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	focus_mode = Control.FOCUS_NONE
+	focus_mode = Control.FOCUS_ALL
+	focus_entered.connect(queue_redraw)
+	focus_exited.connect(queue_redraw)
 	size = Vector2(maxi(min_w, MacDraw.measure(p_label) + 24), 20)
 	custom_minimum_size = size
 	add_to_group("pm_auto")
@@ -31,12 +34,17 @@ func _init(p_label: String = "OK", min_w: int = 60) -> void:
 
 func _draw() -> void:
 	MacDraw.button(self, Rect2(Vector2.ZERO, size), label, is_default, _down, disabled)
+	if has_focus():
+		Px.focus_rect(self, Rect2(Vector2.ZERO, size).grow(-4), MacTheme.t("444444"))
 
 
 func _gui_input(event: InputEvent) -> void:
 	if disabled:
 		return
-	if event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+	if event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER, KEY_SPACE]:
+		accept_event()
+		pressed.emit()
+	elif event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 		var mb := event as InputEventMouseButton
 		if mb.pressed:
 			_down = true

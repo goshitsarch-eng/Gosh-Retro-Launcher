@@ -124,7 +124,12 @@ static func load_any(bytes: PackedByteArray, svg_size: int = ICON_SIZE) -> Image
 		return IcnsFile.best_image(bytes)
 	if _looks_like_svg(bytes):
 		return load_svg(bytes, svg_size)
-	# Last resort for TGA and anything else Godot can sniff.
+	# TGA has no magic signature. Check its header before handing arbitrary files to the decoder.
+	if bytes.size() < 18 or bytes[1] > 1 or bytes[2] not in [1, 2, 3, 9, 10, 11]:
+		return null
+	var pixels := bytes.decode_u16(12) * bytes.decode_u16(14)
+	if pixels == 0 or pixels > MAX_IMAGE_PIXELS:
+		return null
 	return _finish(_try(bytes, "load_tga_from_buffer"))
 
 

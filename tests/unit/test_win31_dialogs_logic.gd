@@ -505,7 +505,9 @@ func test_button_fit_metrics() -> void:
 	var wrap := W31Button.new("Change Icon...")
 	wrap.wrap_text = true
 	expect_eq(wrap.fit(78), Vector2(78, 32), "two-line button in the 78px column")
-	expect_eq(W31Button.new("Help").auto_id, "wfw.dialog.button:Help")
+	var help := W31Button.new("Help")
+	expect_eq(help.auto_id, "wfw.dialog.button:Help")
+	help.free()
 	b.free()
 	long.free()
 	wrap.free()

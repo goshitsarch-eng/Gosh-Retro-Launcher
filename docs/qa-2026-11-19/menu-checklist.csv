@@ -1,0 +1,278 @@
+Desktop,Menu,Entry,macOS,Windows,Linux
+win31,file,New...,clicked; opened New Program Object > newObject,clicked; opened New Program Object > newObject,clicked; opened New Program Object > newObject
+win31,file,Open,clicked,clicked,clicked
+win31,file,Move...,clicked; opened Move Program Item > moveItem,clicked; opened Move Program Item > moveItem,clicked; opened Move Program Item > moveItem
+win31,file,Copy...,clicked; opened Copy Program Item > copyItem,clicked; opened Copy Program Item > copyItem,clicked; opened Copy Program Item > copyItem
+win31,file,Delete,clicked; opened Delete Program Item > confirm,clicked; opened Delete Program Item > confirm,clicked; opened Delete Program Item > confirm
+win31,file,Properties...,clicked; opened Program Item Properties > itemProperties,clicked; opened Program Item Properties > itemProperties,clicked; opened Program Item Properties > itemProperties
+win31,file,Run...,clicked; opened Run > run,clicked; opened Run > run,clicked; opened Run > run
+win31,file,Import All...,clicked; opened Import All Programs > confirm,clicked; opened Import All Programs > confirm,clicked; opened Import All Programs > confirm
+win31,file,Export All...,clicked,clicked,clicked
+win31,file,Exit Windows...,clicked; opened Exit Windows > exitWindows,clicked; opened Exit Windows > exitWindows,clicked; opened Exit Windows > exitWindows
+win31,options,Auto Arrange,clicked,clicked,clicked
+win31,options,Minimize on Use,clicked,clicked,clicked
+win31,options,Save Settings on Exit,clicked,clicked,clicked
+win31,options,Settings...,clicked; opened Settings > settings,clicked; opened Settings > settings,clicked; opened Settings > settings
+win31,window,Cascade,clicked,clicked,clicked
+win31,window,Tile,clicked,clicked,clicked
+win31,window,Arrange Icons,clicked,clicked,clicked
+win31,window,1 Main,clicked,clicked,clicked
+win31,window,2 Accessories,clicked,clicked,clicked
+win31,launcher,Launch All,clicked,clicked,clicked
+win31,launcher,Launch Group 1 (1 item),clicked,clicked,clicked
+win31,launcher,Launch Groups...,clicked; opened Launch Groups > launchGroups,clicked; opened Launch Groups > launchGroups,clicked; opened Launch Groups > launchGroups
+win31,launcher,Launcher Tools...,clicked; opened Launcher Tools,clicked; opened Launcher Tools,clicked; opened Launcher Tools
+win31,help,Contents,clicked; opened Program Manager Help > help,clicked; opened Program Manager Help > help,clicked; opened Program Manager Help > help
+win31,help,Search for Help On...,clicked; opened Program Manager Help > help,clicked; opened Program Manager Help > help,clicked; opened Program Manager Help > help
+win31,help,How to Use Help,clicked; opened Program Manager Help > help,clicked; opened Program Manager Help > help,clicked; opened Program Manager Help > help
+win31,help,About Program Manager...,clicked; opened About Program Manager > about,clicked; opened About Program Manager > about,clicked; opened About Program Manager > about
+win31,system,Restore,disabled click,disabled click,disabled click
+win31,system,Move,clicked,clicked,clicked
+win31,system,Size,clicked,clicked,clicked
+win31,system,Minimize,clicked,clicked,clicked
+win31,system,Maximize,clicked,clicked,clicked
+win31,childsystem,Restore,disabled click,disabled click,disabled click
+win31,childsystem,Move,clicked,clicked,clicked
+win31,childsystem,Size,clicked,clicked,clicked
+win31,childsystem,Minimize,clicked,clicked,clicked
+win31,childsystem,Maximize,clicked,clicked,clicked
+win31,childsystem,Close,clicked,clicked,clicked
+win31,note,Close,clicked,clicked,clicked
+win31,note,Properties...,clicked; opened Sticky Note Properties > itemProperties,clicked; opened Sticky Note Properties > itemProperties,clicked; opened Sticky Note Properties > itemProperties
+win31,note,Delete...,clicked; opened Delete Sticky Note > confirm,clicked; opened Delete Sticky Note > confirm,clicked; opened Delete Sticky Note > confirm
+win95,file,Open,clicked,clicked,clicked
+win95,file,New Program...,clicked; opened Create Shortcut,clicked; opened Create Shortcut,clicked; opened Create Shortcut
+win95,file,New Sticky Note...,clicked; opened New Sticky Note,clicked; opened New Sticky Note,clicked; opened New Sticky Note
+win95,file,Delete,clicked; opened Confirm File Delete,clicked; opened Confirm File Delete,clicked; opened Confirm File Delete
+win95,file,Properties,clicked; opened Main Properties,clicked; opened Main Properties,clicked; opened Main Properties
+win95,file,Close,clicked,clicked,clicked
+win95,edit,Undo,disabled click,disabled click,disabled click
+win95,edit,Cut,disabled click,disabled click,disabled click
+win95,edit,Copy,disabled click,disabled click,disabled click
+win95,edit,Paste,disabled click,disabled click,disabled click
+win95,edit,Select All,clicked,clicked,clicked
+win95,view,Large Icons,clicked,clicked,clicked
+win95,view,Small Icons,clicked,clicked,clicked
+win95,view,List,clicked,clicked,clicked
+win95,view,Details,clicked,clicked,clicked
+win95,view,Status Bar,clicked,clicked,clicked
+win95,help,Help Topics,clicked; opened Gosh 95 Help,clicked; opened Gosh 95 Help,clicked; opened Gosh 95 Help
+win95,help,About Gosh 95...,clicked; opened About Gosh 95,clicked; opened About Gosh 95,clicked; opened About Gosh 95
+win95,system,Restore,disabled click,disabled click,disabled click
+win95,system,Move,clicked,clicked,clicked
+win95,system,Size,clicked,clicked,clicked
+win95,system,Minimize,clicked,clicked,clicked
+win95,system,Maximize,clicked,clicked,clicked
+win95,system,Close,clicked,clicked,clicked
+win95,background,Arrange Icons > by Name,clicked,clicked,clicked
+win95,background,Arrange Icons > by Type,disabled click,disabled click,disabled click
+win95,background,Arrange Icons > Auto Arrange,clicked,clicked,clicked
+win95,background,Line Up Icons,clicked,clicked,clicked
+win95,background,Paste,disabled click,disabled click,disabled click
+win95,background,Paste Shortcut,disabled click,disabled click,disabled click
+win95,background,New Folder...,clicked; opened New Folder Properties,clicked; opened New Folder Properties,clicked; opened New Folder Properties
+win95,background,New Shortcut...,clicked; opened Create Shortcut,clicked; opened Create Shortcut,clicked; opened Create Shortcut
+win95,background,New Sticky Note...,clicked; opened New Sticky Note,clicked; opened New Sticky Note,clicked; opened New Sticky Note
+win95,background,Properties,clicked; opened Launcher Tools,clicked; opened Launcher Tools,clicked; opened Launcher Tools
+win95,computer,Open,clicked,clicked,clicked
+win95,computer,Properties,clicked; opened Main Properties,clicked; opened Main Properties,clicked; opened Main Properties
+win95,icon,Open,clicked; opened Network Neighborhood,clicked; opened Network Neighborhood,clicked; opened Network Neighborhood
+win95,icon,Properties,clicked; opened Network Neighborhood,clicked; opened Network Neighborhood,clicked; opened Network Neighborhood
+win95,item,Open,clicked,clicked,clicked
+win95,item,Delete,clicked; opened Confirm File Delete,clicked; opened Confirm File Delete,clicked; opened Confirm File Delete
+win95,item,Properties,clicked; opened File Manager Properties,clicked; opened File Manager Properties,clicked; opened File Manager Properties
+win95,taskbar,Cascade Windows,disabled click,disabled click,disabled click
+win95,taskbar,Tile Windows Horizontally,disabled click,disabled click,disabled click
+win95,taskbar,Tile Windows Vertically,disabled click,disabled click,disabled click
+win95,taskbar,Minimize All Windows,disabled click,disabled click,disabled click
+win95,taskbar,Properties,clicked; opened Launcher Tools,clicked; opened Launcher Tools,clicked; opened Launcher Tools
+win95,task,Restore,disabled click,disabled click,disabled click
+win95,task,Move,clicked,clicked,clicked
+win95,task,Size,clicked,clicked,clicked
+win95,task,Minimize,clicked,clicked,clicked
+win95,task,Maximize,clicked,clicked,clicked
+win95,task,Close,clicked,clicked,clicked
+win95,start,Programs > Main > File Manager,clicked,clicked,clicked
+win95,start,Programs > Main > Control Panel,clicked; opened Control Panel,clicked; opened Control Panel,clicked; opened Control Panel
+win95,start,Programs > Main > QA Note,clicked,clicked,clicked
+win95,start,Programs > Accessories > (Empty),disabled click,disabled click,disabled click
+win95,start,Programs > Launch Groups > Launch All,clicked,clicked,clicked
+win95,start,Programs > Launch Groups > Launch Group 1 (1 item),clicked,clicked,clicked
+win95,start,Programs > Launch Groups > Manage Launch Groups...,clicked; opened Launch Groups,clicked; opened Launch Groups,clicked; opened Launch Groups
+win95,start,Documents > (Empty),disabled click,disabled click,disabled click
+win95,start,Settings > Control Panel,clicked; opened Control Panel,clicked; opened Control Panel,clicked; opened Control Panel
+win95,start,Settings > Printers,clicked; opened Printers,clicked; opened Printers,clicked; opened Printers
+win95,start,Settings > Taskbar...,clicked; opened Taskbar...,clicked; opened Taskbar...,clicked; opened Taskbar...
+win95,start,Settings > Launcher Tools...,clicked; opened Launcher Tools,clicked; opened Launcher Tools,clicked; opened Launcher Tools
+win95,start,Settings > Launch Groups...,clicked; opened Launch Groups,clicked; opened Launch Groups,clicked; opened Launch Groups
+win95,start,Settings > Export All...,clicked,clicked,clicked
+win95,start,Settings > Import All...,clicked; opened Import All Programs,clicked; opened Import All Programs,clicked; opened Import All Programs
+win95,start,Find > Files or Folders...,clicked,clicked,clicked
+win95,start,Find > Computer...,clicked; opened Computer...,clicked; opened Computer...,clicked; opened Computer...
+win95,start,Find > On the Internet...,clicked; opened On the Internet...,clicked; opened On the Internet...,clicked; opened On the Internet...
+win95,start,Help,clicked; opened Gosh 95 Help,clicked; opened Gosh 95 Help,clicked; opened Gosh 95 Help
+win95,start,Run...,clicked; opened Run,clicked; opened Run,clicked; opened Run
+win95,start,Shut Down...,clicked; opened Shut Down Windows,clicked; opened Shut Down Windows,clicked; opened Shut Down Windows
+win95,note,Close,clicked,clicked,clicked
+win95,note,Properties,clicked; opened QA Note Properties,clicked; opened QA Note Properties,clicked; opened QA Note Properties
+win95,note,Delete,clicked; opened Confirm File Delete,clicked; opened Confirm File Delete,clicked; opened Confirm File Delete
+mac,file,New Folder,clicked; opened New Folder,clicked; opened New Folder,clicked; opened New Folder
+mac,file,New Program…,clicked; opened New Program,clicked; opened New Program,clicked; opened New Program
+mac,file,New Website…,clicked; opened New Website,clicked; opened New Website,clicked; opened New Website
+mac,file,New Note…,clicked; opened New Note,clicked; opened New Note,clicked; opened New Note
+mac,file,Open,clicked,clicked,clicked
+mac,file,Close Window,clicked,clicked,clicked
+mac,file,Get Info,clicked; opened File Manager Info,clicked; opened File Manager Info,clicked; opened File Manager Info
+mac,file,Duplicate,clicked,clicked,clicked
+mac,file,Move To Trash,clicked,clicked,clicked
+mac,file,Find…,clicked,clicked,clicked
+mac,file,Export All…,clicked,clicked,clicked
+mac,file,Import All…,clicked,clicked,clicked
+mac,edit,Undo,disabled click,disabled click,disabled click
+mac,edit,Cut,disabled click,disabled click,disabled click
+mac,edit,Copy,disabled click,disabled click,disabled click
+mac,edit,Paste,disabled click,disabled click,disabled click
+mac,edit,Clear,disabled click,disabled click,disabled click
+mac,edit,Select All,disabled click,disabled click,disabled click
+mac,view,as Icons,clicked,clicked,clicked
+mac,view,as List,clicked,clicked,clicked
+mac,special,Launch All,clicked,clicked,clicked
+mac,special,Launch Group 1 (1 item),clicked,clicked,clicked
+mac,special,Launch Groups…,clicked; opened Launch Groups,clicked; opened Launch Groups,clicked; opened Launch Groups
+mac,special,Run…,clicked; opened Run,clicked; opened Run,clicked; opened Run
+mac,special,Restart,clicked,clicked,clicked
+mac,special,Shut Down,clicked; opened Shut Down,clicked; opened Shut Down,clicked; opened Shut Down
+mac,help,Program Manager Help,clicked; opened Program Manager Help,clicked; opened Program Manager Help,clicked; opened Program Manager Help
+mac,help,Show Balloons,disabled click,disabled click,disabled click
+mac,logo,About Program Manager…,clicked,clicked,clicked
+mac,logo,Launcher Tools…,clicked; opened Launcher Tools,clicked; opened Launcher Tools,clicked; opened Launcher Tools
+mac,logo,Desktop Pictures…,clicked; opened Desktop Pictures,clicked; opened Desktop Pictures,clicked; opened Desktop Pictures
+mac,logo,Find…,clicked,clicked,clicked
+mac,logo,Main,clicked,clicked,clicked
+mac,logo,Accessories,clicked,clicked,clicked
+mac,app,Launcher Tools…,clicked; opened Launcher Tools,clicked; opened Launcher Tools,clicked; opened Launcher Tools
+mac,app,Main,clicked,clicked,clicked
+mac,app,Launcher HD,clicked,clicked,clicked
+mac,background,Help,clicked; opened Program Manager Help,clicked; opened Program Manager Help,clicked; opened Program Manager Help
+mac,background,New Folder,clicked; opened New Folder,clicked; opened New Folder,clicked; opened New Folder
+mac,background,New Note…,clicked; opened New Note,clicked; opened New Note,clicked; opened New Note
+mac,background,Clean Up,clicked,clicked,clicked
+mac,background,Change Desktop Background…,clicked; opened Desktop Pictures,clicked; opened Desktop Pictures,clicked; opened Desktop Pictures
+mac,computer,Help,clicked; opened Program Manager Help,clicked; opened Program Manager Help,clicked; opened Program Manager Help
+mac,computer,Open,clicked,clicked,clicked
+mac,computer,Get Info,clicked,clicked,clicked
+mac,trash,Open,clicked,clicked,clicked
+mac,trash,Empty Trash…,disabled click,disabled click,disabled click
+mac,item,Help,clicked; opened Program Manager Help,clicked; opened Program Manager Help,clicked; opened Program Manager Help
+mac,item,Open,clicked,clicked,clicked
+mac,item,Get Info,clicked; opened File Manager Info,clicked; opened File Manager Info,clicked; opened File Manager Info
+mac,item,Move To Trash,clicked,clicked,clicked
+mac,item,Duplicate,clicked,clicked,clicked
+mac,item,Make Alias,clicked,clicked,clicked
+mac,item,Rename,clicked; opened Rename,clicked; opened Rename,clicked; opened Rename
+mac,folderbg,Help,clicked; opened Program Manager Help,clicked; opened Program Manager Help,clicked; opened Program Manager Help
+mac,folderbg,New Program…,clicked; opened New Program,clicked; opened New Program,clicked; opened New Program
+mac,folderbg,New Website…,clicked; opened New Website,clicked; opened New Website,clicked; opened New Website
+mac,folderbg,New Note…,clicked; opened New Note,clicked; opened New Note,clicked; opened New Note
+mac,folderbg,Close Window,clicked,clicked,clicked
+mac,folderbg,as Icons,clicked,clicked,clicked
+mac,folderbg,as List,clicked,clicked,clicked
+mac,folderbg,Clean Up,clicked,clicked,clicked
+mac,folderbg,Get Info,clicked; opened Main Info,clicked; opened Main Info,clicked; opened Main Info
+mac,note,Close,clicked,clicked,clicked
+mac,note,Get Info,clicked; opened QA Note Info,clicked; opened QA Note Info,clicked; opened QA Note Info
+mac,note,Yellow,clicked,clicked,clicked
+mac,note,Pink,clicked,clicked,clicked
+mac,note,Blue,clicked,clicked,clicked
+mac,note,Green,clicked,clicked,clicked
+mac,note,Purple,clicked,clicked,clicked
+mac,note,Gray,clicked,clicked,clicked
+mac,note,Move To Trash…,clicked,clicked,clicked
+be,file,Open,clicked,clicked,clicked
+be,file,Add Program…,clicked; opened New Program,clicked; opened New Program,clicked; opened New Program
+be,file,Add Website…,clicked; opened New Website,clicked; opened New Website,clicked; opened New Website
+be,file,New Note…,clicked; opened New Note,clicked; opened New Note,clicked; opened New Note
+be,file,Move to Trash,clicked,clicked,clicked
+be,file,Edit Name,clicked; opened Edit Name,clicked; opened Edit Name,clicked; opened Edit Name
+be,file,Get Info,clicked; opened File Manager info,clicked; opened File Manager info,clicked; opened File Manager info
+be,file,Close,clicked,clicked,clicked
+be,edit,Undo,disabled click,disabled click,disabled click
+be,edit,Cut,disabled click,disabled click,disabled click
+be,edit,Copy,disabled click,disabled click,disabled click
+be,edit,Paste,disabled click,disabled click,disabled click
+be,edit,Select All,disabled click,disabled click,disabled click
+be,edit,Invert Selection,disabled click,disabled click,disabled click
+be,view,Icon View,clicked,clicked,clicked
+be,view,Mini Icon View,clicked,clicked,clicked
+be,view,List View,clicked,clicked,clicked
+be,view,Clean Up,clicked,clicked,clicked
+be,view,Refresh,clicked,clicked,clicked
+be,help,Help Topics,clicked; opened Program Manager Help,clicked; opened Program Manager Help,clicked; opened Program Manager Help
+be,help,About Program Manager,clicked,clicked,clicked
+be,logo,About Program Manager…,clicked,clicked,clicked
+be,logo,Find…,clicked,clicked,clicked
+be,logo,Run…,clicked; opened Run,clicked; opened Run,clicked; opened Run
+be,logo,New Note…,clicked; opened New Note,clicked; opened New Note,clicked; opened New Note
+be,logo,Launcher Tools…,clicked; opened Launcher Tools,clicked; opened Launcher Tools,clicked; opened Launcher Tools
+be,logo,Backgrounds…,clicked; opened Backgrounds,clicked; opened Backgrounds,clicked; opened Backgrounds
+be,logo,Help,clicked; opened Program Manager Help,clicked; opened Program Manager Help,clicked; opened Program Manager Help
+be,logo,Launch All,clicked,clicked,clicked
+be,logo,Launch Group 1 (1 item),clicked,clicked,clicked
+be,logo,Launch Groups…,clicked; opened Launch Groups,clicked; opened Launch Groups,clicked; opened Launch Groups
+be,logo,Export All…,clicked,clicked,clicked
+be,logo,Import All…,clicked,clicked,clicked
+be,logo,Restart,clicked,clicked,clicked
+be,logo,Shut Down…,clicked,clicked,clicked
+be,logo,Main > File Manager,clicked,clicked,clicked
+be,logo,Main > Control Panel,clicked,clicked,clicked
+be,logo,Main > QA Note,clicked,clicked,clicked
+be,logo,Accessories,clicked,clicked,clicked
+be,background,New Folder,clicked; opened New Folder,clicked; opened New Folder,clicked; opened New Folder
+be,background,New Note…,clicked; opened New Note,clicked; opened New Note,clicked; opened New Note
+be,background,Clean Up,clicked,clicked,clicked
+be,background,Select All,disabled click,disabled click,disabled click
+be,background,Find…,clicked,clicked,clicked
+be,background,Launcher Tools…,clicked; opened Launcher Tools,clicked; opened Launcher Tools,clicked; opened Launcher Tools
+be,background,Backgrounds…,clicked; opened Backgrounds,clicked; opened Backgrounds,clicked; opened Backgrounds
+be,background,Help,clicked; opened Program Manager Help,clicked; opened Program Manager Help,clicked; opened Program Manager Help
+be,computer,Open,clicked,clicked,clicked
+be,computer,Get Info,clicked,clicked,clicked
+be,computer,Find…,clicked,clicked,clicked
+be,group,Open,clicked,clicked,clicked
+be,group,Get Info,clicked; opened Main info,clicked; opened Main info,clicked; opened Main info
+be,group,Edit Name,clicked; opened Edit Name,clicked; opened Edit Name,clicked; opened Edit Name
+be,group,Move to Trash,clicked,clicked,clicked
+be,item,Open,clicked,clicked,clicked
+be,item,Get Info,clicked; opened File Manager info,clicked; opened File Manager info,clicked; opened File Manager info
+be,item,Edit Name,clicked; opened Edit Name,clicked; opened Edit Name,clicked; opened Edit Name
+be,item,Duplicate,clicked,clicked,clicked
+be,item,Move to Trash,clicked,clicked,clicked
+be,folderbg,Add Program…,clicked; opened New Program,clicked; opened New Program,clicked; opened New Program
+be,folderbg,Add Website…,clicked; opened New Website,clicked; opened New Website,clicked; opened New Website
+be,folderbg,New Note…,clicked; opened New Note,clicked; opened New Note,clicked; opened New Note
+be,folderbg,Icon View,clicked,clicked,clicked
+be,folderbg,Mini Icon View,clicked,clicked,clicked
+be,folderbg,List View,clicked,clicked,clicked
+be,folderbg,Clean Up,clicked,clicked,clicked
+be,folderbg,Select All,disabled click,disabled click,disabled click
+be,folderbg,Get Info,clicked; opened Main info,clicked; opened Main info,clicked; opened Main info
+be,folderbg,Close,clicked,clicked,clicked
+be,task,Show,clicked,clicked,clicked
+be,task,Hide,clicked,clicked,clicked
+be,task,Zoom,clicked,clicked,clicked
+be,task,Close,clicked,clicked,clicked
+be,logocontext,About Program Manager…,clicked,clicked,clicked
+be,logocontext,New Note…,clicked; opened New Note,clicked; opened New Note,clicked; opened New Note
+be,logocontext,Launcher Tools…,clicked; opened Launcher Tools,clicked; opened Launcher Tools,clicked; opened Launcher Tools
+be,logocontext,Launch Groups…,clicked; opened Launch Groups,clicked; opened Launch Groups,clicked; opened Launch Groups
+be,logocontext,Export All…,clicked,clicked,clicked
+be,logocontext,Import All…,clicked,clicked,clicked
+be,note,Close,clicked,clicked,clicked
+be,note,Get Info,clicked; opened QA Note info,clicked; opened QA Note info,clicked; opened QA Note info
+be,note,Color > Yellow,clicked,clicked,clicked
+be,note,Color > Pink,clicked,clicked,clicked
+be,note,Color > Blue,clicked,clicked,clicked
+be,note,Color > Green,clicked,clicked,clicked
+be,note,Color > Purple,clicked,clicked,clicked
+be,note,Color > Gray,clicked,clicked,clicked
+be,note,Move to Trash…,clicked,clicked,clicked

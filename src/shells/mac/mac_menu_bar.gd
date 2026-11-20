@@ -15,6 +15,8 @@ var open_id := ""                   ## "" | menu id | "app"
 var _menus: Array = []
 var _hit: Array = []                ## [{id, rect}]
 var _popup: MacPopupMenu
+var _clock_rect := Rect2()
+var _app_label := true
 var _clock_timer: Timer
 
 
@@ -58,7 +60,14 @@ func _build_hits() -> void:
 		_hit.append({"id": m.id, "rect": Rect2(x, 0, w, size.y - 1)})
 		x += w
 	var app_w := 10 + 16 + 6 + MacDraw.measure("Program Manager", true) + 10
+	var clock_w := MacDraw.measure(clock_text)
+	_app_label = x + clock_w + 16 + app_w + 6 <= size.x
+	if not _app_label:
+		app_w = 36
 	var app_x := int(size.x) - 6 - app_w
+	_clock_rect = Rect2(app_x - clock_w - 10, 0, clock_w, size.y - 1)
+	if _clock_rect.position.x < x:
+		_clock_rect = Rect2()
 	_hit.append({"id": "app", "rect": Rect2(app_x, 0, app_w, size.y - 1)})
 
 
@@ -83,14 +92,14 @@ func _draw() -> void:
 		if hit.id == "app":
 			draw_rect(Rect2(rect.position.x, 0, 1, h - 1), MacTheme.b("999999"))
 			draw_texture_rect(logo, Rect2(rect.position.x + 10, floorf((h - 16) / 2.0), 16, 16), false)
-			MacDraw.text_centered_y(self, rect.position.x + 10 + 16 + 6, 0, h - 1, "Program Manager", fg, true)
+			if _app_label:
+				MacDraw.text_centered_y(self, rect.position.x + 10 + 16 + 6, 0, h - 1, "Program Manager", fg, true)
 		elif hit.id == "logo":
 			draw_texture_rect(logo, Rect2(rect.position.x + 10, floorf((h - 16) / 2.0), 16, 16), false)
 		else:
 			MacDraw.text_centered_y(self, rect.position.x + 10, 0, h - 1, String(_menus[i].label), fg, true)
-	var app_rect: Rect2 = _hit[_hit.size() - 1].rect
-	var cw := MacDraw.measure(clock_text)
-	MacDraw.text_centered_y(self, app_rect.position.x - 10 - cw, 0, h - 1, clock_text, MacTheme.t("000000"))
+	if _clock_rect.has_area():
+		MacDraw.text_centered_y(self, _clock_rect.position.x, 0, h - 1, clock_text, MacTheme.t("000000"))
 
 
 ## The black rounded screen corners (design: 8px radial-gradient cut-outs).
@@ -107,9 +116,7 @@ func auto_lookup(id: String) -> Variant:
 	if not is_visible_in_tree():
 		return null
 	if id == "mac.clock":
-		var app_rect: Rect2 = _hit[_hit.size() - 1].rect if _hit.size() > 0 else Rect2()
-		var cw := MacDraw.measure(clock_text)
-		return Rect2(global_position + Vector2(app_rect.position.x - 10 - cw, 0), Vector2(cw, size.y - 1))
+		return Rect2(global_position + _clock_rect.position, _clock_rect.size)
 	if not id.begins_with("mac.menu:"):
 		return null
 	var want := id.substr("mac.menu:".length())

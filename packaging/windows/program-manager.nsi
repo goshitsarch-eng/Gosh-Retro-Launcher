@@ -1,10 +1,10 @@
 ; Per-user NSIS installer for the exported Godot build.
-;   makensis /DVERSION=2.0.0 /DARCH=x64 /DSOURCE=build\windows-x86_64\program-manager.exe /DOUTFILE=dist\Program-Manager-2.0.0-win-x64.exe packaging\windows\program-manager.nsi
+;   makensis /DVERSION=2.1.0 /DARCH=x64 /DSOURCE=build\windows-x86_64\program-manager.exe /DOUTFILE=dist\Program-Manager-2.1.0-win-x64.exe packaging\windows\program-manager.nsi
 Unicode true
 !include "MUI2.nsh"
 
 !ifndef VERSION
-  !define VERSION "2.0.0"
+  !define VERSION "2.1.0"
 !endif
 !ifndef ARCH
   !define ARCH "x64"

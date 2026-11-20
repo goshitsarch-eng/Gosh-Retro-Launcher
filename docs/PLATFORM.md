@@ -52,7 +52,7 @@ Presets: `export_presets.cfg` (Windows x86_64/arm64, macOS universal, Linux x86_
 Pinned toolchain: the latest stable Godot release, **4.7.2-stable** from
 `https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/`
 (`Godot_v4.7.2-stable_{linux.x86_64,linux.arm64,win64.exe,macos.universal}.zip`, `Godot_v4.7.2-stable_export_templates.tpz`).
-Signing: the macOS preset ad-hoc signs the app (codesign mode 1 with an empty identity); notarization is off.
+Signing: the macOS preset uses Apple’s native codesign tool with the ad-hoc identity `-`. The standard GDScript runtime needs no JIT or unsigned executable memory entitlements. Notarization is off.
 Templates install to `~/.local/share/godot/export_templates/4.7.2.stable/` (Linux),
 `%APPDATA%\Godot\export_templates\4.7.2.stable\` (Windows), `~/Library/Application Support/Godot/export_templates/4.7.2.stable/` (macOS).
 Windows icon/version resources need `rcedit` (the workflow downloads it and writes the editor setting).
@@ -70,3 +70,5 @@ The workflows have not been executed (no CI access from the development sandbox)
 - When the wrapper is unavailable and `can_fall_back_to_shell_open` allows it, the program is started with `ShellExecute` and a warning is logged. This is allowed only for a `.exe` or `.com` with no arguments; `ShellExecute` then ignores the working folder, environment and window style. Anything else fails with "the PowerShell launcher is unavailable or blocked". A `.bat`/`.cmd` never falls back, because its plan runs `cmd.exe` with arguments.
 - A program that starts and then fails is not reported; only a failure of `Process.Start` itself is.
 - This path was unit-tested with Windows plans on macOS; it has not been run on Windows.
+
+On Debian with the Godot 4.7.2 X11 runtime, `FEATURE_STATUS_INDICATOR` is false even with a registered XFCE StatusNotifier host. Closing to the tray uses the minimize fallback there. Restore the window from the taskbar or by starting Program Manager again.

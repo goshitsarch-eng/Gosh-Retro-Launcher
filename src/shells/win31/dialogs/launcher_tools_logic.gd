@@ -120,18 +120,18 @@ static func import_json_status(result: Dictionary) -> String:
 
 
 static func url_valid(group_id: String, name: String, url: String) -> bool:
-	var re := RegEx.new()
-	re.compile("(?i)^https?://")
-	return group_id != "" and not name.strip_edges().is_empty() and re.search(url) != null
+	var address := url.strip_edges()
+	return group_id != "" and not name.strip_edges().is_empty() and Launcher.is_valid_launch_url(address) \
+		and not W31DialogLogic.parse_url(address).is_empty()
 
 
 ## Add URL: returns the status line, "" when the inputs are not acceptable (no-op).
 static func add_url(store: Node, group_id: String, name: String, url: String) -> String:
 	if not url_valid(group_id, name, url):
 		return ""
-	store.add_item(group_id, {"name": name.strip_edges(), "path": url.strip_edges(), "workingDir": "",
+	var item_id: String = store.add_item(group_id, {"name": name.strip_edges(), "path": url.strip_edges(), "workingDir": "",
 		"icon": "network", "win31Icon": "network"})
-	return "URL launcher added."
+	return "URL launcher added." if item_id != "" else "The destination group is no longer available."
 
 
 static func clamp_delay(value: Variant) -> int:

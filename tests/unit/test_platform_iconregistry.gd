@@ -67,7 +67,8 @@ func test_resolve_data_url_file_and_http() -> void:
 	var path := dir.path_join("icon.png")
 	img.save_png(path)
 	expect_eq(IconRegistry.resolve(path).get_size(), Vector2(8, 6))
-	expect_eq(IconRegistry.resolve("file://" + path).get_size(), Vector2(8, 6))
+	var file_url := "file:///" + path.replace("\\", "/").trim_prefix("/")
+	expect_eq(IconRegistry.resolve(file_url).get_size(), Vector2(8, 6))
 	expect(IconRegistry.resolve(dir.path_join("missing.png")) == IconRegistry.default_item_texture())
 	PlatformFixtures.rm_rf(dir)
 

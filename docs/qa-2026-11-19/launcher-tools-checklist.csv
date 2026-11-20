@@ -1,0 +1,59 @@
+Walkthrough,Control or assertion,macOS,Windows,Linux
+tools,missing host,Pass — true,Pass — true,Pass — true
+tools,add URL enabled,Pass — true,Pass — true,Pass — true
+tools,Open GRP group selector,Pass — true,Pass — true,Pass — true
+tools,URL saved in displayed destination,"Pass — ""Café 日本語 QA""","Pass — ""Café 日本語 QA""","Pass — ""Café 日本語 QA"""
+tools,opened tools.item-select,Pass — true,Pass — true,Pass — true
+tools,opened Run mode,Pass — true,Pass — true,Pass — true
+tools,opened tools.batch-group,Pass — true,Pass — true,Pass — true
+tools,save arguments,"Pass — ""--audit""","Pass — ""--audit""","Pass — ""--audit"""
+tools,save workingDir,"Pass — ""/tmp""","Pass — ""/tmp""","Pass — ""/tmp"""
+tools,save environment,"Pass — ""QA=one\nQA2=two""","Pass — ""QA=one\nQA2=two""","Pass — ""QA=one\nQA2=two"""
+tools,save runMode,"Pass — ""maximized""","Pass — ""maximized""","Pass — ""maximized"""
+tools,save launchGroup,Pass — 2,Pass — 2,Pass — 2
+tools,workspace saved,Pass — 1,Pass — 1,Pass — 1
+tools,apply confirmation,Pass — true,Pass — true,Pass — true
+tools,profile cancel closed,Pass — true,Pass — true,Pass — true
+tools,profile applied,"Pass — ""Workspace profile applied.""","Pass — ""Workspace profile applied.""","Pass — ""Workspace profile applied."""
+tools,manual restore point,Pass — 3,Pass — 3,Pass — 3
+tools,restore cancelled,Pass — true,Pass — true,Pass — true
+tools,restore,"Pass — ""Backup restored.""","Pass — ""Backup restored.""","Pass — ""Backup restored."""
+tools,GRP export,"Pass — ""Unicode () QA.grp""","Pass — ""Unicode () QA.grp""","Pass — ""Unicode () QA.grp"""
+tools,GRP import,Pass — 6,Pass — 6,Pass — 6
+tools,JSON export,"Pass — ""Unicode () QA.json""","Pass — ""Unicode () QA.json""","Pass — ""Unicode () QA.json"""
+tools,JSON import cancel,Pass — true,Pass — true,Pass — true
+tools,JSON import,"Pass — ""Imported everything. Your previous setup was backed up.""","Pass — ""Imported everything. Your previous setup was backed up.""","Pass — ""Imported everything. Your previous setup was backed up."""
+tools,bad JSON kept groups,Pass — 6,Pass — 6,Pass — 6
+tools,bad JSON message,"Pass — ""The selected file contains invalid JSON.""","Pass — ""The selected file contains invalid JSON.""","Pass — ""The selected file contains invalid JSON."""
+tools,opened tools.profile-select,Pass — true,Pass — true,Pass — true
+tools,clear profile disables Apply,Pass — true,Pass — true,Pass — true
+tools,new launch group,Pass — 1,Pass — 1,Pass — 1
+tools,renamed launch group,"Pass — {""1"": ""Renamed QA""}","Pass — {""1"": ""Renamed QA""}","Pass — {""1"": ""Renamed QA""}"
+tools,deleted launch group,Pass — {},Pass — {},Pass — {}
+tools,resize,"Pass — ""(480, 360)""","Pass — ""(480, 360)""","Pass — ""(480, 360)"""
+tools,resize,"Pass — ""(500, 740)""","Pass — ""(500, 740)""","Pass — ""(500, 740)"""
+tools,resize,"Pass — ""(1000, 360)""","Pass — ""(1000, 360)""","Pass — ""(1000, 360)"""
+tools,resize,"Pass — ""(800, 600)""","Pass — ""(800, 600)""","Pass — ""(800, 600)"""
+advanced,toggle win31DesktopMode,Pass — true,Pass — true,Pass — true
+advanced,toggle soundEnabled,Pass — true,Pass — true,Pass — true
+advanced,toggle trayOnClose,Pass — true,Pass — true,Pass — true
+advanced,opened tools.shell,Pass — true,Pass — true,Pass — true
+advanced,opened tools.scale,Pass — true,Pass — true,Pass — true
+advanced,appearance win95,"Pass — ""win95""","Pass — ""win95""","Pass — ""win95"""
+advanced,opened tools.shell,Pass — true,Pass — true,Pass — true
+advanced,opened tools.scale,Pass — true,Pass — true,Pass — true
+advanced,appearance mac,"Pass — ""mac""","Pass — ""mac""","Pass — ""mac"""
+advanced,opened tools.shell,Pass — true,Pass — true,Pass — true
+advanced,opened tools.scale,Pass — true,Pass — true,Pass — true
+advanced,appearance be,"Pass — ""be""","Pass — ""be""","Pass — ""be"""
+advanced,opened tools.shell,Pass — true,Pass — true,Pass — true
+advanced,opened tools.scale,Pass — true,Pass — true,Pass — true
+advanced,appearance win31,"Pass — ""win31""","Pass — ""win31""","Pass — ""win31"""
+advanced,launch delay,Pass — 100,Pass — 100,Pass — 100
+advanced,rename workspace,"Pass — ""Renamed Audit""","Pass — ""Renamed Audit""","Pass — ""Renamed Audit"""
+advanced,delete workspace,Pass — 0,Pass — 0,Pass — 0
+advanced,opened tools.launch-group-number-1,Pass — true,Pass — true,Pass — true
+advanced,renumber group,Pass — 3,Pass — 3,Pass — 3
+advanced,launch one,"Pass — ""Launched 1 item.""","Pass — ""Launched 1 item.""","Pass — ""Launched 1 item."""
+advanced,launch all,"Pass — ""Launched 1 item.""","Pass — ""Launched 1 item.""","Pass — ""Launched 1 item."""
+advanced,cancel deletion,Pass — 3,Pass — 3,Pass — 3

@@ -361,11 +361,12 @@ func update_group_icon_position(id: String, position: Dictionary) -> void:
 # ------------------------------------------------------------------- items
 
 func add_item(group_id: String, item: Dictionary) -> String:
+	var group := find_group(group_id)
+	if group.is_empty():
+		return ""
 	var new_item: Dictionary = item.duplicate(true)
 	new_item["id"] = Types.make_id()
-	for g in groups:
-		if g.id == group_id:
-			g.items.append(new_item)
+	group.items.append(new_item)
 	_dirty_groups()
 	return new_item.id
 
@@ -667,8 +668,10 @@ func import_from(path: String) -> Dictionary:
 	if f.get_length() > MAX_IMPORT_BYTES:
 		return {"success": false, "error": "Import file is too large (max %dMB)" % (MAX_IMPORT_BYTES / (1024 * 1024))}
 	var parsed := Jsonx.parse_checked(f.get_as_text())
-	if not parsed[0] or not Jsonx.is_obj(parsed[1]):
-		return {"success": false, "error": "Failed to read file"}
+	if not parsed[0]:
+		return {"success": false, "error": "The selected file contains invalid JSON."}
+	if not Jsonx.is_obj(parsed[1]):
+		return {"success": false, "error": "Invalid file format"}
 	var d: Dictionary = parsed[1]
 	var ctx := {"normalized": 0}
 	_repair_import_values(d, ctx)

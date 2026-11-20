@@ -2,7 +2,7 @@
 
 Program Manager is a retro desktop launcher inspired by Windows 3.1. It lets you organize apps, URLs, scripts, and folders into classic program groups, then launch them from a nostalgic app on Windows, macOS, and Linux.
 
-Version 2.0.0 is a ground-up rewrite in **Godot 4** (GDScript). It uses the same JSON data layout as the 1.x Electron build. Compatibility with 1.x data was not re-verified in the 2026-11-14 audit.
+The current version is **2.1.0**. The 2.x series is a ground-up rewrite in **Godot 4** (GDScript). It uses the same JSON data layout as the 1.x Electron build. Compatibility with 1.x data was not re-verified in the 2026-11-14 audit.
 
 ## What It Does
 
@@ -35,11 +35,12 @@ More views, including dialogs, dark themes and 2×/3× scaling, are in the [hand
 
 ## Run
 
-You need [Godot 4.7](https://godotengine.org/download) (the standard build; .NET is not required). Version 4.7.2 is the latest stable release and the one this repository is verified against.
+You need [Godot 4.7](https://godotengine.org/download) (the standard build; .NET is not required). The repository pins version 4.7.2.
 
 ```bash
 git clone https://github.com/goshitsarch-eng/Gosh-Retro-Launcher.git
 cd Gosh-Retro-Launcher
+godot --headless --path . --import
 godot --path .
 ```
 
@@ -47,9 +48,10 @@ You can also open `project.godot` in the Godot editor and press F5.
 
 ## Build
 
-Export presets for Windows, macOS, and Linux are in `export_presets.cfg`. With the matching export templates installed:
+Export presets for Windows, macOS, and Linux are in `export_presets.cfg`. With the matching export templates installed, run the import step above, then build from the repository root. Build the macOS preset on macOS with Apple’s codesign tool.
 
 ```bash
+mkdir -p build
 godot --headless --path . --export-release "Linux x86_64" build/program-manager.x86_64
 godot --headless --path . --export-release "Windows x86_64" build/program-manager.exe
 godot --headless --path . --export-release "macOS" build/program-manager.zip
@@ -88,6 +90,8 @@ python3 tests/visual/compare.py artifacts/win95-start.png tests/visual/baselines
 | `tests` | Unit tests and the visual regression harness |
 
 ## Documentation
+
+The [November 19 desktop audit](docs/qa-2026-11-19/README.md) lists platform builds, hands-on results, screenshots and outstanding coverage.
 
 1. [Handbook](docs/handbook/index.html): open this file in a browser. It is the full manual, with architecture, build and release, troubleshooting, audit findings and coverage. It works offline.
 2. [User Guide](docs/USER_GUIDE.md): a short guide that points to the handbook

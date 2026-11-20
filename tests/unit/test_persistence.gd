@@ -188,7 +188,7 @@ func test_import_validation_and_export_roundtrip() -> void:
 	f = FileAccess.open(bad, FileAccess.WRITE)
 	f.store_string("not json")
 	f.close()
-	expect_eq(s2.import_from(bad).error, "Failed to read file")
+	expect_eq(s2.import_from(bad).error, "The selected file contains invalid JSON.")
 	s.free()
 	s2.free()
 	_rm(dir)

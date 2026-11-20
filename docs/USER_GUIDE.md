@@ -8,12 +8,12 @@ This page is the short guide. The full manual, with screenshots, step-by-step in
 
 The handbook is the reference for every claim in this file. If the two ever disagree, the handbook and the source code are right, and this file should be corrected.
 
-Version 2.0.0, revision `edb4155` plus the fixes made after the 2026-11-14 audit.
+Version 2.1.0. The [desktop audit](qa-2026-11-19/README.md) records the tested revisions and platform results.
 
 ## Start the program
 
 1. Install [Godot 4.7](https://godotengine.org/download). Version 4.7.2 was used for every check. The standard build is enough; .NET is not needed.
-2. From the project folder, run `godot --path .`, or open `project.godot` in the editor and press F5.
+2. From a fresh checkout, run `godot --headless --path . --import` to prepare the imported assets and script classes. Then run `godot --path .`. You can also open `project.godot` in the editor, let the import finish, and press F5.
 
 On first start the program has an empty workspace and shows the Windows for Workgroups 3.11 desktop. No starter groups are created. The settings dialog's **Add Starter Groups** button adds them if you want them.
 
@@ -63,6 +63,10 @@ In the Windows for Workgroups desktop, choose **Options > Settings...**. The dia
 - **Batch Launch:** Delay between launches, 100 to 5000 ms.
 
 Changes are saved when you choose **OK**. If they cannot be saved, a message box says the settings could not be applied and nothing was changed.
+
+If the window is too small for the selected zoom, the launcher uses the largest whole-number scale that leaves a usable desktop. Enlarging the window restores the selected zoom.
+
+In Classic Mac dialogs, Tab and Shift+Tab move between fields, selectors and buttons. Space operates the focused control. Return on a button activates that button, and Escape cancels.
 
 The other settings are changed where they appear: the Options menu (Auto Arrange, Minimize on Use, Save Settings on Exit), Launcher Tools (desktop choice, the scale of the selected desktop, WfW gray desktop mode, sound effects and minimize to tray on close under *Shell and appearance*; the delay between items under *Launch groups*), Classic Mac OS **Desktop Pictures...** and BeOS **Backgrounds...** (colour and dark mode).
 

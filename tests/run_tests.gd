@@ -3,6 +3,14 @@ extends SceneTree
 ##   godot --headless --path . --script tests/run_tests.gd [-- filter]
 ## Exits non-zero on any failure.
 
+class ScriptErrors extends Logger:
+	var count := 0
+
+	func _log_error(_function: String, _file: String, _line: int, _code: String, _rationale: String,
+			_editor_notify: bool, error_type: int, _script_backtraces: Array[ScriptBacktrace]) -> void:
+		if error_type == Logger.ERROR_TYPE_SCRIPT:
+			count += 1
+
 
 func _init() -> void:
 	_run()
@@ -22,6 +30,8 @@ func _run() -> void:
 	files.sort()
 	var total := 0
 	var failed := 0
+	var script_errors := ScriptErrors.new()
+	OS.add_logger(script_errors)
 	for f in files:
 		var script: GDScript = load("res://tests/unit/" + f)
 		if script == null or not script.can_instantiate():
@@ -37,11 +47,15 @@ func _run() -> void:
 		for m in methods:
 			tc._current = "%s::%s" % [f.get_basename(), m]
 			var before := tc.failures.size()
+			var errors_before := script_errors.count
 			await tc.call(m)
+			if script_errors.count > errors_before:
+				tc.failures.append("%s: GDScript runtime error (see log above)" % tc._current)
 			total += 1
 			if tc.failures.size() > before:
 				failed += 1
 				for i in range(before, tc.failures.size()):
 					printerr("FAIL ", tc.failures[i])
+	OS.remove_logger(script_errors)
 	print("%d tests, %d failed" % [total, failed])
 	quit(1 if failed > 0 else 0)

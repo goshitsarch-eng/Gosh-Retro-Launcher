@@ -53,7 +53,7 @@ class _Base extends W31Dialog:
 	## changed it), keeping the dialog where it is.
 	func refresh() -> void:
 		_refresh_queued = false
-		if _closing or not is_instance_valid(self):
+		if _closing or is_queued_for_deletion() or not is_inside_tree():
 			return
 		_before_refresh()
 		_rebuild(scroll != null)

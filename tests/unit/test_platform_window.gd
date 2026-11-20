@@ -450,7 +450,9 @@ func test_platform_launch_validates_payload() -> void:
 	expect_eq(Platform.open_external("ftp://x"), {"success": false, "error": "Only http and https URLs are allowed"})
 	var r := await Platform.launch_batch([{"nope": true}], 0)
 	expect_eq(r[0].success, false)
-	expect_eq(Platform.version(), "2.0.0")
+	var configured_version := String(ProjectSettings.get_setting("application/config/version", ""))
+	expect(not configured_version.is_empty())
+	expect_eq(Platform.version(), configured_version)
 
 
 func test_posix_launch_env_names_and_paths_are_not_options() -> void:

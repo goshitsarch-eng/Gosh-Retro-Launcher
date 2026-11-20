@@ -71,6 +71,7 @@ func test_url_launcher_rules() -> void:
 	expect_eq(LauncherToolsLogic.add_url(s, g, "  ", "https://x.org"), "", "name required")
 	expect_eq(LauncherToolsLogic.add_url(s, g, "X", "ftp://x.org"), "", "http(s) only")
 	expect_eq(LauncherToolsLogic.add_url(s, "", "X", "https://x.org"), "", "group required")
+	expect_eq(LauncherToolsLogic.add_url(s, "deleted-group", "X", "https://x.org"), "The destination group is no longer available.")
 	expect_eq(s.find_group(g).items.size(), 0)
 	expect_eq(LauncherToolsLogic.add_url(s, g, " X ", "HTTPS://x.org "), "URL launcher added.")
 	var it: Dictionary = s.find_group(g).items[0]
@@ -236,4 +237,71 @@ func test_backups_create_list_restore() -> void:
 	expect_eq(s.groups[0].name, "Before")
 	expect_eq(LauncherToolsLogic.restore_backup(s, "../evil"), "Invalid backup identifier")
 	s.free()
+	_rm(dir)
+
+
+func _tool_field(window: Window, key: String) -> Control:
+	for control in window.find_children("*", "Control", true, false):
+		if control.get_meta("auto_id", "") == key or control.accessibility_name == key:
+			return control
+	return null
+
+
+func _edit_tools_text(field: LineEdit, value: String) -> void:
+	field.text = value
+	field.text_changed.emit(value)
+
+
+func test_tools_form_saves_current_values_and_url_destination() -> void:
+	var dir := _tmp()
+	var saved := [ProgramStore.persistence, ProgramStore.groups, ProgramStore.settings, ProgramStore.workspace_profiles]
+	ProgramStore.init_store(dir)
+	var first := ProgramStore.add_group("First")
+	var second := ProgramStore.add_group("Second")
+	var item_id := ProgramStore.add_item(first, {"name": "Tool", "path": "/qa", "icon": "default", "workingDir": ""})
+	var w := LauncherToolsWindow.new()
+	(Engine.get_main_loop() as SceneTree).root.add_child(w)
+	var groups_row := _tool_field(w, "tools.groups-row")
+	var export_group := groups_row.find_children("*", "OptionButton", true, false)[0] as OptionButton
+	export_group.select(1)
+	export_group.item_selected.emit(1)
+	_edit_tools_text(_tool_field(w, "tools.url-name"), " Café ")
+	_edit_tools_text(_tool_field(w, "tools.url-value"), "https://")
+	expect(_tool_field(w, "tools.add-url").disabled, "a URL needs a host")
+	_edit_tools_text(_tool_field(w, "tools.url-value"), "https://example.invalid/")
+	var add := _tool_field(w, "tools.add-url") as Button
+	expect(not add.disabled, "the same button enables as soon as the address is valid")
+	add.pressed.emit()
+	expect_eq(ProgramStore.find_group(first).items.back().name, "Café", "URL goes to the group displayed in its own form")
+	expect(ProgramStore.find_group(second).items.is_empty(), "export selection is independent")
+	var choice := _tool_field(w, "tools.item-select") as OptionButton
+	choice.select(1)
+	choice.item_selected.emit(1)
+	_edit_tools_text(_tool_field(w, "Arguments"), "--flag")
+	_edit_tools_text(_tool_field(w, "Working directory"), "/qa folder")
+	var environment := _tool_field(w, "Environment") as TextEdit
+	environment.text = "FIRST=one\nSECOND=two"
+	environment.text_changed.emit()
+	var mode := _tool_field(w, "Run mode") as OptionButton
+	mode.select(2)
+	mode.item_selected.emit(2)
+	var batch := _tool_field(w, "tools.batch-group") as OptionButton
+	batch.select(3)
+	batch.item_selected.emit(3)
+	(_tool_field(w, "tools.save-profile") as Button).pressed.emit()
+	w.free()
+	ProgramStore.flush()
+	var p := Persistence.new(dir)
+	p.init_store()
+	var item: Dictionary = p.get_groups()[0].items[0]
+	expect_eq(item.id, item_id)
+	expect_eq(item.arguments, "--flag")
+	expect_eq(item.workingDir, "/qa folder")
+	expect_eq(item.environment, "FIRST=one\nSECOND=two")
+	expect_eq(item.runMode, "maximized")
+	expect_eq(item.launchGroup, 3)
+	ProgramStore.persistence = saved[0]
+	ProgramStore.groups = saved[1]
+	ProgramStore.settings = saved[2]
+	ProgramStore.workspace_profiles = saved[3]
 	_rm(dir)

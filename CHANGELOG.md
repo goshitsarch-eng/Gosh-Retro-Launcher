@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-20
+
 ### Fixed
+- The macOS app launches and quits cleanly. A second Windows instance hands off to the running app. The Windows for Workgroups system menu restores the previous window size and position.
+- Launcher Tools saves edited launch settings and adds websites to the selected destination. Dialogs remain usable at small window sizes, and Classic Mac dialog controls support keyboard navigation.
+- The [desktop audit](docs/qa-2026-11-19/README.md) records all 27 corrections, their regression checks and the remaining platform coverage limits.
 - macOS export: ETC2 ASTC import is enabled, so the universal macOS export succeeds (RT-01).
 - Stored values that are out of range or of the wrong type are repaired on load and on import. Every repaired value is counted in the report, including a missing or wrong-type list or settings object (CORE-01).
 - A stored or imported `launchGroup` above 8 is kept and launched in order. Only a negative number, a fraction or a string becomes 0, and that counts as a repair.

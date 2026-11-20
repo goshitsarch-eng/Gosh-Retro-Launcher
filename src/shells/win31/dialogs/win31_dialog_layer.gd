@@ -5,6 +5,8 @@ extends Control
 ## Mounted full-rect above the shell by Win31Shell. While a dialog is open the layer swallows
 ## all mouse input (the backdrop is not dismissible in the WfW shell).
 
+var _scroll: ScrollContainer
+var _canvas: Control
 var _dialog: W31Dialog
 var _pending: W31Dialog
 var _prev_focus: Control
@@ -16,6 +18,17 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	_scroll = ScrollContainer.new()
+	_scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_scroll.follow_focus = true
+	_scroll.hide()
+	add_child(_scroll)
+	_canvas = Control.new()
+	_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_canvas.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_scroll.add_child(_canvas)
+	_canvas.resized.connect(_place_dialog)
 	UIState.dialog_changed.connect(_on_changed)
 	resized.connect(_on_resized)
 	_on_changed()
@@ -122,19 +135,22 @@ func _on_changed() -> void:
 func _remove_current() -> void:
 	for d in [_dialog, _pending]:
 		if d != null and is_instance_valid(d):
-			if d.get_parent() == self:
-				remove_child(d)
+			if d.get_parent() != null:
+				d.get_parent().remove_child(d)
 			d.queue_free()
 	_dialog = null
 	_pending = null
+	_scroll.hide()
 
 
 func _mount(dlg: W31Dialog) -> void:
 	_dialog = dlg
 	_pending = null
-	add_child(dlg)
+	_scroll.show()
+	_canvas.add_child(dlg)
 	dlg.build(int(size.y))
-	dlg.place(size)
+	dlg.resized.connect(_place_dialog)
+	_place_dialog()
 	dlg.grab_initial_focus()
 
 
@@ -142,4 +158,11 @@ func _on_resized() -> void:
 	if _pending and size.y > 0:
 		_mount(_pending)
 	elif _dialog:
-		_dialog.place(size)
+		_dialog.fit_height(int(size.y))
+		_place_dialog()
+
+
+func _place_dialog() -> void:
+	if is_instance_valid(_dialog):
+		_canvas.custom_minimum_size = _dialog.size
+		_dialog.place(_canvas.size.max(_dialog.size))

@@ -57,8 +57,7 @@ jobs:
           if grep -E "SCRIPT ERROR|Parse Error|FAILED TO LOAD" test.log; then exit 2; fi
           grep -E "^[0-9]+ tests, 0 failed" test.log
 
-      # Signing: the preset uses Godot's built-in codesign (ad-hoc without an identity) with the
-      # entitlements of entitlements.plist (JIT, unsigned executable memory, library validation off).
+      # Signing: the preset uses Apple's codesign tool with the ad-hoc identity for local builds.
       # For a notarized release set codesign/identity + notarization/* in export_presets.cfg (or
       # export them through the Godot editor) and provide the Apple credentials as secrets.
       - name: Export (universal)
@@ -68,6 +67,16 @@ jobs:
           "$GODOT" --headless --path . --export-release "macOS" "build/macos/Program Manager.zip"
           test -f "build/macos/Program Manager.zip"
           cp "build/macos/Program Manager.zip" "dist/Program-Manager-${VERSION}-mac-universal.zip"
+
+      - name: Smoke test the signed application
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/launcher-smoke" "$RUNNER_TEMP/launcher-profile"
+          ditto -x -k "build/macos/Program Manager.zip" "$RUNNER_TEMP/launcher-smoke"
+          app="$RUNNER_TEMP/launcher-smoke/Program Manager.app"
+          codesign --verify --deep --strict "$app"
+          PM_USER_DATA="$RUNNER_TEMP/launcher-profile" "$app/Contents/MacOS/Program Manager" --headless --quit-after 5
+          test -s "$RUNNER_TEMP/launcher-profile/program-manager-data.json"
 
       - name: Build dmg
         run: |

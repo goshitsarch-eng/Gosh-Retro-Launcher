@@ -51,6 +51,9 @@ var _last_state: Dictionary = {}
 var _last_screen := -1
 var _last_mouse_px := Vector2.ZERO
 var _was_maximized := false
+var _borderless_restore := Rect2i()
+var _last_windowed_bounds := Rect2i()
+var _frame_revision := 0
 var _last_dir := ""
 var _settle_timer: Timer
 var _settle_ticks := 0
@@ -93,7 +96,7 @@ func os_name() -> String:
 
 
 func version() -> String:
-	return String(ProjectSettings.get_setting("application/config/version", "2.0.0"))
+	return String(ProjectSettings.get_setting("application/config/version", ""))
 
 
 func open_external(url: String) -> Dictionary:
@@ -366,13 +369,52 @@ func minimize_window() -> void:
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_MINIMIZED)
 
 
+func _uses_borderless_zoom() -> bool:
+	return get_window().borderless and OS.get_name() in ["Windows", "macOS"]
+
+
 func toggle_maximize_window() -> void:
+	var win := get_window()
+	if _uses_borderless_zoom() and (win.mode == Window.MODE_WINDOWED or win.mode == Window.MODE_MAXIMIZED):
+		# A borderless HWND can fill the work area while Godot still reports WINDOWED.
+		# AppKit zoom is asynchronous. Keep the saved rectangle until the matching Restore.
+		var bounds: Rect2i
+		if _borderless_restore.has_area():
+			bounds = _borderless_restore
+			_borderless_restore = Rect2i()
+		else:
+			_borderless_restore = get_window_bounds()
+			bounds = DisplayServer.screen_get_usable_rect(DisplayServer.window_get_current_screen())
+		_set_borderless_bounds(bounds)
+		_queue_state()
+		return
 	var m := DisplayServer.window_get_mode()
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if m == DisplayServer.WINDOW_MODE_MAXIMIZED else DisplayServer.WINDOW_MODE_MAXIMIZED)
 
 
+func _set_borderless_bounds(bounds: Rect2i) -> void:
+	if OS.get_name() == "Windows":
+		var win := get_window()
+		if win.mode == Window.MODE_MAXIMIZED:
+			win.mode = Window.MODE_WINDOWED
+		win.size = bounds.size
+		win.position = bounds.position
+		return
+	# Godot/macOS ignores window_set_size while the frame equals the screen's visibleFrame.
+	# Move it off that frame first, including when restoring to the same top-left corner.
+	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_MAXIMIZED:
+		DisplayServer.window_set_position(bounds.position + Vector2i(0, ceili(DisplayServer.screen_get_scale())))
+	else:
+		DisplayServer.window_set_position(bounds.position)
+	DisplayServer.window_set_size(bounds.size)
+	DisplayServer.window_set_position(bounds.position)
+
+
 func is_window_maximized() -> bool:
-	return DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_MAXIMIZED
+	var mode := DisplayServer.window_get_mode()
+	if _uses_borderless_zoom():
+		return _borderless_restore.has_area() and mode != DisplayServer.WINDOW_MODE_MINIMIZED
+	return mode == DisplayServer.WINDOW_MODE_MAXIMIZED
 
 
 func is_window_minimized() -> bool:
@@ -457,7 +499,7 @@ func _on_shown_timeout() -> void:
 func _restore_and_focus() -> void:
 	var win := get_window()
 	if win.mode == Window.MODE_MINIMIZED:
-		win.mode = Window.MODE_MAXIMIZED if _was_maximized else Window.MODE_WINDOWED
+		win.mode = Window.MODE_MAXIMIZED if _was_maximized and not _borderless_restore.has_area() else Window.MODE_WINDOWED
 	win.grab_focus()
 	DisplayServer.window_move_to_foreground()
 	_queue_state()
@@ -478,7 +520,7 @@ func get_window_bounds() -> Rect2i:
 ## Sets the OUTER rect (frame included). Ignored while maximized/minimized or below the minimum size.
 func set_window_bounds(bounds: Rect2i) -> void:
 	var win := get_window()
-	if win.mode != Window.MODE_WINDOWED:
+	if is_window_maximized() or is_window_minimized() or win.mode in [Window.MODE_FULLSCREEN, Window.MODE_EXCLUSIVE_FULLSCREEN]:
 		return
 	var origin := DisplayServer.window_get_position() - DisplayServer.window_get_position_with_decorations()
 	var frame := DisplayServer.window_get_size_with_decorations() - DisplayServer.window_get_size()
@@ -528,14 +570,29 @@ func configure_window_chrome(shell: String) -> bool:
 ## recreating the BrowserWindow (here the same window is simply flipped). (await)
 func apply_shell_frame(shell: String) -> void:
 	var win := get_window()
-	var maximized := win.mode == Window.MODE_MAXIMIZED
+	var maximized := is_window_maximized()
 	var outer := get_window_bounds()
+	var restore := _borderless_restore
+	var previous_normal := _last_windowed_bounds
 	if not configure_window_chrome(shell):
 		return
+	_borderless_restore = Rect2i()
+	_frame_revision += 1
+	var revision := _frame_revision
 	# The window manager applies the new decorations asynchronously.
 	await get_tree().process_frame
 	await get_tree().create_timer(0.06).timeout
-	if not maximized and win.mode == Window.MODE_WINDOWED:
+	if revision != _frame_revision:
+		return
+	if maximized and _uses_borderless_zoom() and previous_normal.has_area():
+		_borderless_restore = previous_normal
+		_set_borderless_bounds(DisplayServer.screen_get_usable_rect(DisplayServer.window_get_current_screen()))
+	elif restore.has_area():
+		win.mode = Window.MODE_WINDOWED
+		set_window_bounds(restore)
+		win.mode = Window.MODE_MAXIMIZED
+		_last_windowed_bounds = restore
+	elif not maximized and win.mode == Window.MODE_WINDOWED:
 		set_window_bounds(outer)
 	_queue_state()
 
@@ -625,11 +682,11 @@ func _queue_state() -> void:
 func _emit_state() -> void:
 	_state_pending = false
 	var win := get_window()
-	if win.mode == Window.MODE_MAXIMIZED:
-		_was_maximized = true
-	elif win.mode == Window.MODE_WINDOWED:
-		_was_maximized = false
+	if win.mode != Window.MODE_MINIMIZED:
+		_was_maximized = is_window_maximized()
 	var state := get_window_state()
+	if not state.maximized and not state.minimized:
+		_last_windowed_bounds = state.bounds
 	var screen := DisplayServer.window_get_current_screen()
 	if _last_screen != -1 and screen != _last_screen:
 		display_changed.emit()

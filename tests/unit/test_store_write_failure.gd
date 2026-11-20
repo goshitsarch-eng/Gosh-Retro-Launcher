@@ -15,7 +15,8 @@ func _tmp() -> String:
 
 
 func _rm(path: String) -> void:
-	_chmod(path, "755")
+	if OS.get_name() != "Windows":
+		_chmod(path, "755")
 	var dir := DirAccess.open(path)
 	if dir == null:
 		return

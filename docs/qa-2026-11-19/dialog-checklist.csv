@@ -1,0 +1,433 @@
+Desktop,Menu,Route to control,Dialog,Control,macOS,Windows,Linux
+win31,file,New...,New Program Object,wfw.dialog.radio:Program Group #1,input; New Program Object,input; New Program Object,input; New Program Object
+win31,file,New...,New Program Object,wfw.dialog.radio:Program Item #1,input; New Program Object,input; New Program Object,input; New Program Object
+win31,file,New...,New Program Object,wfw.dialog.radio:Web Site #1,input; New Program Object,input; New Program Object,input; New Program Object
+win31,file,New...,New Program Object,wfw.dialog.radio:Sticky Note #1,input; New Program Object,input; New Program Object,input; New Program Object
+win31,file,New...,New Program Object,button OK #1,input; New Program Item,input; New Program Item,input; New Program Item
+win31,file,New...,New Program Object,button Cancel #1,input; (closed),input; (closed),input; (closed)
+win31,file,New...,New Program Object,button Help #1,input; Program Manager Help,input; Program Manager Help,input; Program Manager Help
+win31,file,New... > wfw.dialog.radio:Program Group #1 > button OK #1,New Program Group,input Description #1,input; New Program Group; field=é,input; New Program Group; field=é,input; New Program Group; field=é
+win31,file,New... > wfw.dialog.radio:Program Group #1 > button OK #1,New Program Group,button OK #1,disabled click; New Program Group,disabled click; New Program Group,disabled click; New Program Group
+win31,file,New... > wfw.dialog.radio:Program Group #1 > button OK #1,New Program Group,button Cancel #1,input; (closed),input; (closed),input; (closed)
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1,New Program Item,input Description #1,input; New Program Item; field=é,input; New Program Item; field=é,input; New Program Item; field=é
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1,New Program Item,input Command Line #1,input; New Program Item; field=é,input; New Program Item; field=é,input; New Program Item; field=é
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1,New Program Item,input Working Directory #1,input; New Program Item; field=é,input; New Program Item; field=é,input; New Program Item; field=é
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1,New Program Item,input Arguments #1,input; New Program Item; field=é,input; New Program Item; field=é,input; New Program Item; field=é
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1,New Program Item,multiline Environment #1,"input; New Program Item; field=é
+",input; New Program Item; field=,"input; New Program Item; field=é
+"
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1,New Program Item,input Shortcut Key #1,input; New Program Item; field=é,input; New Program Item; field=é,input; New Program Item; field=é
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1,New Program Item,W31Combo #1,input; New Program Item,input; New Program Item,input; New Program Item
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1,New Program Item,W31Combo #2,input; New Program Item,input; New Program Item,input; New Program Item
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1,New Program Item,button OK #1,disabled click; New Program Item,disabled click; New Program Item,disabled click; New Program Item
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1,New Program Item,button Cancel #1,input; (closed),input; (closed),input; (closed)
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1,New Program Item,button Browse... #1,input; New Program Item,input; New Program Item,input; New Program Item
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1,New Program Item,button Change Icon... #1,input; New Program Item,input; New Program Item,input; New Program Item
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1,New Program Item,button Help #1,input; Program Manager Help,input; Program Manager Help,input; Program Manager Help
+win31,file,New... > wfw.dialog.radio:Web Site #1 > button OK #1,New Web Site,wfw.dialog.web-group #1,input; New Web Site,input; New Web Site,input; New Web Site
+win31,file,New... > wfw.dialog.radio:Web Site #1 > button OK #1,New Web Site,wfw.dialog.web-url #1,input; New Web Site,input; New Web Site,input; New Web Site
+win31,file,New... > wfw.dialog.radio:Web Site #1 > button OK #1,New Web Site,input URL #1,input; New Web Site; field=é,input; New Web Site; field=é,input; New Web Site; field=é
+win31,file,New... > wfw.dialog.radio:Web Site #1 > button OK #1,New Web Site,wfw.dialog.web-name #1,input; New Web Site,input; New Web Site,input; New Web Site
+win31,file,New... > wfw.dialog.radio:Web Site #1 > button OK #1,New Web Site,input Description #1,input; New Web Site; field=é,input; New Web Site; field=é,input; New Web Site; field=é
+win31,file,New... > wfw.dialog.radio:Web Site #1 > button OK #1,New Web Site,wfw.dialog.web-launch-group #1,input; New Web Site,input; New Web Site,input; New Web Site
+win31,file,New... > wfw.dialog.radio:Web Site #1 > button OK #1,New Web Site,button OK #1,disabled click; New Web Site,disabled click; New Web Site,disabled click; New Web Site
+win31,file,New... > wfw.dialog.radio:Web Site #1 > button OK #1,New Web Site,button Cancel #1,input; (closed),input; (closed),input; (closed)
+win31,file,New... > wfw.dialog.radio:Web Site #1 > button OK #1,New Web Site,button Help #1,input; Program Manager Help,input; Program Manager Help,input; Program Manager Help
+win31,file,New... > wfw.dialog.radio:Sticky Note #1 > button OK #1,New Sticky Note,wfw.dialog.note-group #1,input; New Sticky Note,input; New Sticky Note,input; New Sticky Note
+win31,file,New... > wfw.dialog.radio:Sticky Note #1 > button OK #1,New Sticky Note,wfw.dialog.note-title #1,input; New Sticky Note,input; New Sticky Note,input; New Sticky Note
+win31,file,New... > wfw.dialog.radio:Sticky Note #1 > button OK #1,New Sticky Note,input Title #1,input; New Sticky Note; field=é,input; New Sticky Note; field=é,input; New Sticky Note; field=é
+win31,file,New... > wfw.dialog.radio:Sticky Note #1 > button OK #1,New Sticky Note,wfw.dialog.note-color #1,input; New Sticky Note,input; New Sticky Note,input; New Sticky Note
+win31,file,New... > wfw.dialog.radio:Sticky Note #1 > button OK #1,New Sticky Note,wfw.dialog.note-text #1,input; New Sticky Note,input; New Sticky Note,input; New Sticky Note
+win31,file,New... > wfw.dialog.radio:Sticky Note #1 > button OK #1,New Sticky Note,multiline Text #1,"input; New Sticky Note; field=é
+",input; (closed),"input; New Sticky Note; field=é
+"
+win31,file,New... > wfw.dialog.radio:Sticky Note #1 > button OK #1,New Sticky Note,button OK #1,input; (closed),input; (closed),input; (closed)
+win31,file,New... > wfw.dialog.radio:Sticky Note #1 > button OK #1,New Sticky Note,button Cancel #1,input; (closed),input; (closed),input; (closed)
+win31,file,New... > wfw.dialog.radio:Sticky Note #1 > button OK #1,New Sticky Note,button Help #1,input; Program Manager Help,input; Program Manager Help,input; Program Manager Help
+win31,file,New... > button Help #1,Program Manager Help,button OK #1,input; (closed),input; (closed),input; (closed)
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1 > button Change Icon... #1,New Program Item,input Description #1,input; New Program Item; field=é,input; New Program Item; field=é,input; New Program Item; field=é
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1 > button Change Icon... #1,New Program Item,input Command Line #1,input; New Program Item; field=é,input; New Program Item; field=é,input; New Program Item; field=é
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1 > button Change Icon... #1,New Program Item,input Working Directory #1,input; New Program Item; field=é,input; New Program Item; field=é,input; New Program Item; field=é
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1 > button Change Icon... #1,New Program Item,input Arguments #1,input; New Program Item; field=é,input; New Program Item; field=é,input; New Program Item; field=é
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1 > button Change Icon... #1,New Program Item,multiline Environment #1,"input; New Program Item; field=é
+",input; New Program Item; field=,"input; New Program Item; field=é
+"
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1 > button Change Icon... #1,New Program Item,input Shortcut Key #1,input; New Program Item; field=é,input; New Program Item; field=é,input; New Program Item; field=é
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1 > button Change Icon... #1,New Program Item,W31Combo #1,input; New Program Item,input; New Program Item,input; New Program Item
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1 > button Change Icon... #1,New Program Item,W31Combo #2,input; New Program Item,input; New Program Item,input; New Program Item
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1 > button Change Icon... #1,New Program Item,input Filter icons #1,input; New Program Item,input; New Program Item,input; New Program Item
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1 > button Change Icon... #1,New Program Item,wfw.dialog.icon-grid #1,input; New Program Item,input; New Program Item,input; New Program Item
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1 > button Change Icon... #1,New Program Item,button OK #1,disabled click; New Program Item,disabled click; New Program Item,disabled click; New Program Item
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1 > button Change Icon... #1,New Program Item,button Cancel #1,input; (closed),input; (closed),input; (closed)
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1 > button Change Icon... #1,New Program Item,button Browse... #1,input; New Program Item,input; New Program Item,input; New Program Item
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1 > button Change Icon... #1,New Program Item,button Hide Icons #1,input; New Program Item,input; New Program Item,input; New Program Item
+win31,file,New... > wfw.dialog.radio:Program Item #1 > button OK #1 > button Change Icon... #1,New Program Item,button Help #1,input; Program Manager Help,input; Program Manager Help,input; Program Manager Help
+win31,file,Move...,Move Program Item,W31Combo #1,input; Move Program Item,input; Move Program Item,input; Move Program Item
+win31,file,Move...,Move Program Item,button OK #1,input; (closed),input; (closed),input; (closed)
+win31,file,Move...,Move Program Item,button Cancel #1,input; (closed),input; (closed),input; (closed)
+win31,file,Move...,Move Program Item,button Help #1,input; Program Manager Help,input; Program Manager Help,input; Program Manager Help
+win31,file,Copy...,Copy Program Item,W31Combo #1,input; Copy Program Item,input; Copy Program Item,input; Copy Program Item
+win31,file,Copy...,Copy Program Item,button OK #1,input; (closed),input; (closed),input; (closed)
+win31,file,Copy...,Copy Program Item,button Cancel #1,input; (closed),input; (closed),input; (closed)
+win31,file,Copy...,Copy Program Item,button Help #1,input; Program Manager Help,input; Program Manager Help,input; Program Manager Help
+win31,file,Delete,Delete Program Item,button Yes #1,input; (closed),input; (closed),input; (closed)
+win31,file,Delete,Delete Program Item,button No #1,input; (closed),input; (closed),input; (closed)
+win31,file,Properties...,Program Item Properties,input Description #1,input; Program Item Properties; field=File Manageré,input; Program Item Properties; field=File Manageré,input; Program Item Properties; field=File Manageré
+win31,file,Properties...,Program Item Properties,input Command Line #1,input; Program Item Properties; field=/usr/bin/trueé,input; Program Item Properties; field=C:/Windows/System32/whoami.exeé,input; Program Item Properties; field=/usr/bin/trueé
+win31,file,Properties...,Program Item Properties,input Working Directory #1,input; Program Item Properties; field=é,input; Program Item Properties; field=é,input; Program Item Properties; field=é
+win31,file,Properties...,Program Item Properties,input Arguments #1,input; Program Item Properties; field=é,input; Program Item Properties; field=é,input; Program Item Properties; field=é
+win31,file,Properties...,Program Item Properties,multiline Environment #1,"input; Program Item Properties; field=é
+",input; (closed),"input; Program Item Properties; field=é
+"
+win31,file,Properties...,Program Item Properties,input Shortcut Key #1,input; Program Item Properties; field=é,input; Program Item Properties; field=é,input; Program Item Properties; field=é
+win31,file,Properties...,Program Item Properties,W31Combo #1,input; Program Item Properties,input; Program Item Properties,input; Program Item Properties
+win31,file,Properties...,Program Item Properties,W31Combo #2,input; Program Item Properties,input; Program Item Properties,input; Program Item Properties
+win31,file,Properties...,Program Item Properties,button OK #1,input; (closed),input; (closed),input; (closed)
+win31,file,Properties...,Program Item Properties,button Cancel #1,input; (closed),input; (closed),input; (closed)
+win31,file,Properties...,Program Item Properties,button Browse... #1,input; Program Item Properties,input; Program Item Properties,input; Program Item Properties
+win31,file,Properties...,Program Item Properties,button Change Icon... #1,input; Change Icon,input; Change Icon,input; Change Icon
+win31,file,Properties...,Program Item Properties,button Help #1,input; Program Manager Help,input; Program Manager Help,input; Program Manager Help
+win31,file,Properties... > button Change Icon... #1,Change Icon,wfw.dialog.icon-grid #1,input; Change Icon,input; Change Icon,input; Change Icon
+win31,file,Properties... > button Change Icon... #1,Change Icon,button OK #1,input; Program Item Properties,input; Program Item Properties,input; Program Item Properties
+win31,file,Properties... > button Change Icon... #1,Change Icon,button Cancel #1,input; Program Item Properties,input; Program Item Properties,input; Program Item Properties
+win31,file,Properties... > button Change Icon... #1,Change Icon,button Browse... #1,input; Change Icon,input; Change Icon,input; Change Icon
+win31,file,Properties... > button Change Icon... #1,Change Icon,button Help #1,input; Program Manager Help,input; Program Manager Help,input; Program Manager Help
+win31,file,Run...,Run,input Command Line #1,input; Run; field=é,input; Run; field=é,input; Run; field=é
+win31,file,Run...,Run,button OK #1,disabled click; Run,disabled click; Run,disabled click; Run
+win31,file,Run...,Run,button Cancel #1,input; (closed),input; (closed),input; (closed)
+win31,file,Run...,Run,button Browse... #1,input; Run,input; Run,input; Run
+win31,file,Run...,Run,button Help #1,input; Program Manager Help,input; Program Manager Help,input; Program Manager Help
+win31,file,Import All...,Import All Programs,button OK #1,input; (closed),input; (closed),input; (closed)
+win31,file,Import All...,Import All Programs,button Cancel #1,input; (closed),input; (closed),input; (closed)
+win31,file,Exit Windows...,,button OK #1,Exit confirmation excluded from reusable scene,Exit confirmation excluded from reusable scene,Exit confirmation excluded from reusable scene
+win31,file,Exit Windows...,Exit Windows,button Cancel #1,input; (closed),input; (closed),input; (closed)
+win31,file,Exit Windows...,Exit Windows,button Help #1,input; Program Manager Help,input; Program Manager Help,input; Program Manager Help
+win31,options,Settings...,Settings,wfw.dialog.checkbox:Auto Arrange icons #1,input; Settings,input; Settings,input; Settings
+win31,options,Settings...,Settings,wfw.dialog.checkbox:Minimize on Use #1,input; Settings,input; Settings,input; Settings
+win31,options,Settings...,Settings,wfw.dialog.checkbox:Save Settings on Exit #1,input; Settings,input; Settings,input; Settings
+win31,options,Settings...,Settings,wfw.dialog.checkbox:Minimize to Tray on Close #1,input; Settings,input; Settings,input; Settings
+win31,options,Settings...,Settings,button Add Starter Groups #1,input; Settings,input; Settings,input; Settings
+win31,options,Settings...,Settings,wfw.dialog.checkbox:Dark Mode (Mac OS and BeOS shells only) #1,input; Settings,input; Settings,input; Settings
+win31,options,Settings...,Settings,wfw.dialog.checkbox:Wrap item labels (show full names) #1,input; Settings,input; Settings,input; Settings
+win31,options,Settings...,Settings,wfw.dialog.checkbox:Sound Effects #1,input; Settings,input; Settings,input; Settings
+win31,options,Settings...,Settings,W31Combo #1,input; Settings,input; Settings,input; Settings
+win31,options,Settings...,Settings,W31Combo #2,input; Settings,input; Settings,input; Settings
+win31,options,Settings...,Settings,wfw.dialog.slider #1,input; Settings,input; Settings,input; Settings
+win31,options,Settings...,Settings,button OK #1,input; (closed),input; (closed),input; (closed)
+win31,options,Settings...,Settings,button Cancel #1,input; (closed),input; (closed),input; (closed)
+win31,launcher,Launch Groups...,Launch Groups,wfw.dialog.launch-groups.list #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win31,launcher,Launch Groups...,Launch Groups,button Close #1,input; (closed),input; (closed),input; (closed)
+win31,launcher,Launch Groups...,Launch Groups,button &New... #1,input; New Launch Group,input; New Launch Group,input; New Launch Group
+win31,launcher,Launch Groups...,Launch Groups,button &Rename... #1,input; Rename Launch Group,input; Rename Launch Group,input; Rename Launch Group
+win31,launcher,Launch Groups...,Launch Groups,button N&umber... #1,input; Launch Group Number,input; Launch Group Number,input; Launch Group Number
+win31,launcher,Launch Groups...,Launch Groups,button &Delete #1,input; Delete Launch Group,input; Delete Launch Group,input; Delete Launch Group
+win31,launcher,Launch Groups...,Launch Groups,button &Members... #1,input; Launch Group Members,input; Launch Group Members,input; Launch Group Members
+win31,launcher,Launch Groups...,Launch Groups,button &Launch #1,input; (closed),input; (closed),input; (closed)
+win31,launcher,Launch Groups... > button &New... #1,New Launch Group,wfw.dialog.launch-group-name #1,input; New Launch Group,input; New Launch Group,input; New Launch Group
+win31,launcher,Launch Groups... > button &New... #1,New Launch Group,input Name #1,input; New Launch Group; field=é,input; New Launch Group; field=é,input; New Launch Group; field=é
+win31,launcher,Launch Groups... > button &New... #1,New Launch Group,button OK #1,disabled click; New Launch Group,disabled click; New Launch Group,disabled click; New Launch Group
+win31,launcher,Launch Groups... > button &New... #1,New Launch Group,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win31,launcher,Launch Groups... > button &Rename... #1,Rename Launch Group,wfw.dialog.launch-group-name #1,input; Rename Launch Group,input; Rename Launch Group,input; Rename Launch Group
+win31,launcher,Launch Groups... > button &Rename... #1,Rename Launch Group,input Name #1,input; Rename Launch Group; field=é,input; Rename Launch Group; field=é,input; Rename Launch Group; field=é
+win31,launcher,Launch Groups... > button &Rename... #1,Rename Launch Group,button OK #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win31,launcher,Launch Groups... > button &Rename... #1,Rename Launch Group,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win31,launcher,Launch Groups... > button N&umber... #1,Launch Group Number,wfw.dialog.launch-group-number #1,input; Launch Group Number,input; Launch Group Number,input; Launch Group Number
+win31,launcher,Launch Groups... > button N&umber... #1,Launch Group Number,button OK #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win31,launcher,Launch Groups... > button N&umber... #1,Launch Group Number,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win31,launcher,Launch Groups... > button &Delete #1,Delete Launch Group,button Yes #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win31,launcher,Launch Groups... > button &Delete #1,Delete Launch Group,button No #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win31,launcher,Launch Groups... > button &Members... #1,Launch Group Members,wfw.dialog.launch-group-members.list #1,input; Launch Group Members,input; Launch Group Members,input; Launch Group Members
+win31,launcher,Launch Groups... > button &Members... #1,Launch Group Members,button OK #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win31,launcher,Launch Groups... > button &Members... #1,Launch Group Members,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win31,launcher,Launch Groups... > button &Members... #1,Launch Group Members,button Select &All #1,input; Launch Group Members,input; Launch Group Members,input; Launch Group Members
+win31,launcher,Launch Groups... > button &Members... #1,Launch Group Members,button C&lear All #1,input; Launch Group Members,input; Launch Group Members,input; Launch Group Members
+win31,help,About Program Manager...,About Program Manager,button OK #1,input; (closed),input; (closed),input; (closed)
+win95,file,New Program...,Create Shortcut,input  #1,input; Create Shortcut; field=é,input; Create Shortcut; field=é,input; Create Shortcut; field=é
+win95,file,New Program...,Create Shortcut,button &Browse... #1,input; Create Shortcut,input; Create Shortcut,input; Create Shortcut
+win95,file,New Program...,Create Shortcut,button &Sticky Note... #1,input; New Sticky Note,input; New Sticky Note,input; New Sticky Note
+win95,file,New Program...,Create Shortcut,button &Cancel #1,input; (closed),input; (closed),input; (closed)
+win95,file,New Program...,Create Shortcut,button &Next > #1,disabled click; Create Shortcut,disabled click; Create Shortcut,disabled click; Create Shortcut
+win95,file,New Program...,Create Shortcut,button < &Back #1,disabled click; Create Shortcut,disabled click; Create Shortcut,disabled click; Create Shortcut
+win95,file,New Program... > button &Sticky Note... #1,New Sticky Note,w95.new-note.title #1,input; New Sticky Note,input; New Sticky Note,input; New Sticky Note
+win95,file,New Program... > button &Sticky Note... #1,New Sticky Note,input Title #1,input; New Sticky Note; field=New Sticky Noteé,input; New Sticky Note; field=New Sticky Noteé,input; New Sticky Note; field=New Sticky Noteé
+win95,file,New Program... > button &Sticky Note... #1,New Sticky Note,w95.new-note.color #1,input; New Sticky Note,input; New Sticky Note,input; New Sticky Note
+win95,file,New Program... > button &Sticky Note... #1,New Sticky Note,w95.new-note.group #1,input; New Sticky Note,input; New Sticky Note,input; New Sticky Note
+win95,file,New Program... > button &Sticky Note... #1,New Sticky Note,w95.new-note.text #1,input; New Sticky Note,input; New Sticky Note,input; New Sticky Note
+win95,file,New Program... > button &Sticky Note... #1,New Sticky Note,multiline Text #1,"input; New Sticky Note; field=é
+",input; (closed),input; (closed)
+win95,file,New Program... > button &Sticky Note... #1,New Sticky Note,button Cancel #1,input; (closed),input; (closed),input; (closed)
+win95,file,New Program... > button &Sticky Note... #1,New Sticky Note,button OK #1,input; (closed),input; (closed),input; (closed)
+win95,file,Delete,Confirm File Delete,button &Yes #1,input; (closed),input; (closed),input; (closed)
+win95,file,Delete,Confirm File Delete,button &No #1,input; (closed),input; (closed),input; (closed)
+win95,file,Properties,Main Properties,input Name #1,input; Main Properties; field=Mainé,input; Main Properties; field=Mainé,input; Main Properties; field=Mainé
+win95,file,Properties,Main Properties,button &Apply #1,disabled click; Main Properties,disabled click; Main Properties,disabled click; Main Properties
+win95,file,Properties,Main Properties,button &Cancel #1,input; (closed),input; (closed),input; (closed)
+win95,file,Properties,Main Properties,button &OK #1,input; (closed),input; (closed),input; (closed)
+win95,help,Help Topics,Gosh 95 Help,button OK #1,input; (closed),input; (closed),input; (closed)
+win95,help,About Gosh 95...,About Gosh 95,button OK #1,input; (closed),input; (closed),input; (closed)
+win95,background,New Folder...,New Folder Properties,input Name #1,input; New Folder Properties; field=New Folderé,input; New Folder Properties; field=New Folderé,input; New Folder Properties; field=New Folderé
+win95,background,New Folder...,New Folder Properties,button &Apply #1,disabled click; New Folder Properties,disabled click; New Folder Properties,disabled click; New Folder Properties
+win95,background,New Folder...,New Folder Properties,button &Cancel #1,input; (closed),input; (closed),input; (closed)
+win95,background,New Folder...,New Folder Properties,button &OK #1,input; (closed),input; (closed),input; (closed)
+win95,icon,Open,Network Neighborhood,button OK #1,input; (closed),input; (closed),input; (closed)
+win95,item,Properties,File Manager Properties,input Description #1,input; File Manager Properties; field=File Manageré,input; File Manager Properties; field=File Manageré,input; File Manager Properties; field=File Manageré
+win95,item,Properties,File Manager Properties,input Command line #1,input; File Manager Properties; field=/usr/bin/trueé,input; File Manager Properties; field=C:/Windows/System32/whoami.exeé,input; File Manager Properties; field=/usr/bin/trueé
+win95,item,Properties,File Manager Properties,input Working directory #1,input; File Manager Properties; field=é,input; File Manager Properties; field=é,input; File Manager Properties; field=é
+win95,item,Properties,File Manager Properties,Win95Select #1,input; File Manager Properties,input; File Manager Properties,input; File Manager Properties
+win95,item,Properties,File Manager Properties,button &Apply #1,disabled click; File Manager Properties,disabled click; File Manager Properties,disabled click; File Manager Properties
+win95,item,Properties,File Manager Properties,button &Cancel #1,input; (closed),input; (closed),input; (closed)
+win95,item,Properties,File Manager Properties,button &OK #1,input; (closed),input; (closed),input; (closed)
+win95,start,Programs > Main > Control Panel,Control Panel,button OK #1,input; (closed),input; (closed),input; (closed)
+win95,start,Programs > Launch Groups > Manage Launch Groups...,Launch Groups,w95.lg.list #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win95,start,Programs > Launch Groups > Manage Launch Groups...,Launch Groups,button &New... #1,input; New Launch Group,input; New Launch Group,input; New Launch Group
+win95,start,Programs > Launch Groups > Manage Launch Groups...,Launch Groups,button &Rename... #1,input; Rename Launch Group,input; Rename Launch Group,input; Rename Launch Group
+win95,start,Programs > Launch Groups > Manage Launch Groups...,Launch Groups,button N&umber... #1,input; Change Group Number,input; Change Group Number,input; Change Group Number
+win95,start,Programs > Launch Groups > Manage Launch Groups...,Launch Groups,button &Delete #1,input; Confirm Launch Group Delete,input; Confirm Launch Group Delete,input; Confirm Launch Group Delete
+win95,start,Programs > Launch Groups > Manage Launch Groups...,Launch Groups,button &Members... #1,input; Group 1 Members,input; Group 1 Members,input; Group 1 Members
+win95,start,Programs > Launch Groups > Manage Launch Groups...,Launch Groups,button &Launch #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win95,start,Programs > Launch Groups > Manage Launch Groups...,Launch Groups,button Close #1,input; (closed),input; (closed),input; (closed)
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button &New... #1,New Launch Group,w95.lg.name #1,input; New Launch Group,input; New Launch Group,input; New Launch Group
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button &New... #1,New Launch Group,input Type a name for the new launch group (Group 2). You choose its programs next. #1,input; New Launch Group; field=é,input; New Launch Group; field=é,input; New Launch Group; field=é
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button &New... #1,New Launch Group,button OK #1,input; Group 2 Members,input; Group 2 Members,input; Group 2 Members
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button &New... #1,New Launch Group,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button &Rename... #1,Rename Launch Group,w95.lg.name #1,input; Rename Launch Group,input; Rename Launch Group,input; Rename Launch Group
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button &Rename... #1,Rename Launch Group,input Type a new name for Group 1. Leave it blank to remove the name. #1,input; Rename Launch Group; field=é,input; Rename Launch Group; field=é,input; Rename Launch Group; field=é
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button &Rename... #1,Rename Launch Group,button OK #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button &Rename... #1,Rename Launch Group,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button N&umber... #1,Change Group Number,w95.lg.number #1,input; Change Group Number,input; Change Group Number,input; Change Group Number
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button N&umber... #1,Change Group Number,button OK #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button N&umber... #1,Change Group Number,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button &Delete #1,Confirm Launch Group Delete,button &Yes #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button &Delete #1,Confirm Launch Group Delete,button &No #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button &Members... #1,Group 1 Members,w95.lg.members.list #1,input; Group 1 Members,input; Group 1 Members,input; Group 1 Members
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button &Members... #1,Group 1 Members,button OK #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button &Members... #1,Group 1 Members,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button &New... #1 > button OK #1,Group 2 Members,w95.lg.members.list #1,input; Group 2 Members,input; Group 2 Members,input; Group 2 Members
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button &New... #1 > button OK #1,Group 2 Members,button OK #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win95,start,Programs > Launch Groups > Manage Launch Groups... > button &New... #1 > button OK #1,Group 2 Members,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+win95,start,Settings > Printers,Printers,button OK #1,input; (closed),input; (closed),input; (closed)
+win95,start,Settings > Taskbar...,Taskbar...,button OK #1,input; (closed),input; (closed),input; (closed)
+win95,start,Settings > Import All...,Import All Programs,button OK #1,input; (closed),input; (closed),input; (closed)
+win95,start,Settings > Import All...,Import All Programs,button Cancel #1,input; (closed),input; (closed),input; (closed)
+win95,start,Find > Computer...,Computer...,button OK #1,input; (closed),input; (closed),input; (closed)
+win95,start,Find > On the Internet...,On the Internet...,button OK #1,input; (closed),input; (closed),input; (closed)
+win95,start,Run...,Run,input Open #1,input; Run; field=é,input; Run; field=é,input; Run; field=é
+win95,start,Run...,Run,button &Browse... #1,input; Run,input; Run,input; Run
+win95,start,Run...,Run,button &Cancel #1,input; (closed),input; (closed),input; (closed)
+win95,start,Run...,Run,button &OK #1,input; Run,input; Run,input; Run
+win95,start,Shut Down...,Shut Down Windows,Win95Radio #1,input; Shut Down Windows,input; Shut Down Windows,input; Shut Down Windows
+win95,start,Shut Down...,Shut Down Windows,Win95Radio #2,input; Shut Down Windows,input; Shut Down Windows,input; Shut Down Windows
+win95,start,Shut Down...,Shut Down Windows,Win95Radio #3,input; Shut Down Windows,input; Shut Down Windows,input; Shut Down Windows
+win95,start,Shut Down...,Shut Down Windows,Win95Radio #4,disabled click; (closed),disabled click; (closed),disabled click; (closed)
+win95,start,Shut Down...,Shut Down Windows,button &Help #1,input; Shut Down Help,input; Shut Down Help,input; Shut Down Help
+win95,start,Shut Down...,Shut Down Windows,button &No #1,input; (closed),input; (closed),input; (closed)
+win95,start,Shut Down...,Shut Down Windows,button &Yes #1,input; (closed),input; (closed),input; (closed)
+win95,start,Shut Down...,,button OK #1,Exit confirmation excluded from reusable scene,Exit confirmation excluded from reusable scene,Exit confirmation excluded from reusable scene
+mac,file,New Folder,New Folder,mac.dialog.field:Name #1,input; New Folder,input; New Folder,input; New Folder
+mac,file,New Folder,New Folder,input  #1,input; New Folder; field=untitled folderé,input; New Folder; field=untitled folderé,input; New Folder; field=untitled folderé
+mac,file,New Folder,New Folder,button Cancel #1,input; (closed),input; (closed),input; (closed)
+mac,file,New Folder,New Folder,button OK #1,input; (closed),input; (closed),input; (closed)
+mac,file,New Program…,New Program,mac.dialog.field:Command line #1,input; New Program,input; New Program,input; New Program
+mac,file,New Program…,New Program,input  #1,input; New Program; field=é,input; New Program; field=é,input; New Program; field=é
+mac,file,New Program…,New Program,mac.dialog.field:Name #1,input; New Program,input; New Program,input; New Program
+mac,file,New Program…,New Program,input  #2,input; New Program; field=é,input; New Program; field=é,input; New Program; field=é
+mac,file,New Program…,New Program,mac.dialog.select:Group #1,input; New Program,input; New Program,input; New Program
+mac,file,New Program…,New Program,button Cancel #1,input; (closed),input; (closed),input; (closed)
+mac,file,New Program…,New Program,button OK #1,input; (closed),input; (closed),input; (closed)
+mac,file,New Program…,New Program,button Browse... #1,input; New Program,input; New Program,input; New Program
+mac,file,New Website…,New Website,mac.dialog.field:Web address #1,input; New Website,input; New Website,input; New Website
+mac,file,New Website…,New Website,input  #1,input; New Website; field=é,input; New Website; field=é,input; New Website; field=é
+mac,file,New Website…,New Website,mac.dialog.field:Name #1,input; New Website,input; New Website,input; New Website
+mac,file,New Website…,New Website,input  #2,input; New Website; field=é,input; New Website; field=é,input; New Website; field=é
+mac,file,New Website…,New Website,mac.dialog.select:Group #1,input; New Website,input; New Website,input; New Website
+mac,file,New Website…,New Website,button Cancel #1,input; (closed),input; (closed),input; (closed)
+mac,file,New Website…,New Website,button OK #1,input; (closed),input; (closed),input; (closed)
+mac,file,New Note…,New Note,mac.dialog.field:Title #1,input; New Note,input; New Note,input; New Note
+mac,file,New Note…,New Note,input  #1,input; New Note; field=untitled noteé,input; New Note; field=untitled noteé,input; New Note; field=untitled noteé
+mac,file,New Note…,New Note,mac.dialog.select:Color #1,input; New Note,input; New Note,input; New Note
+mac,file,New Note…,New Note,mac.dialog.swatch:Color #1,input; New Note,input; New Note,input; New Note
+mac,file,New Note…,New Note,mac.dialog.select:Folder #1,input; New Note,input; New Note,input; New Note
+mac,file,New Note…,New Note,mac.dialog.field:Text #1,input; New Note,input; New Note,input; New Note
+mac,file,New Note…,New Note,multiline  #1,"input; New Note; field=é
+",input; (closed),input; (closed)
+mac,file,New Note…,New Note,button Cancel #1,input; (closed),input; (closed),input; (closed)
+mac,file,New Note…,New Note,button OK #1,input; (closed),input; (closed),input; (closed)
+mac,file,Get Info,File Manager Info,mac.dialog.field:Name #1,input; File Manager Info,input; File Manager Info,input; File Manager Info
+mac,file,Get Info,File Manager Info,input  #1,input; File Manager Info; field=File Manageré,input; File Manager Info; field=File Manageré,input; File Manager Info; field=File Manageré
+mac,file,Get Info,File Manager Info,mac.dialog.select:Where #1,input; File Manager Info,input; File Manager Info,input; File Manager Info
+mac,file,Get Info,File Manager Info,mac.dialog.field:Target #1,input; File Manager Info,input; File Manager Info,input; File Manager Info
+mac,file,Get Info,File Manager Info,input  #2,input; File Manager Info; field=/usr/bin/trueé,input; File Manager Info; field=C:/Windows/System32/whoami.exeé,input; File Manager Info; field=/usr/bin/trueé
+mac,file,Get Info,File Manager Info,mac.dialog.field:Start in #1,input; File Manager Info,input; File Manager Info,input; File Manager Info
+mac,file,Get Info,File Manager Info,input  #3,input; File Manager Info; field=é,input; File Manager Info; field=é,input; File Manager Info; field=é
+mac,file,Get Info,File Manager Info,mac.dialog.field:Arguments #1,input; File Manager Info,input; File Manager Info,input; File Manager Info
+mac,file,Get Info,File Manager Info,input  #4,input; File Manager Info; field=é,input; File Manager Info; field=é,input; File Manager Info; field=é
+mac,file,Get Info,File Manager Info,mac.dialog.field:Environment #1,input; File Manager Info,input; File Manager Info,input; File Manager Info
+mac,file,Get Info,File Manager Info,input  #5,input; File Manager Info; field=é,input; File Manager Info; field=é,input; File Manager Info; field=é
+mac,file,Get Info,File Manager Info,mac.dialog.select:Launch group #1,input; File Manager Info,input; File Manager Info,input; File Manager Info
+mac,file,Get Info,File Manager Info,mac.dialog.field:Shortcut key #1,input; File Manager Info,input; File Manager Info,input; File Manager Info
+mac,file,Get Info,File Manager Info,input  #6,input; File Manager Info; field=é,input; File Manager Info; field=é,input; File Manager Info; field=é
+mac,file,Get Info,File Manager Info,mac.dialog.select:Open as #1,input; File Manager Info,input; File Manager Info,input; File Manager Info
+mac,file,Get Info,File Manager Info,button Cancel #1,input; (closed),input; (closed),input; (closed)
+mac,file,Get Info,File Manager Info,button OK #1,input; (closed),input; (closed),input; (closed)
+mac,file,Get Info,File Manager Info,button Change Icon... #1,input; Change Icon,input; Change Icon,input; Change Icon
+mac,file,Get Info > button Change Icon... #1,Change Icon,mac.icon-choice #1,input; Change Icon,input; Change Icon,input; Change Icon
+mac,file,Get Info > button Change Icon... #1,Change Icon,button Cancel #1,input; File Manager Info,input; File Manager Info,input; File Manager Info
+mac,file,Get Info > button Change Icon... #1,Change Icon,button OK #1,input; File Manager Info,input; File Manager Info,input; File Manager Info
+mac,file,Get Info > button Change Icon... #1,Change Icon,button Browse... #1,input; Change Icon,input; Change Icon,input; Change Icon
+mac,file,Move To Trash,,button No #1,input; (closed),input; (closed),input; (closed)
+mac,file,Move To Trash,,button Yes #1,input; (closed),input; (closed),input; (closed)
+mac,special,Launch Groups…,Launch Groups,mac.launch-groups #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+mac,special,Launch Groups…,Launch Groups,button New… #1,input; New Launch Group,input; New Launch Group,input; New Launch Group
+mac,special,Launch Groups…,Launch Groups,button Rename… #1,input; Rename Group 1,input; Rename Group 1,input; Rename Group 1
+mac,special,Launch Groups…,Launch Groups,button Members… #1,input; Group 1,input; Group 1,input; Group 1
+mac,special,Launch Groups…,Launch Groups,button Delete… #1,input;,input;,input;
+mac,special,Launch Groups…,Launch Groups,button Launch #1,input; (closed),input; (closed),input; (closed)
+mac,special,Launch Groups…,Launch Groups,mac.launch-groups.number #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+mac,special,Launch Groups…,Launch Groups,button Done #1,input; (closed),input; (closed),input; (closed)
+mac,special,Launch Groups… > button New… #1,New Launch Group,mac.dialog.field:Name #1,input; New Launch Group,input; New Launch Group,input; New Launch Group
+mac,special,Launch Groups… > button New… #1,New Launch Group,input  #1,input; New Launch Group; field=é,input; New Launch Group; field=é,input; New Launch Group; field=é
+mac,special,Launch Groups… > button New… #1,New Launch Group,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+mac,special,Launch Groups… > button New… #1,New Launch Group,button OK #1,input;,input;,input;
+mac,special,Launch Groups… > button Rename… #1,Rename Group 1,mac.dialog.field:Name #1,input; Rename Group 1,input; Rename Group 1,input; Rename Group 1
+mac,special,Launch Groups… > button Rename… #1,Rename Group 1,input  #1,input; Rename Group 1; field=é,input; Rename Group 1; field=é,input; Rename Group 1; field=é
+mac,special,Launch Groups… > button Rename… #1,Rename Group 1,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+mac,special,Launch Groups… > button Rename… #1,Rename Group 1,button OK #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+mac,special,Launch Groups… > button Members… #1,Group 1,mac.launch-group-members #1,input; Group 1,input; Group 1,input; Group 1
+mac,special,Launch Groups… > button Members… #1,Group 1,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+mac,special,Launch Groups… > button Members… #1,Group 1,button OK #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+mac,special,Launch Groups… > button Delete… #1,,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+mac,special,Launch Groups… > button Delete… #1,,button Delete #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+mac,special,Launch Groups… > button New… #1 > button OK #1,,button OK #1,input; New Launch Group,input; New Launch Group,input; New Launch Group
+mac,special,Launch Groups… > button Delete… #1 > button Delete #1,Launch Groups,mac.launch-groups #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+mac,special,Launch Groups… > button Delete… #1 > button Delete #1,Launch Groups,button New… #1,input; New Launch Group,input; New Launch Group,input; New Launch Group
+mac,special,Launch Groups… > button Delete… #1 > button Delete #1,Launch Groups,button Rename… #1,disabled click; Launch Groups,disabled click; Launch Groups,disabled click; Launch Groups
+mac,special,Launch Groups… > button Delete… #1 > button Delete #1,Launch Groups,button Members… #1,disabled click; Launch Groups,disabled click; Launch Groups,disabled click; Launch Groups
+mac,special,Launch Groups… > button Delete… #1 > button Delete #1,Launch Groups,button Delete… #1,disabled click; Launch Groups,disabled click; Launch Groups,disabled click; Launch Groups
+mac,special,Launch Groups… > button Delete… #1 > button Delete #1,Launch Groups,button Launch #1,disabled click; Launch Groups,disabled click; Launch Groups,disabled click; Launch Groups
+mac,special,Launch Groups… > button Delete… #1 > button Delete #1,Launch Groups,button Done #1,input; (closed),input; (closed),input; (closed)
+mac,special,Run…,Run,mac.dialog.field:Run #1,input; Run,input; Run,input; Run
+mac,special,Run…,Run,input  #1,input; Run; field=é,input; Run; field=é,input; Run; field=é
+mac,special,Run…,Run,button Cancel #1,input; (closed),input; (closed),input; (closed)
+mac,special,Run…,Run,button OK #1,input; (closed),input; (closed),input; (closed)
+mac,special,Run…,Run,button Browse... #1,input; Browse,input; Browse,input; Browse
+mac,special,Run… > button Browse... #1,Browse,mac.browse #1,input; Browse,input; Browse,input; Browse
+mac,special,Run… > button Browse... #1,Browse,button Cancel #1,input; Run,input; Run,input; Run
+mac,special,Run… > button Browse... #1,Browse,button OK #1,input; Run,input; Run,input; Run
+mac,special,Shut Down,Shut Down,mac.shutdown #1,input; Shut Down,input; Shut Down,input; Shut Down
+mac,special,Shut Down,Shut Down,button Cancel #1,input; (closed),input; (closed),input; (closed)
+mac,special,Shut Down,,button OK #1,Exit confirmation excluded from reusable scene,Exit confirmation excluded from reusable scene,Exit confirmation excluded from reusable scene
+mac,help,Program Manager Help,Program Manager Help,mac.help #1,input; Program Manager Help,input; Program Manager Help,input; Program Manager Help
+mac,help,Program Manager Help,Program Manager Help,button Cancel #1,input; (closed),input; (closed),input; (closed)
+mac,help,Program Manager Help,Program Manager Help,button Display #1,input;,input;,input;
+mac,logo,Desktop Pictures…,Desktop Pictures,mac.swatch:Periwinkle #1,input; Desktop Pictures,input; Desktop Pictures,input; Desktop Pictures
+mac,logo,Desktop Pictures…,Desktop Pictures,mac.swatch:Ocean #1,input; Desktop Pictures,input; Desktop Pictures,input; Desktop Pictures
+mac,logo,Desktop Pictures…,Desktop Pictures,mac.swatch:Fern #1,input; Desktop Pictures,input; Desktop Pictures,input; Desktop Pictures
+mac,logo,Desktop Pictures…,Desktop Pictures,mac.swatch:Plum #1,input; Desktop Pictures,input; Desktop Pictures,input; Desktop Pictures
+mac,logo,Desktop Pictures…,Desktop Pictures,mac.swatch:Platinum #1,input; Desktop Pictures,input; Desktop Pictures,input; Desktop Pictures
+mac,logo,Desktop Pictures…,Desktop Pictures,mac.swatch:Indigo #1,input; Desktop Pictures,input; Desktop Pictures,input; Desktop Pictures
+mac,logo,Desktop Pictures…,Desktop Pictures,mac.dialog.check:Dark mode #1,input; (closed),input; Desktop Pictures,input; (closed)
+mac,logo,Desktop Pictures…,Desktop Pictures,button Cancel #1,input; (closed),input; (closed),input; (closed)
+mac,logo,Desktop Pictures…,Desktop Pictures,button OK #1,input; (closed),input; (closed),input; (closed)
+mac,item,Rename,Rename,mac.dialog.field:Name #1,input; Rename,input; Rename,input; Rename
+mac,item,Rename,Rename,input  #1,input; Rename; field=File Manageré,input; Rename; field=File Manageré,input; Rename; field=File Manageré
+mac,item,Rename,Rename,button Cancel #1,input; (closed),input; (closed),input; (closed)
+mac,item,Rename,Rename,button OK #1,input; (closed),input; (closed),input; (closed)
+mac,folderbg,Get Info,Main Info,mac.dialog.field:Name #1,input; Main Info,input; Main Info,input; Main Info
+mac,folderbg,Get Info,Main Info,input  #1,input; Main Info; field=Mainé,input; Main Info; field=Mainé,input; Main Info; field=Mainé
+mac,folderbg,Get Info,Main Info,button Cancel #1,input; (closed),input; (closed),input; (closed)
+mac,folderbg,Get Info,Main Info,button OK #1,input; (closed),input; (closed),input; (closed)
+be,file,Add Program…,New Program,be.dialog.field:path #1,input; New Program,input; New Program,input; New Program
+be,file,Add Program…,New Program,input  #1,input; New Program; field=é,input; New Program; field=é,input; New Program; field=é
+be,file,Add Program…,New Program,be.dialog.field:name #1,input; New Program,input; New Program,input; New Program
+be,file,Add Program…,New Program,input  #2,input; New Program; field=é,input; New Program; field=é,input; New Program; field=é
+be,file,Add Program…,New Program,be.dialog.select:group #1,input; New Program,input; New Program,input; New Program
+be,file,Add Program…,New Program,button OK #1,input; (closed),input; (closed),input; (closed)
+be,file,Add Program…,New Program,button Cancel #1,input; (closed),input; (closed),input; (closed)
+be,file,Add Program…,New Program,button Browse... #1,input; New Program,input; New Program,input; New Program
+be,file,Add Website…,New Website,be.dialog.field:url #1,input; New Website,input; New Website,input; New Website
+be,file,Add Website…,New Website,input  #1,input; New Website; field=é,input; New Website; field=é,input; New Website; field=é
+be,file,Add Website…,New Website,be.dialog.field:name #1,input; New Website,input; New Website,input; New Website
+be,file,Add Website…,New Website,input  #2,input; New Website; field=é,input; New Website; field=é,input; New Website; field=é
+be,file,Add Website…,New Website,be.dialog.select:group #1,input; New Website,input; New Website,input; New Website
+be,file,Add Website…,New Website,button OK #1,input; (closed),input; (closed),input; (closed)
+be,file,Add Website…,New Website,button Cancel #1,input; (closed),input; (closed),input; (closed)
+be,file,New Note…,New Note,be.dialog.field:name #1,input; New Note,input; New Note,input; New Note
+be,file,New Note…,New Note,input  #1,input; New Note; field=é,input; New Note; field=é,input; New Note; field=é
+be,file,New Note…,New Note,be.dialog.select:noteColor #1,input; New Note,input; New Note,input; New Note
+be,file,New Note…,New Note,be.dialog.select:group #1,input; New Note,input; New Note,input; New Note
+be,file,New Note…,New Note,be.dialog.field:noteText #1,input; New Note,input; New Note,input; New Note
+be,file,New Note…,New Note,multiline  #1,"input; New Note; field=é
+",input; (closed),"input; New Note; field=é
+"
+be,file,New Note…,New Note,button OK #1,input; (closed),input; (closed),input; (closed)
+be,file,New Note…,New Note,button Cancel #1,input; (closed),input; (closed),input; (closed)
+be,file,Move to Trash,,button Yes #1,input; (closed),input; (closed),input; (closed)
+be,file,Move to Trash,,button No #1,input; (closed),input; (closed),input; (closed)
+be,file,Edit Name,Edit Name,be.dialog.field:name #1,input; Edit Name,input; Edit Name,input; Edit Name
+be,file,Edit Name,Edit Name,input  #1,input; Edit Name; field=File Manageré,input; Edit Name; field=File Manageré,input; Edit Name; field=File Manageré
+be,file,Edit Name,Edit Name,button OK #1,input; (closed),input; (closed),input; (closed)
+be,file,Edit Name,Edit Name,button Cancel #1,input; (closed),input; (closed),input; (closed)
+be,file,Get Info,File Manager info,be.dialog.field:name #1,input; File Manager info,input; File Manager info,input; File Manager info
+be,file,Get Info,File Manager info,input  #1,input; File Manager info; field=File Manageré,input; File Manager info; field=File Manageré,input; File Manager info; field=File Manageré
+be,file,Get Info,File Manager info,be.dialog.select:group #1,input; (closed),input; (closed),input; (closed)
+be,file,Get Info,File Manager info,be.dialog.field:path #1,input; File Manager info,input; File Manager info,input; File Manager info
+be,file,Get Info,File Manager info,input  #2,input; File Manager info; field=/usr/bin/trueé,input; File Manager info; field=C:/Windows/System32/whoami.exeé,input; File Manager info; field=/usr/bin/trueé
+be,file,Get Info,File Manager info,be.dialog.field:workingDir #1,input; File Manager info,input; File Manager info,input; File Manager info
+be,file,Get Info,File Manager info,input  #3,input; File Manager info; field=é,input; File Manager info; field=é,input; File Manager info; field=é
+be,file,Get Info,File Manager info,be.dialog.field:arguments #1,input; File Manager info,input; File Manager info,input; File Manager info
+be,file,Get Info,File Manager info,input  #4,input; File Manager info; field=é,input; File Manager info; field=é,input; File Manager info; field=é
+be,file,Get Info,File Manager info,be.dialog.field:environment #1,input; File Manager info,input; File Manager info,input; File Manager info
+be,file,Get Info,File Manager info,input  #5,input; File Manager info; field=é,input; File Manager info; field=é,input; File Manager info; field=é
+be,file,Get Info,File Manager info,be.dialog.field:shortcutKey #1,input; File Manager info,input; File Manager info,input; File Manager info
+be,file,Get Info,File Manager info,input  #6,input; File Manager info; field=é,input; File Manager info; field=é,input; File Manager info; field=é
+be,file,Get Info,File Manager info,be.dialog.select:launchGroup #1,input; (closed),input; (closed),input; (closed)
+be,file,Get Info,File Manager info,be.dialog.select:runMode #1,input; (closed),input; (closed),input; (closed)
+be,file,Get Info,File Manager info,button Change Icon... #1,input; Change Icon,input; Change Icon,input; Change Icon
+be,file,Get Info,File Manager info,button OK #1,input; (closed),input; (closed),input; (closed)
+be,file,Get Info,File Manager info,button Cancel #1,input; (closed),input; (closed),input; (closed)
+be,file,Get Info,File Manager info,button Apply #1,input; File Manager info,input; File Manager info,input; File Manager info
+be,file,Get Info > button Change Icon... #1,Change Icon,be.dialog.icon-grid #1,input; Change Icon,input; Change Icon,input; Change Icon
+be,file,Get Info > button Change Icon... #1,Change Icon,button OK #1,input; File Manager info,input; File Manager info,input; File Manager info
+be,file,Get Info > button Change Icon... #1,Change Icon,button Cancel #1,input; File Manager info,input; File Manager info,input; File Manager info
+be,help,Help Topics,Program Manager Help,be.dialog.help-list #1,input;,input;,input;
+be,help,Help Topics,Program Manager Help,button Display #1,input;,input;,input;
+be,help,Help Topics,Program Manager Help,button Cancel #1,input; (closed),input; (closed),input; (closed)
+be,help,Help Topics > button Display #1,,button OK #1,input; (closed),input; (closed),input; (closed)
+be,logo,Run…,Run,be.dialog.field:command #1,input; Run,input; Run,input; Run
+be,logo,Run…,Run,input  #1,input; Run; field=é,input; Run; field=é,input; Run; field=é
+be,logo,Run…,Run,button OK #1,input; (closed),input; (closed),input; (closed)
+be,logo,Run…,Run,button Cancel #1,input; (closed),input; (closed),input; (closed)
+be,logo,Run…,Run,button Browse... #1,input; Run,input; Run,input; Run
+be,logo,Backgrounds…,Backgrounds,be.dialog.swatches #1,input; (closed),input; (closed),input; (closed)
+be,logo,Backgrounds…,Backgrounds,be.dialog.dark #1,input; (closed),input; (closed),input; (closed)
+be,logo,Backgrounds…,Backgrounds,button OK #1,input; (closed),input; (closed),input; (closed)
+be,logo,Backgrounds…,Backgrounds,button Cancel #1,input; (closed),input; (closed),input; (closed)
+be,logo,Launch Groups…,Launch Groups,be.dialog.launch-groups-list #1,input; (closed),input; (closed),input; (closed)
+be,logo,Launch Groups…,Launch Groups,button New… #1,input; New Launch Group,input; New Launch Group,input; New Launch Group
+be,logo,Launch Groups…,Launch Groups,button Rename… #1,input; Rename Launch Group,input; Rename Launch Group,input; Rename Launch Group
+be,logo,Launch Groups…,Launch Groups,button Number… #1,input; Launch Group Number,input; Launch Group Number,input; Launch Group Number
+be,logo,Launch Groups…,Launch Groups,button Members… #1,input; Group 1 members,input; Group 1 members,input; Group 1 members
+be,logo,Launch Groups…,Launch Groups,button Delete #1,input;,input;,input;
+be,logo,Launch Groups…,Launch Groups,button Launch #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+be,logo,Launch Groups…,Launch Groups,be.dialog.status #1,input; (closed),input; (closed),input; (closed)
+be,logo,Launch Groups…,Launch Groups,button Done #1,input; (closed),input; (closed),input; (closed)
+be,logo,Launch Groups… > button New… #1,New Launch Group,be.dialog.field:name #1,input; New Launch Group,input; New Launch Group,input; New Launch Group
+be,logo,Launch Groups… > button New… #1,New Launch Group,input  #1,input; New Launch Group; field=é,input; New Launch Group; field=é,input; New Launch Group; field=é
+be,logo,Launch Groups… > button New… #1,New Launch Group,button OK #1,input;,input;,input;
+be,logo,Launch Groups… > button New… #1,New Launch Group,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+be,logo,Launch Groups… > button Rename… #1,Rename Launch Group,be.dialog.field:name #1,input; Rename Launch Group,input; Rename Launch Group,input; Rename Launch Group
+be,logo,Launch Groups… > button Rename… #1,Rename Launch Group,input  #1,input; Rename Launch Group; field=é,input; Rename Launch Group; field=é,input; Rename Launch Group; field=é
+be,logo,Launch Groups… > button Rename… #1,Rename Launch Group,button OK #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+be,logo,Launch Groups… > button Rename… #1,Rename Launch Group,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+be,logo,Launch Groups… > button Number… #1,Launch Group Number,be.dialog.select:number #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+be,logo,Launch Groups… > button Number… #1,Launch Group Number,button OK #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+be,logo,Launch Groups… > button Number… #1,Launch Group Number,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+be,logo,Launch Groups… > button Members… #1,Group 1 members,be.dialog.members-list #1,input; Group 1 members,input; Group 1 members,input; Group 1 members
+be,logo,Launch Groups… > button Members… #1,Group 1 members,button OK #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+be,logo,Launch Groups… > button Members… #1,Group 1 members,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+be,logo,Launch Groups… > button Delete #1,,button Delete #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+be,logo,Launch Groups… > button Delete #1,,button Cancel #1,input; Launch Groups,input; Launch Groups,input; Launch Groups
+be,group,Get Info,Main info,be.dialog.field:name #1,input; Main info,input; Main info,input; Main info
+be,group,Get Info,Main info,input  #1,input; Main info; field=Mainé,input; Main info; field=Mainé,input; Main info; field=Mainé
+be,group,Get Info,Main info,button OK #1,input; (closed),input; (closed),input; (closed)
+be,group,Get Info,Main info,button Cancel #1,input; (closed),input; (closed),input; (closed)

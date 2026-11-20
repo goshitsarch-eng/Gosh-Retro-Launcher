@@ -82,6 +82,7 @@ func _rebuild(with_scroll: bool) -> void:
 	viewport = Control.new()
 	viewport.clip_contents = true
 	viewport.mouse_filter = Control.MOUSE_FILTER_PASS
+	viewport.gui_input.connect(_viewport_wheel)
 	add_child(viewport)
 	body = W31Body.new()
 	viewport.add_child(body)
@@ -110,26 +111,40 @@ func _finish_layout(with_scroll: bool) -> void:
 	if overflow and not with_scroll:
 		_rebuild(true)
 		return
-	var vh := mini(content_h, max_height - chrome)
+	_fit_content()
+
+
+## Keep the same widgets and their edits when the host window changes height.
+func fit_height(shell_height: int) -> void:
+	max_height = maxi(2 * FRAME + TITLE_H + 1, int(shell_height * 0.9))
+	if _built:
+		_fit_content()
+
+
+func _fit_content() -> void:
+	var content_h := _inner_h + 2 * PAD
+	var chrome := 2 * FRAME + TITLE_H
+	var vh := clampi(max_height - chrome, 1, content_h)
+	var overflow := vh < content_h
+	var content_width := _content_w + 2 * PAD
+	var frame_width := maxi(dialog_width, content_width + 2 * FRAME + (W31ScrollBar.WIDTH if overflow else 0))
 	viewport.position = Vector2(FRAME, FRAME + TITLE_H)
-	viewport.size = Vector2(dialog_width - 2 * FRAME, vh)
-	body.position = Vector2(PAD, PAD)
+	viewport.size = Vector2(frame_width - 2 * FRAME, vh)
 	body.size = Vector2(_content_w, _inner_h)
-	# Minimum first: setting `size` below an older, larger minimum is ignored, so a dialog that got
-	# shorter (Quick Search as its results narrow) kept its tallest height.
-	custom_minimum_size = Vector2(dialog_width, chrome + vh)
+	custom_minimum_size = Vector2(frame_width, chrome + vh)
 	size = custom_minimum_size
-	if with_scroll:
+	if overflow and scroll == null:
 		scroll = W31ScrollBar.new()
+		scroll.step = 13
+		scroll.scrolled.connect(func(v: float): body.position.y = PAD - v)
+		viewport.add_child(scroll)
+	if scroll:
+		scroll.visible = overflow
 		scroll.position = Vector2(viewport.size.x - W31ScrollBar.WIDTH, 0)
 		scroll.size = Vector2(W31ScrollBar.WIDTH, vh)
 		scroll.total = content_h
 		scroll.page = vh
-		scroll.step = 13
-		scroll.scrolled.connect(func(v: float):
-			body.position.y = PAD - v)
-		viewport.add_child(scroll)
-		viewport.gui_input.connect(_viewport_wheel)
+	body.position = Vector2(PAD, PAD - (scroll.value if scroll else 0.0))
 	queue_redraw()
 
 
@@ -256,12 +271,12 @@ func place(shell_size: Vector2) -> void:
 	var cx := floorf((shell_size.x - size.x) / 2.0 + 0.5)
 	var cy := floorf((shell_size.y - size.y) / 2.0 + 0.5)
 	half_pixel = int(shell_size.y - size.y) % 2 != 0
-	position = Vector2(cx, cy) + drag_offset
+	position = (Vector2(cx, cy) + drag_offset).clamp(Vector2.ZERO, (shell_size - size).max(Vector2.ZERO))
 	queue_redraw()
 
 
 func _title_rect() -> Rect2:
-	return Rect2(FRAME, FRAME, dialog_width - 2 * FRAME, TITLE_H)
+	return Rect2(FRAME, FRAME, size.x - 2 * FRAME, TITLE_H)
 
 
 func _sysbtn_rect() -> Rect2:
@@ -378,6 +393,13 @@ func focus_next(reverse: bool = false) -> void:
 			idx = i
 	var next := 0 if idx < 0 and not reverse else (stops.size() - 1 if idx < 0 else posmod(idx + (-1 if reverse else 1), stops.size()))
 	var w: W31Widget = stops[next]
+	if scroll:
+		var top := w.global_position.y - viewport.global_position.y
+		if top < 0:
+			scroll.value += top
+		elif top + w.size.y > viewport.size.y:
+			scroll.value += top + w.size.y - viewport.size.y
+		body.position.y = PAD - scroll.value
 	if w is W31TextField:
 		w.focus_select_all()
 	else:

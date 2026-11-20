@@ -92,9 +92,9 @@ func test_ok_on_web_site_opens_new_web_site() -> void:
 	var saved := _use_scratch_store()
 	var g: String = ProgramStore.add_group("Main")
 	var layer := Win31DialogLayer.new()
+	layer.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
 	layer.size = Vector2(640, 480)
 	_tree().root.add_child(layer)
-	layer.size = Vector2(640, 480)
 	UIState.open_dialog("newObject", {"groupId": g})
 	await _tree().process_frame
 	var dlg: W31FormDialogs.NewObject = layer.current_dialog()
@@ -223,9 +223,9 @@ func test_change_icon_comes_back_to_web_site_properties() -> void:
 	var g: String = ProgramStore.add_group("Main")
 	var id := W31DialogLogic.apply_new_url(ProgramStore, g, "https://news.example", "News", 0)
 	var layer := Win31DialogLayer.new()
+	layer.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
 	layer.size = Vector2(640, 480)
 	_tree().root.add_child(layer)
-	layer.size = Vector2(640, 480)
 	UIState.open_dialog("itemProperties", {"groupId": g, "item": ProgramStore.find_item(g, id)})
 	await _tree().process_frame
 	var d: W31PropertiesDialogs.WebSiteProperties = layer.current_dialog()

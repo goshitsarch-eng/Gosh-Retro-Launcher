@@ -24,13 +24,16 @@ func _ready() -> void:
 	var view: String = args.get("view", "about")
 	var flow_mode: bool = args.has("flow")
 	var out: String = args.get("out", "artifacts/dlg-%s.png" % view)
-	var profile := "%s/pm-dlg-%d" % [OS.get_environment("TMPDIR") if OS.get_environment("TMPDIR") != "" else "/tmp", OS.get_process_id()]
+	var profile := OS.get_cache_dir().path_join("pm-dlg-%d" % OS.get_process_id())
 	DirAccess.make_dir_recursive_absolute(profile)
 	var f := FileAccess.open(profile.path_join("program-manager-data.json"), FileAccess.WRITE)
 	f.store_string(Jsonx.stringify(FIXTURES.data_for("workspace"), "  "))
 	f.close()
 	ProgramStore.init_store(profile)
 	Engine.set_meta("pm_capture", true)
+	# Fixture coordinates and pointer deltas are specified at 1x, like Capture.prepare().
+	if OS.get_environment("PM_FORCE_DPR").is_empty():
+		OS.set_environment("PM_FORCE_DPR", "1")
 	get_window().size = Vector2i(640, 480)
 	ShellScale.apply(get_window(), 1.0)
 	var bg := ColorRect.new()
@@ -47,7 +50,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	if flow_mode:
 		await _flows()
-		get_tree().quit()
+		get_tree().quit(1 if _fails > 0 else 0)
 		return
 	await _open(view)
 	for i in 6:

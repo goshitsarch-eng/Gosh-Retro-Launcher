@@ -112,7 +112,9 @@ func _probe(p: int, tree: SceneTree) -> String:
 			return "free"
 		if Time.get_ticks_msec() > deadline:
 			peer.disconnect_from_host()
-			return "foreign"
+			# Winsock can keep a refused loopback connection pending past this deadline.
+			# The bind in acquire() decides whether the port can actually be claimed.
+			return "free"
 		await tree.process_frame
 	peer.put_data(request_line(profile, command).to_utf8_buffer())
 	var buf := PackedByteArray()

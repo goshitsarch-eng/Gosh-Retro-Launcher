@@ -13,6 +13,8 @@ var title := ""
 var titled := true
 var frame_size := Vector2(360, 120)
 var body: Control
+var _scroll: ScrollContainer
+var _visible_frame := Vector2.ZERO
 var default_button: MacButton
 var on_cancel: Callable = Callable()
 ## Optional key hook for the topmost dialog: (InputEventKey) -> bool handled. Runs before Return / Esc / Cmd-.
@@ -51,23 +53,34 @@ func _init() -> void:
 
 
 func _build() -> void:
-	var vp: Vector2 = shell.logical_size
-	_frame_pos = Vector2(floorf((vp.x - frame_size.x) / 2.0), floorf((vp.y - frame_size.y) / 2.0))
-	_frame_pos = Vector2(maxf(0.0, _frame_pos.x), maxf(float(MacGeometry.MENU_H), _frame_pos.y))
+	_scroll = ScrollContainer.new()
+	_scroll.follow_focus = true
+	add_child(_scroll)
 	body = Control.new()
 	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(body)
+	_scroll.add_child(body)
+	resized.connect(_fit_frame)
+	_fit_frame()
+	queue_redraw()
+
+
+func _fit_frame() -> void:
+	var top := float(MacGeometry.MENU_H)
+	_visible_frame = frame_size.min(Vector2(size.x, maxf(1, size.y - top)))
+	_frame_pos = ((size - _visible_frame) / 2.0).round()
 	_place_body()
 	queue_redraw()
 
 
 func _place_body() -> void:
-	if titled:
-		body.position = _frame_pos + Vector2(1 + 4, 1 + MacGeometry.TITLE_H)
-		body.size = Vector2(frame_size.x - 2 - 8, frame_size.y - 2 - MacGeometry.TITLE_H - 4)
-	else:
-		body.position = _frame_pos + Vector2(ALERT_PAD + ALERT_BORDER + 1, ALERT_PAD + ALERT_BORDER + 1)
-		body.size = frame_size - Vector2((ALERT_PAD + ALERT_BORDER + 1) * 2, (ALERT_PAD + ALERT_BORDER + 1) * 2)
+	var top := float(MacGeometry.MENU_H)
+	_frame_pos = _frame_pos.clamp(Vector2(0, top), (size - _visible_frame).max(Vector2(0, top)))
+	var inset := Vector2(5, 1 + MacGeometry.TITLE_H) if titled else Vector2.ONE * (ALERT_PAD + ALERT_BORDER + 1)
+	var chrome := Vector2(10, 6 + MacGeometry.TITLE_H) if titled else inset * 2
+	_scroll.position = _frame_pos + inset
+	_scroll.size = (_visible_frame - chrome).max(Vector2.ONE)
+	body.custom_minimum_size = frame_size - chrome
+	body.size = body.custom_minimum_size
 
 
 func add(widget: Control, at: Vector2) -> Control:
@@ -84,7 +97,7 @@ func set_default(btn: MacButton) -> void:
 
 
 func frame_rect() -> Rect2:
-	return Rect2(_frame_pos, frame_size)
+	return Rect2(_frame_pos, _visible_frame)
 
 
 ## Places buttons right-aligned in a row whose top is `y` (body coords); returns nothing.
@@ -175,6 +188,20 @@ func _input(event: InputEvent) -> void:
 	if shell.dialog_layer.get_child(shell.dialog_layer.get_child_count() - 1) != self:
 		return  # only the topmost dialog reacts
 	var k := event as InputEventKey
+	if shell.select_layer.get_child_count() > 0:
+		return
+	var owner := get_viewport().gui_get_focus_owner()
+	if k.keycode == KEY_TAB:
+		var stops := body.find_children("*", "Control", true, false).filter(func(c: Control):
+			return c.is_visible_in_tree() and c.focus_mode == Control.FOCUS_ALL and not c is ScrollBar)
+		if not stops.is_empty():
+			var i := stops.find(owner)
+			var next := posmod(i - 1, stops.size()) if k.shift_pressed else (i + 1) % stops.size()
+			if i < 0 and k.shift_pressed:
+				next = stops.size() - 1
+			stops[next].grab_focus()
+		get_viewport().set_input_as_handled()
+		return
 	if on_key.is_valid() and on_key.call(k):
 		get_viewport().set_input_as_handled()
 		return
@@ -182,6 +209,8 @@ func _input(event: InputEvent) -> void:
 		cancel()
 		get_viewport().set_input_as_handled()
 	elif k.keycode == KEY_ENTER or k.keycode == KEY_KP_ENTER:
+		if owner is MacButton or owner is MacSelect or owner is TextEdit:
+			return
 		if default_button != null and is_instance_valid(default_button) and not default_button.disabled:
 			default_button.pressed.emit()
 			get_viewport().set_input_as_handled()
@@ -189,5 +218,5 @@ func _input(event: InputEvent) -> void:
 
 func auto_lookup(id: String) -> Variant:
 	if id == "mac.dialog" and is_visible_in_tree() and shell.dialog_layer.get_child(shell.dialog_layer.get_child_count() - 1) == self:
-		return Rect2(global_position + _frame_pos, frame_size)
+		return Rect2(global_position + _frame_pos, _visible_frame)
 	return null

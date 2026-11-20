@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Program Manager Handbook</title>
-<meta name="description" content="Handbook for Program Manager 2.0.0: user manual, architecture, development, build and release, troubleshooting, audit findings and coverage. Works offline from file://.">
+<meta name="description" content="Handbook for Program Manager 2.1.0: user manual, architecture, development, build and release, troubleshooting, audit findings and coverage. Works offline from file://.">
 <link rel="stylesheet" href="handbook.css">
 </head>
 <body>
@@ -13,7 +13,7 @@
 <header class="app-header">
   <div class="brand">
     <strong>Program Manager Handbook</strong>
-    <span>Version 2.0.0 &middot; revision edb4155 &middot; audited 2026-11-14</span>
+    <span>Version 2.1.0 &middot; original audit at edb4155 on 2026-11-14</span>
   </div>
   <div class="header-search js-only">
     <label for="search">Search the handbook</label>
@@ -194,6 +194,7 @@
         <p>Clone the repository, then start the project from its folder:</p>
         <div class="codeblock"><button class="copy" type="button">Copy</button><pre><code>git clone https://github.com/goshitsarch-eng/Gosh-Retro-Launcher.git
 cd Gosh-Retro-Launcher
+godot --headless --path . --import
 godot --path .</code></pre></div>
         <p>You can also open <code>project.godot</code> in the Godot editor and press F5. The audit ran the main scene through the capture harness (<code>godot --path . -- --capture=&hellip;</code>), which starts the same scene. The interactive start from the command line was not repeated by hand.</p>
       </article>
@@ -537,7 +538,7 @@ godot --path .</code></pre></div>
         <ul>
           <li><strong>Where:</strong> Launcher Tools, section <em>Windows 3.x groups</em>. The buttons are Export JSON&hellip;, Import JSON&hellip;, Export .GRP&hellip; and Import .GRP&hellip;.</li>
           <li><strong>JSON export</strong> writes the whole configuration (groups, items, settings and workspace profiles) to a file you choose. The suggested name is <code>program-manager-backup.json</code>.</li>
-          <li><strong>JSON import</strong> <em>replaces</em> the current groups, settings and workspace profiles. Before replacing them, the program writes a backup of the current data. If that backup cannot be written, or the imported data cannot be saved, the import is refused and nothing changes. If the file is malformed, you see <em>Invalid file format</em>, <em>Invalid group or item data in file</em> or <em>Failed to read file</em>, and nothing changes. Files over 10 MB are refused.</li>
+          <li><strong>JSON import</strong> <em>replaces</em> the current groups, settings and workspace profiles. Before replacing them, the program writes a backup of the current data. If that backup cannot be written, or the imported data cannot be saved, the import is refused and nothing changes. If the file is malformed, you see <em>Invalid file format</em>, <em>Invalid group or item data in file</em> or <em>The selected file contains invalid JSON.</em>, and nothing changes. An unreadable file reports <em>Failed to read file</em>. Files over 10 MB are refused.</li>
           <li><strong>Repairs:</strong> imported values are checked. A launch group that is not a whole number of 0 or more becomes 0 (numbers above 8 are kept), a setting with the wrong type or range takes its default, and a shortcut key without Ctrl, Alt, Shift or Meta is cleared. The Launcher Tools status line says how many values were repaired and how many shortcut keys were cleared, and a notice in the main window repeats it.</li>
           <li><strong>.GRP files</strong> are the Windows 3.x group format. Export names the file after the group. Import adds the group to your workspace, under a new id if its id is already in use.</li>
           <li>Import never starts a program by itself.</li>
@@ -876,7 +877,7 @@ godot --path .</code></pre></div>
           <tbody>
             <tr><td>Windows x86_64</td><td><code>build/windows-x86_64/program-manager.exe</code></td><td>Icon and version resources are edited on export (needs the rcedit tool in CI).</td></tr>
             <tr><td>Windows arm64</td><td><code>build/windows-arm64/program-manager.exe</code></td><td>Marked experimental in the Windows workflow.</td></tr>
-            <tr><td>macOS</td><td><code>build/macos/Program Manager.zip</code></td><td>Universal binary, ad-hoc signed (codesign mode 1 with an empty identity). Notarization is off.</td></tr>
+            <tr><td>macOS</td><td><code>build/macos/Program Manager.zip</code></td><td>Universal binary, ad-hoc signed (Apple codesign with the ad-hoc identity <code>-</code>). Notarization is off.</td></tr>
             <tr><td>Linux x86_64</td><td><code>build/linux-x86_64/program-manager.x86_64</code></td><td>The PCK is embedded in the executable.</td></tr>
             <tr><td>Linux arm64</td><td><code>build/linux-arm64/program-manager.arm64</code></td><td>Built by the Linux workflow.</td></tr>
           </tbody>
@@ -940,7 +941,7 @@ godot --headless --path . --export-release "macOS" "build/macos/Program Manager.
         <ul>
           <li><strong>Linux:</strong> <code>tools/package_linux.sh</code> builds a tar.gz and, when <code>dpkg-deb</code> is available, a .deb. The .deb installs a <code>program-manager</code> command. The desktop entry is in <code>packaging/linux/program-manager.desktop</code>.</li>
           <li><strong>Windows:</strong> <code>packaging/windows/program-manager.nsi</code> is the NSIS installer script. Its contents were not checked in this audit.</li>
-          <li><strong>macOS:</strong> the workflow makes a zip and a disk image. The preset ad-hoc signs the app: codesign mode 1 with an empty identity. Notarization is off (<code>notarization/notarization=0</code>). A notarized release would need a Developer ID identity, the notarization settings and Apple credentials, none of which are configured.</li>
+          <li><strong>macOS:</strong> the workflow makes a zip and a disk image. The preset ad-hoc signs the app: Apple codesign with the ad-hoc identity <code>-</code>. Notarization is off (<code>notarization/notarization=0</code>). A notarized release would need a Developer ID identity, the notarization settings and Apple credentials, none of which are configured.</li>
           <li>No package was built or installed in this audit.</li>
         </ul>
       </article>
@@ -2313,7 +2314,7 @@ godot --headless --path . --export-release "macOS" "build/macos/Program Manager.
     </section>
 
     <footer class="doc-footer">
-      <p>Program Manager 2.0.0 handbook. Audited from revision edb4155 on 2026-11-14; describes branch main with the fixes committed since. Runtime checks used Godot 4.7.2 on macOS. Windows and Linux behaviour is described from source only. Each claim has its status tag, and the audit findings list their evidence.</p>
+      <p>Program Manager 2.1.0 handbook. The original audit began at revision edb4155 on 2026-11-14 and ran on macOS with Godot 4.7.2. For later Windows, macOS and Linux runtime results, see the <a href="../qa-2026-11-19/README.md">desktop audit</a>. Each claim has its status tag, and the audit findings list their evidence.</p>
       <p>This page loads its style and script from this folder and its screenshots from <code>../screenshots/</code>. It makes no network requests.</p>
     </footer>
   </main>

@@ -21,6 +21,8 @@ var title := ""
 var frame_size := Vector2(360, 120)
 var context_help := ""
 var body: Control
+var _scroll: ScrollContainer
+var _visible_frame := Vector2.ZERO
 var default_button: Control
 var on_cancel: Callable = Callable()
 
@@ -54,23 +56,37 @@ func _init() -> void:
 
 
 func _build() -> void:
-	var vp: Vector2 = shell.logical_size
-	# the overlay covers the whole shell (taskbar included), so dialogs centre in the full viewport
-	_frame_pos = Vector2(Win95ShellInput.js_round((vp.x - frame_size.x) / 2.0), Win95ShellInput.js_round((vp.y - frame_size.y) / 2.0))
-	_frame_pos = Vector2(maxf(0, _frame_pos.x), maxf(0, _frame_pos.y))
+	_scroll = ScrollContainer.new()
+	_scroll.follow_focus = true
+	add_child(_scroll)
 	body = Control.new()
 	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(body)
-	_place_body()
+	_scroll.add_child(body)
+	resized.connect(_fit_frame)
+	_fit_frame()
 	shell.input.set_modal(_uid, true)
 	shell.input.register_key("modal", _uid, _on_key)
 	add_to_group("pm_auto")
 	queue_redraw()
 
 
+func _fit_frame() -> void:
+	var top := 0.0
+	_visible_frame = frame_size.min(Vector2(size.x, maxf(1, size.y - top)))
+	_frame_pos = ((size - _visible_frame) / 2.0).round()
+	_place_body()
+	queue_redraw()
+
+
 func _place_body() -> void:
-	body.position = _frame_pos + Vector2(4, 22)
-	body.size = Vector2(frame_size.x - 8, frame_size.y - 26)
+	var top := 0.0
+	_frame_pos = _frame_pos.clamp(Vector2(0, top), (size - _visible_frame).max(Vector2(0, top)))
+	var inset := Vector2(4, 22)
+	var chrome := Vector2(8, 26)
+	_scroll.position = _frame_pos + inset
+	_scroll.size = (_visible_frame - chrome).max(Vector2.ONE)
+	body.custom_minimum_size = frame_size - chrome
+	body.size = body.custom_minimum_size
 
 
 func add(widget: Control, at: Vector2) -> Control:
@@ -88,7 +104,7 @@ func set_default(btn: Control) -> void:
 
 
 func frame_rect() -> Rect2:
-	return Rect2(_frame_pos, frame_size)
+	return Rect2(_frame_pos, _visible_frame)
 
 
 func _exit_tree() -> void:
@@ -117,15 +133,15 @@ func cancel() -> void:
 # -------------------------------------------------------------------- drawing
 
 func _caption_rect() -> Rect2:
-	return Rect2(_frame_pos + Vector2(4, 4), Vector2(frame_size.x - 8, 18))
+	return Rect2(_frame_pos + Vector2(4, 4), Vector2(_visible_frame.x - 8, 18))
 
 
 func _close_rect() -> Rect2:
-	return Rect2(_frame_pos + Vector2(frame_size.x - 22, 6), Vector2(16, 14))
+	return Rect2(_frame_pos + Vector2(_visible_frame.x - 22, 6), Vector2(16, 14))
 
 
 func _help_rect() -> Rect2:
-	return Rect2(_frame_pos + Vector2(frame_size.x - 38, 6), Vector2(16, 14))
+	return Rect2(_frame_pos + Vector2(_visible_frame.x - 38, 6), Vector2(16, 14))
 
 
 var _pressed_cap := ""
@@ -137,7 +153,7 @@ func _draw() -> void:
 	var cap := _caption_rect()
 	Win95Draw.fill(self, cap, Win95Draw.CAPTION)
 	Win95Draw.text(self, cap.position + Vector2(2, 3), title, Color.WHITE,
-		{"bold": true, "max_width": maxi(1, int(frame_size.x) - (49 if context_help != "" else 31))})
+		{"bold": true, "max_width": maxi(1, int(_visible_frame.x) - (49 if context_help != "" else 31))})
 	for part in ["close", "help"]:
 		if part == "help" and context_help == "":
 			continue

@@ -16,6 +16,7 @@ var _content: VBoxContainer
 # state (mirrors the React component)
 var _form: Dictionary
 var _selected_group := ""
+var _url_group := ""
 var _selected_profile := ""
 var _selected_item_key := ""
 var _profile_name := ""
@@ -182,6 +183,13 @@ static func _box(bg: Color, border: Color, shadow: bool = false) -> StyleBoxFlat
 
 static func _make_theme() -> Theme:
 	var t := Theme.new()
+	var ui_font := SystemFont.new()
+	ui_font.font_names = PackedStringArray([".AppleSystemUIFont", "Segoe UI", "Noto Sans", "DejaVu Sans"])
+	ui_font.allow_system_fallback = true
+	var cjk := SystemFont.new()
+	cjk.font_names = PackedStringArray(["Hiragino Sans", "Yu Gothic", "Microsoft YaHei", "Noto Sans CJK JP", "Noto Sans CJK SC"])
+	ui_font.fallbacks = [cjk]
+	t.default_font = ui_font
 	t.default_font_size = 13
 	var ink := Color("#111111")
 	for type_name in ["Button", "OptionButton", "CheckBox"]:
@@ -197,8 +205,22 @@ static func _make_theme() -> Theme:
 		t.set_stylebox("pressed", type_name, _box(Color("#c4c0b8"), Color("#444444")))
 		t.set_stylebox("disabled", type_name, _box(Color("#d4d0c8"), Color("#999999")))
 		t.set_stylebox("focus", type_name, _box(Color(0, 0, 0, 0), Color("#000080")))
-	for state in ["normal", "hover", "pressed", "hover_pressed", "focus", "disabled"]:
+	for state in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
 		t.set_stylebox(state, "CheckBox", StyleBoxEmpty.new())
+	var focus_ring := StyleBoxFlat.new()
+	focus_ring.draw_center = false
+	focus_ring.border_color = Color("#000080")
+	focus_ring.set_border_width_all(1)
+	t.set_stylebox("focus", "CheckBox", focus_ring)
+	for type_name in ["LineEdit", "TextEdit"]:
+		t.set_color("font_placeholder_color", type_name, Color("#595959"))
+		t.set_color("caret_color", type_name, ink)
+		t.set_color("selection_color", type_name, Color("#000080"))
+		t.set_color("font_selected_color", type_name, Color.WHITE)
+	t.set_constant("modulate_arrow", "OptionButton", 1)
+	for direction in ["up", "down"]:
+		for state in ["", "_hover", "_pressed", "_disabled"]:
+			t.set_color(direction + state + "_icon_modulate", "SpinBox", Color("#777777") if state == "_disabled" else ink)
 	t.set_stylebox("normal", "LineEdit", _box(Color.WHITE, Color("#666666")))
 	t.set_stylebox("focus", "LineEdit", _box(Color.WHITE, Color("#000080")))
 	t.set_stylebox("read_only", "LineEdit", _box(Color("#eeeeee"), Color("#666666")))
@@ -299,18 +321,17 @@ func _labeled(parent: Control, label: String, ctl: Control, expand: bool = true)
 	return v
 
 
-func _group_option(parent: Control, on_change: Callable) -> OptionButton:
+func _group_option(parent: Control, selected: String, on_change: Callable) -> OptionButton:
 	var o := _fit_option(OptionButton.new())
 	o.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for g in ProgramStore.groups:
 		o.add_item(g.name)
 		o.set_item_metadata(o.item_count - 1, g.id)
 	for i in o.item_count:
-		if o.get_item_metadata(i) == _selected_group:
+		if o.get_item_metadata(i) == selected:
 			o.select(i)
 	o.item_selected.connect(func(i: int):
-		_selected_group = String(o.get_item_metadata(i))
-		on_change.call())
+		on_change.call(String(o.get_item_metadata(i))))
 	parent.add_child(o)
 	return o
 
@@ -324,12 +345,13 @@ func _check(parent: Control, text: String, on: bool, cb: Callable) -> CheckBox:
 	return c
 
 
-func _line(text: String, placeholder: String, cb: Callable) -> LineEdit:
+func _line(text: String, placeholder: String, cb: Callable = Callable()) -> LineEdit:
 	var e := LineEdit.new()
 	e.text = text
 	e.placeholder_text = placeholder
 	e.custom_minimum_size.x = FIELD_MIN_W
-	e.text_changed.connect(cb)
+	if cb.is_valid():
+		e.text_changed.connect(cb)
 	return e
 
 
@@ -339,7 +361,7 @@ func _scale_option(value: Variant, cb: Callable) -> OptionButton:
 	for v in Types.SCALE_FACTORS:
 		o.add_item("%d×" % v)
 	o.select(W31DialogLogic.scale_to_index(value))
-	o.tooltip_text = "Auto adapts to your display (HiDPI / Retina / 4K) and window size, keeping text and icons crisp. Pick 1x-4x to force a size."
+	o.tooltip_text = "Auto adapts to your display (HiDPI / Retina / 4K) and window size, keeping text and icons crisp. Pick 1x-4x to set a preferred size. Small windows use the largest scale that fits."
 	o.item_selected.connect(func(i: int): cb.call(W31DialogLogic.scale_from_index(i)))
 	return o
 
@@ -359,13 +381,13 @@ func _rebuild() -> void:
 		_content.remove_child(c)
 		c.queue_free()
 	var groups: Array = ProgramStore.groups
-	if _selected_group == "" and groups.size() > 0:
-		_selected_group = groups[0].id
-	if _selected_group != "" and ProgramStore.find_group(_selected_group).is_empty():
+	if ProgramStore.find_group(_url_group).is_empty():
+		_url_group = groups[0].id if groups.size() > 0 else ""
+	if ProgramStore.find_group(_selected_group).is_empty():
 		_selected_group = groups[0].id if groups.size() > 0 else ""
-	if _selected_profile == "" and ProgramStore.workspace_profiles.size() > 0:
-		_selected_profile = ProgramStore.workspace_profiles[0].id
-		_rename_profile = ProgramStore.workspace_profiles[0].name
+	if _selected_profile != "" and not ProgramStore.workspace_profiles.any(func(p): return p.id == _selected_profile):
+		_selected_profile = ""
+		_rename_profile = ""
 	_build_header()
 	_build_appearance()
 	_build_transfer()
@@ -432,7 +454,7 @@ func _build_groups() -> void:
 	var s := _section("Windows 3.x groups")
 	var row := _row(s)
 	row.set_meta("auto_id", "tools.groups-row")
-	_group_option(row, func(): pass)
+	_group_option(row, _selected_group, func(id: String): _selected_group = id)
 	_button(row, "Import .GRP...", func(): _import_grp(), false, "import-grp")
 	_button(row, "Export .GRP...", func(): _export_grp(), _selected_group == "", "export-grp")
 
@@ -521,10 +543,7 @@ func _build_url() -> void:
 	var s := _section("URL launcher")
 	var grid := _flow(9)
 	s.add_child(grid)
-	var add_btn: Button
-	var name_edit := _line(_url_name, "", func(t: String):
-		_url_name = t
-		add_btn.disabled = ProgramStore.groups.is_empty() or _url_name.strip_edges().is_empty())
+	var name_edit := _line(_url_name, "", func(t: String): _url_name = t)
 	name_edit.set_meta("auto_id", "tools.url-name")
 	_labeled(grid, "Name", name_edit)
 	var url_edit := _line(_url_value, "", func(t: String): _url_value = t)
@@ -537,14 +556,18 @@ func _build_url() -> void:
 	var gl := Label.new()
 	gl.text = "Group"
 	gv.add_child(gl)
-	_group_option(gv, func(): pass)
+	_group_option(gv, _url_group, func(id: String): _url_group = id)
 	grid.add_child(gv)
-	add_btn = _button(s, "Add URL", func():
-		var st := LauncherToolsLogic.add_url(ProgramStore, _selected_group, _url_name, _url_value)
+	var add_btn := _button(s, "Add URL", func():
+		var st := LauncherToolsLogic.add_url(ProgramStore, _url_group, _url_name, _url_value)
 		if st != "":
 			_url_name = ""
 			set_status(st)
-			_rebuild(), ProgramStore.groups.is_empty() or _url_name.strip_edges().is_empty(), "add-url")
+			_rebuild(), not LauncherToolsLogic.url_valid(_url_group, _url_name, _url_value), "add-url")
+	var validate := func(_text: String):
+		add_btn.disabled = not LauncherToolsLogic.url_valid(_url_group, name_edit.text, url_edit.text)
+	name_edit.text_changed.connect(validate)
+	url_edit.text_changed.connect(validate)
 	add_btn.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 
 
@@ -718,21 +741,19 @@ func _build_profile_editor() -> void:
 	var box := _flow(8)
 	box.add_theme_constant_override("v_separation", 8)
 	s.add_child(box)
-	var a_edit := _line(args, "", func(t: String): args = t)
+	var a_edit := _line(args, "")
 	_labeled(box, "Arguments", a_edit)
-	var w_edit := _line(wd, "", func(t: String): wd = t)
+	var w_edit := _line(wd, "")
 	_labeled(box, "Working directory", w_edit)
 	var e_edit := TextEdit.new()
 	e_edit.text = env
 	e_edit.placeholder_text = "KEY=VALUE"
 	e_edit.custom_minimum_size = Vector2(0, 60)
-	e_edit.text_changed.connect(func(): env = e_edit.text)
 	_labeled(box, "Environment", e_edit)
 	var m_opt := _fit_option(OptionButton.new())
 	for m in ["Normal", "Minimized", "Maximized"]:
 		m_opt.add_item(m)
 	m_opt.select(Types.RUN_MODES.find(mode))
-	m_opt.item_selected.connect(func(i: int): mode = Types.RUN_MODES[i])
 	_labeled(box, "Run mode", m_opt)
 	var lg_opt := _fit_option(OptionButton.new())
 	var stored_lg := lg
@@ -740,11 +761,11 @@ func _build_profile_editor() -> void:
 		lg_opt.add_item(label)
 	lg_opt.select(lg if lg <= LaunchGroups.MAX_GROUP else LaunchGroups.MAX_GROUP + 1)
 	lg_opt.set_meta("auto_id", "tools.batch-group")
-	lg_opt.item_selected.connect(func(i: int): lg = LauncherToolsLogic.batch_group_value(i, stored_lg))
 	_labeled(box, "Batch group", lg_opt)
 	var save := _button(s, "Save launch profile", func():
 		var st := LauncherToolsLogic.save_launch_profile(ProgramStore, parts[0], parts[1],
-			LauncherToolsLogic.launch_profile_updates(args, wd, env, mode, lg))
+			LauncherToolsLogic.launch_profile_updates(a_edit.text, w_edit.text, e_edit.text, Types.RUN_MODES[m_opt.selected],
+				LauncherToolsLogic.batch_group_value(lg_opt.selected, stored_lg)))
 		set_status(st), false, "save-profile")
 	save.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 
@@ -799,8 +820,9 @@ func _build_workspaces() -> void:
 	ren_edit.editable = not none
 	ren_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	edit_box.add_child(ren_edit)
-	_button(edit_box, "Rename", func():
+	var rename := _button(edit_box, "Rename", func():
 		LauncherToolsLogic.rename_profile(ProgramStore, _selected_profile, _rename_profile), none or _rename_profile.strip_edges().is_empty(), "rename-profile")
+	ren_edit.text_changed.connect(func(t: String): rename.disabled = none or t.strip_edges().is_empty())
 	_button(edit_box, "Delete", func():
 		LauncherToolsLogic.delete_profile(ProgramStore, _selected_profile)
 		_selected_profile = ""

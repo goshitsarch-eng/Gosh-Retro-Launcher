@@ -423,6 +423,13 @@ func test_load_any_sniffs_formats() -> void:
 	expect_eq(s.get_size(), Vector2i(64, 64))
 	expect(_is_color(s.get_pixel(32, 32), 255, 0, 0))
 	expect_null(IconImage.load_any("not an image at all".to_utf8_buffer()))
+	# One uncompressed true-colour TGA pixel, BGR red.
+	var tga := PackedByteArray([0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 24, 0, 0, 0, 255])
+	tga.append_array(PackedByteArray([0, 0, 0, 0, 0, 0, 0, 0]))
+	tga.append_array("TRUEVISION-XFILE.".to_ascii_buffer())
+	tga.append(0)
+	var pixel := IconImage.load_any(tga)
+	expect(pixel != null and pixel.get_pixel(0, 0) == Color.RED, "true-colour TGA decodes")
 	expect_null(IconImage.load_any(PackedByteArray()))
 	expect_null(IconImage.load_file("/nonexistent/none.png"))
 

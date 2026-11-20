@@ -4,14 +4,13 @@ extends Control
 ## drop, shortcuts, window state). Also hosts the visual capture entry (`--capture=<view>`),
 ## see src/app/capture.gd.
 
-const VERSION := "2.0.0"
-
 var shell: ShellBase
 var capture: Node
 var tray: TrayController
 var single_instance: SingleInstance
 var desktop: DesktopBridge
 
+var _native_menu_installed := false
 var _applied_shell := ""
 var _frame_shell := ""
 var _shown_save_failures := {}  ## groups/settings/profiles failures already shown (they re-fire on every retry); cleared by save_recovered
@@ -25,6 +24,7 @@ func _ready() -> void:
 	Platform.files_dropped.connect(_on_files_dropped)
 	Platform.window_state_changed.connect(_on_window_state_changed)
 	Platform.display_changed.connect(_refresh_scale)
+	win.size_changed.connect(_refresh_scale)
 	if not is_capture and not _single_instance_disabled(args):
 		if not await _acquire_single_instance():
 			get_tree().quit()
@@ -55,7 +55,7 @@ func _ready() -> void:
 		_show_load_notice.call_deferred()
 		_setup_tray()
 		_setup_desktop_bridge()
-		MacAppMenu.install(Platform.open_launcher_tools, Platform.open_launcher_tools, Platform.trigger_quick_search)
+		_native_menu_installed = MacAppMenu.install(Platform.open_launcher_tools, Platform.open_launcher_tools, Platform.trigger_quick_search)
 		_center_initial_window.call_deferred()
 		if wants_quick_search(args, OS.get_cmdline_args()):
 			Platform.trigger_quick_search.call_deferred()  # `--quick-search` with no instance running yet
@@ -63,6 +63,11 @@ func _ready() -> void:
 	win.title = WindowLayout.window_title(current_shell_id())
 	if capture:
 		capture.run()
+
+
+func _exit_tree() -> void:
+	if _native_menu_installed:
+		MacAppMenu.uninstall()
 
 
 static func _parse_args() -> Dictionary:
@@ -190,9 +195,9 @@ func _apply_window_for_shell(initial: bool) -> void:
 	if initial:
 		Platform.configure_window_chrome(id)  # frame flag, title, desktop colour (no bounds to keep yet)
 		_frame_shell = id
-	ShellScale.apply(win, resolve_scale())
 	if initial and (capture == null or not capture.owns_window_size()):
 		win.size = initial_window_size()
+	_refresh_scale()
 	win.title = WindowLayout.window_title(id)
 
 
@@ -214,7 +219,7 @@ func _on_settings_changed() -> void:
 	if id != _frame_shell:
 		_frame_shell = id
 		Platform.apply_shell_frame(id)  # coroutine: keeps the outer bounds across the frame flip
-	ShellScale.apply(get_window(), resolve_scale())
+	_refresh_scale()
 	_mount_shell()
 	if shell:
 		shell.on_scale_changed(int(get_window().content_scale_factor))
@@ -224,7 +229,8 @@ func _on_settings_changed() -> void:
 func _refresh_scale() -> void:
 	var win := get_window()
 	var before := win.content_scale_factor
-	ShellScale.apply(win, resolve_scale())
+	var dips := Vector2(win.size) / ShellScale.display_ratio(win)
+	ShellScale.apply(win, ShellScale.fit_window(resolve_scale(), dips))
 	if shell and before != win.content_scale_factor:
 		shell.on_scale_changed(int(win.content_scale_factor))
 
@@ -348,12 +354,15 @@ func _post_capture_notice() -> void:
 func show_notice(n: Dictionary) -> void:
 	if n.is_empty():
 		return
-	push_warning("Program Manager: " + String(n.text))
+	var alert: bool = n.get("alert", false)
+	if alert:
+		push_warning("Program Manager: " + String(n.text))
+	else:
+		print("Program Manager: " + String(n.text))
 	if capture != null and not capture_notices_enabled(OS.get_environment("PM_CAPTURE_NOTICE")):
 		return
 	if not is_instance_valid(shell) or not shell.is_inside_tree() or shell.is_queued_for_deletion():
 		return
-	var alert: bool = n.get("alert", false)
 	var id := shell.shell_id()
 	if id == "win95":
 		load(NOTICE_DIALOGS.win95).show_message(shell, String(n.title), String(n.text), "warning" if alert else "information")

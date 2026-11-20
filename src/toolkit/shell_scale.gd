@@ -52,6 +52,12 @@ static func resolve_preference(preference: Variant, work_w: float, work_h: float
 	return resolve_auto(work_w, work_h)
 
 
+## Largest requested integer scale that still leaves the desktop its minimum usable area.
+static func fit_window(preferred: int, size_dips: Vector2) -> int:
+	var fit := floori(minf(size_dips.x / WindowLayout.MIN_WIDTH, size_dips.y / WindowLayout.MIN_HEIGHT))
+	return clampi(fit, 1, maxi(1, preferred))
+
+
 ## Applies logical scale `factor_dips` (x display ratio) to the window's content.
 static func apply(window: Window, factor_dips: float) -> void:
 	window.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED

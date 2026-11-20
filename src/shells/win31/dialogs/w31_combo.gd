@@ -268,9 +268,9 @@ class _Popup extends Control:
 				KEY_END:
 					hover = combo.items.size() - 1
 				KEY_ENTER, KEY_KP_ENTER, KEY_SPACE:
-					combo._commit(hover)
-					combo.close_popup()
 					get_viewport().set_input_as_handled()
+					combo.close_popup()
+					combo._commit(hover)
 					return
 				KEY_ESCAPE:
 					combo.close_popup()

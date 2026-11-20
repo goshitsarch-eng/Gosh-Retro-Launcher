@@ -31,4 +31,21 @@ static func install(on_settings: Callable, on_tools: Callable, on_search: Callab
 	if dock.is_valid():
 		NativeMenu.add_item(dock, "Launcher Tools…", func(_tag: Variant) -> void: on_tools.call(), Callable(), TOOLS_TAG)
 		NativeMenu.add_item(dock, "Quick Search", func(_tag: Variant) -> void: on_search.call(), Callable(), SEARCH_TAG)
-	return app.is_valid()
+	return app.is_valid() or dock.is_valid()
+
+
+## System menus outlive the scene tree. Release script callbacks while GDScript is still running.
+static func uninstall() -> void:
+	if OS.get_name() != "macOS" or not DisplayServer.has_feature(DisplayServer.FEATURE_GLOBAL_MENU):
+		return
+	for system_id in [NativeMenu.APPLICATION_MENU_ID, NativeMenu.DOCK_MENU_ID]:
+		var menu := NativeMenu.get_system_menu(system_id)
+		if not menu.is_valid():
+			continue
+		for i in range(NativeMenu.get_item_count(menu) - 1, -1, -1):
+			var tag: Variant = NativeMenu.get_item_tag(menu, i)
+			if tag in [SETTINGS_TAG, TOOLS_TAG, SEARCH_TAG]:
+				if tag == SETTINGS_TAG and i + 1 < NativeMenu.get_item_count(menu) and NativeMenu.get_item_text(menu, i + 1).is_empty():
+					NativeMenu.remove_item(menu, i + 1)
+				NativeMenu.set_item_callback(menu, i, Callable())
+				NativeMenu.remove_item(menu, i)

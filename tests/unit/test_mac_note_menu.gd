@@ -238,11 +238,12 @@ func test_cmd_keys_in_a_note_leave_the_folder_selection_alone() -> void:
 	# text editing keys still reach the note (the headless display has no clipboard, so Select All and Undo).
 	# Cmd/Ctrl-Delete above deleted words in the note, as it does in a text editor.
 	await a.type_text("abc")
-	await a.key(KEY_A, {"ctrl": true})
+	var edit_modifier := {"meta": true} if OS.get_name() == "macOS" else {"ctrl": true}
+	await a.key(KEY_A, edit_modifier)
 	await a.type_text("xy")
 	await _frames(1)
 	expect_eq(note.text(), "xy", "Select All selected the note's text")
-	await a.key(KEY_Z, {"ctrl": true})
+	await a.key(KEY_Z, edit_modifier)
 	await _frames(1)
 	expect(note.text() != "xy", "Undo undid the typing: " + note.text())
 	# Cmd-W closes the note (not the folder window); the Find window below is then in the clear
@@ -370,5 +371,31 @@ func test_note_context_menu() -> void:
 	expect(m != null and a.has("mac.popup-item:Clean Up") and not a.has("mac.popup-item:Move To Trash…"), "the desktop's own menu")
 	if m != null:
 		m.close()
+	_unmount(shell)
+	_restore_store(saved)
+
+
+func test_tab_reaches_note_dialog_controls_and_return_cancels_without_creating_a_note() -> void:
+	var saved := _use_scratch_store()
+	var gid: String = ProgramStore.add_group("Main")
+	var shell := _mount()
+	var a := Automation.new(_tree())
+	await _frames(3)
+	var dlg := MacDialogs.new_note(shell, gid)
+	await _frames(2)
+	var saw_select := false
+	for i in 8:
+		await a.key(KEY_TAB)
+		var owner := shell.get_viewport().gui_get_focus_owner()
+		if owner == null or not dlg.is_ancestor_of(owner):
+			break
+		saw_select = saw_select or owner is MacSelect
+		if owner is MacButton and owner.label == "Cancel":
+			await a.key(KEY_ENTER)
+			break
+	expect(saw_select,
+		"Tab reaches the paper and folder selectors")
+	expect(_dialogs(shell).is_empty(), "Return on the focused Cancel closes the form")
+	expect_eq(ProgramStore.find_group(gid).items.size(), 0, "Cancel leaves the folder alone")
 	_unmount(shell)
 	_restore_store(saved)

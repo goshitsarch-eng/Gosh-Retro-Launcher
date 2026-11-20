@@ -54,3 +54,12 @@ func test_tile_layout() -> void:
 	expect_eq(b.size(), 5)
 	expect_eq(area, 601.0 * 401.0)
 	expect_eq(Win31Layout.calculate_tile_layout(0, 600, 400), [])
+
+
+func test_window_size_limits_explicit_zoom_without_losing_the_preference() -> void:
+	expect_eq(ShellScale.fit_window(4, Vector2(400, 300)), 1)
+	expect_eq(ShellScale.fit_window(4, Vector2(1200, 300)), 1)
+	expect_eq(ShellScale.fit_window(4, Vector2(400, 1200)), 1)
+	expect_eq(ShellScale.fit_window(4, Vector2(1200, 950)), 3)
+	expect_eq(ShellScale.fit_window(4, Vector2(1600, 1200)), 4)
+	expect_eq(ShellScale.fit_window(2, Vector2(1600, 1200)), 2)
